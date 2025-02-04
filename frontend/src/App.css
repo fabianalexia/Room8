@@ -1,38 +1,336 @@
-.App {
+/* Import Unique Font */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Montserrat:wght@300;600&display=swap");
+
+/* Reset & Global Styles */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: "Montserrat", sans-serif;
+    background: #f5f5f5;
+}
+
+/* Navigation Bar (Now Sticky) */
+/* Sticky Navbar */
+/* Sticky Navbar */
+/* Navbar - Ensures it Stays Within Page */
+/* Sticky Navbar */
+/* Navbar - Ensures It Stays Centered and Doesn't Stretch */
+/* Navbar - Ensures It Stays Centered and Doesn't Stretch */
+/* Navbar - Balanced Height & Keeps Everything in Place */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 85px; /* Keeps height consistent */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 50px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  transition: background 0.3s ease-in-out;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Keep Logo on the Left */
+.logo {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 100%;
+}
+
+.logo img {
+  height: 55px;
+  width: auto;
+}
+
+/* Brand Name - Keeps It Inside the Navbar */
+.brand-name {
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: "Playfair Display", serif;
+  color: black;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: absolute;
+  left: 20%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  height: 85%;
+  display: flex;
+  align-items: center;
+}
+
+
+/* 🔹 NAVIGATION LINKS: Aligns Perfectly in Top Right */
+.nav-links {
+  list-style: none;
+  display: flex; /* Makes links stay in a row */
+  flex-direction: row; /* Ensures it stays horizontal */
+  gap: 30px; /* Even spacing between links */
+  position: absolute;
+  right: 50px; /* Keeps links aligned to the right */
+  top: 50%;
+  transform: translateY(-50%);
+  align-items: center;
+  white-space: nowrap; /* Prevents text from wrapping */
+}
+.nav-links li {
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap; /* Prevents wrapping */
+}
+.nav-links a {
+  text-decoration: none;
+  color: black;
+  opacity: 0.9;
+  transition: opacity 0.3s ease-in-out;
+}
+.nav-links a:hover {
+  opacity: 1;
+}
+
+
+/* Hamburger Menu (For Small Screens) */
+.hamburger {
+  display: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: black;
+}
+
+/* Mobile Menu */
+@media screen and (max-width: 800px) {
+  .navbar {
+      height: 85px; /* Ensures navbar height stays the same */
+      padding: 0 20px;
+      justify-content: space-between;
+  }
+
+  .logo {
+      left: 15px;
+  }
+
+  .brand-name {
+      font-size: 1.5rem;
+      left: 50%;
+      transform: translateX(-55%);
+  }
+
+  .hamburger {
+      display: block;
+      position: absolute;
+      right: 20px;
+      cursor: pointer;
+  }
+
+  .nav-links {
+      position: absolute;
+      top: 80px;
+      right: 0;
+      width: 200px;
+      background: white;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transform: translateY(-200%);
+      transition: transform 0.3s ease-in-out;
+  }
+
+  .nav-links.nav-active {
+      transform: translateY(0);
+  }
+}
+
+
+
+  .nav-links li {
+      padding: 10px 0;
+  }
+
+/* Make Navbar Responsive */
+@media screen and (max-width: 800px) {
+  .navbar {
+      flex-direction: row;
+      justify-content: space-between; /* Ensures logo stays in the left corner */
+      padding: 15px 20px;
+  }
+
+  .logo {
+    position: relative;
+    left: 0;
+    top: 0;
+}
+
+  .brand-name {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        background: transparent;
+        color: black;
+    }
+
+    .hamburger {
+      position: relative;
+      right: 0;
+  }
+}
+
+  .nav-links li {
+      padding: 8px 0;
+  }
+
+
+
+/* Brand Name */
+.brand-name {
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: "Playfair Display", serif;
+  color: black; /* Set text color to black */
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.8); /* Adds slight background for visibility */
+  padding: 5px 15px;
+  border-radius: 5px;
+}
+
+
+
+/* Logo Styling */
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo img {
+  height: 55px;
+  width: auto;
+}
+
+
+/* Navigation Links */
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+}
+
+.nav-links li {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: rgb(0, 0, 0);
+    opacity: 0.9;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.nav-links a:hover {
+    opacity: 1;
+}
+
+/* Hero Section */
+.hero-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: url("./assets/background.jpg") no-repeat center center/cover;
+  background-size: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+
+/* Background Zoom Effect */
+@keyframes zoomBackground {
+    0% {
+        background-size: 100%;
+    }
+    100% {
+        background-size: 105%;
+    }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+/* Dark Overlay */
+.hero-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.55);
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+/* Centered Hero Content */
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    color: white;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 1.2s ease-in-out, transform 1.2s ease-in-out;
 }
 
-.App-link {
-  color: #61dafb;
+.hero-content.fade-in {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Hero Title */
+.hero-title {
+    font-size: 3.5rem;
+    font-family: "Playfair Display", serif;
+    font-weight: 600;
+    letter-spacing: -1px;
+}
+
+/* Subtitle */
+.hero-subtitle {
+    font-size: 1.5rem;
+    font-weight: 300;
+    margin-top: 15px;
+    opacity: 0.9;
+}
+
+/* CTA Button */
+.cta-button {
+    display: inline-block;
+    margin-top: 30px;
+    padding: 15px 40px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: white;
+    background-color: #ff5ac8;
+    border: none;
+    border-radius: 30px;
+    text-decoration: none;
+    box-shadow: 0 4px 10px rgba(35, 8, 26, 0.3);
+    transition: 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.cta-button:hover {
+    background-color: #b048e0;
+    box-shadow: 0 4px 20px rgba(176, 72, 224, 0.6);
+}
+
+/* Align About Link to the Right */
+.about-link {
+    margin-left: auto;
 }

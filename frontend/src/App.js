@@ -1,6 +1,7 @@
 import "./App.css";
 import logo from "./assets/room8_logo_transparent.png";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 function App() {
     const [fadeIn, setFadeIn] = useState(false);
@@ -46,5 +47,29 @@ function App() {
         </div>
     );
 }
+
+const buttonVariants = {
+    hover: {
+      scale: 1.1,
+      transition: {
+        yoyo: Infinity, // Repeats animation
+      },
+    },
+  };
+  
+  function App1() {
+      return (
+          <div className="hero-container">
+              <motion.a 
+                  href="#purpose"
+                  className="cta-button"
+                  variants={buttonVariants}
+                  whileHover="hover"
+              >
+                  Get Started
+              </motion.a>
+          </div>
+      );
+  }
 
 export default App;

@@ -309,28 +309,45 @@ body, html {
     opacity: 0.9;
 }
 
-/* CTA Button */
+/* Enhanced "Get Started" Button */
 .cta-button {
-    display: inline-block;
-    margin-top: 30px;
-    padding: 15px 40px;
-    font-size: 1.3rem;
-    font-weight: bold;
-    color: white;
-    background-color: #ff5ac8;
-    border: none;
-    border-radius: 30px;
-    text-decoration: none;
-    box-shadow: 0 4px 10px rgba(35, 8, 26, 0.3);
-    transition: 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  display: inline-block;
+  margin-top: 30px;
+  padding: 15px 40px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: white;
+  background: linear-gradient(135deg, #ff5ac8, #b048e0);
+  border: none;
+  border-radius: 30px;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 
+/* Hover Effect: Smooth Scale & Gradient Shift */
 .cta-button:hover {
-    background-color: #b048e0;
-    box-shadow: 0 4px 20px rgba(176, 72, 224, 0.6);
+  background: linear-gradient(135deg, #b048e0, #ff5ac8); /* Reverse gradient */
+  transform: scale(1.05); /* Slightly grows */
+  box-shadow: 0 4px 20px rgba(176, 72, 224, 0.6);
 }
 
-/* Align About Link to the Right */
-.about-link {
-    margin-left: auto;
+/* Animated Shine Effect */
+.cta-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: skewX(-45deg);
+  transition: left 0.7s ease-in-out;
+}
+
+.cta-button:hover::before {
+  left: 100%;
 }

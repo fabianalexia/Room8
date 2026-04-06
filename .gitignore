@@ -1,0 +1,32 @@
+# General
+.DS_Store
+node_modules/
+.env
+*.log
+*.pyc
+__pycache__/
+
+# Flask (backend)
+instance/
+*.sqlite3
+*.db
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# React (frontend)
+build/
+dist/
+coverage/
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

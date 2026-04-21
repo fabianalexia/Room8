@@ -1,0 +1,312 @@
+/* FORM SECTION STYLING */
+.form-section {
+    background-color: #f9f6ff;
+    background-image: radial-gradient(circle at 1px 1px, #e3d9ff 1px, transparent 0);
+    background-size: 24px 24px;
+    padding: 120px 20px 60px; /* Increased top padding to account for navbar */
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+    margin: 0 auto 80px; /* Changed top margin to 0 to avoid double spacing */
+    max-width: 800px;
+  }
+  
+  .form-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  
+  .form-header h2 {
+    font-size: 2.4rem;
+    color: #7b2cbf;
+    font-family: 'Montserrat', sans-serif;
+    margin-bottom: 15px;
+  }
+  
+  .form-header p {
+    font-size: 1.1rem;
+    color: #555;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+    font-family: 'Lora', serif;
+  }
+  
+  /* Form styling */
+  .room8-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-top: 30px;
+  }
+  
+  /* For full-width form elements */
+  .form-group-full {
+    grid-column: 1 / -1;
+  }
+  
+  .form-group {
+    margin-bottom: 5px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+    font-family: 'Lora', serif;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e3d9ff;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: white;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #7b2cbf;
+    box-shadow: 0 0 0 3px rgba(123, 44, 191, 0.1);
+  }
+  
+  /* Custom select styling */
+  .custom-select {
+    position: relative;
+  }
+  
+  .custom-select select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 40px;
+  }
+  
+  .select-arrow {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #7b2cbf;
+    font-size: 0.8rem;
+    pointer-events: none;
+  }
+  
+  /* Form section dividers */
+  .form-divider {
+    grid-column: 1 / -1;
+    border-top: 1px solid #e3d9ff;
+    margin: 20px 0 5px;
+    padding-top: 15px;
+  }
+  
+  .form-divider h3 {
+    color: #7b2cbf;
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+  }
+  
+  /* Submit button */
+  .submit-btn {
+    grid-column: 1 / -1;
+    padding: 14px 30px;
+    background-color: #7b2cbf;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 100%;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(123, 44, 191, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .submit-btn:hover {
+    background-color: #6b1ba7;
+    transform: translateY(-2px);
+  }
+  
+  .submit-btn:active {
+    transform: translateY(1px);
+  }
+  
+  .submit-btn.loading .btn-text {
+    opacity: 0;
+  }
+  
+  .submit-btn.loading .btn-loading {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 25px;
+    height: 25px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+  }
+  
+  @keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+  
+  /* Form validation styles */
+  .invalid {
+    border-color: #e74c3c !important;
+    background-color: rgba(231, 76, 60, 0.05);
+  }
+  
+  .invalid::placeholder {
+    color: rgba(231, 76, 60, 0.5);
+  }
+  
+  /* Form success message */
+  .form-success {
+    display: none;
+    text-align: center;
+    padding: 40px 20px;
+    margin-top: 30px;
+    animation: fadeIn 0.5s ease;
+  }
+  
+  .form-success.visible {
+    display: block;
+  }
+  
+  .success-icon {
+    width: 70px;
+    height: 70px;
+    background-color: #28c76f;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: white;
+    font-size: 2rem;
+    box-shadow: 0 5px 15px rgba(40, 199, 111, 0.3);
+  }
+  
+  .form-success h3 {
+    font-size: 1.8rem;
+    color: #7b2cbf;
+    margin-bottom: 15px;
+    font-family: 'Montserrat', sans-serif;
+  }
+  
+  .form-success p {
+    font-size: 1.1rem;
+    color: #555;
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.6;
+    font-family: 'Lora', serif;
+  }
+  
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    color: #333;
+    padding: 12px 25px;
+    border-radius: 50px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+    transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  
+  .toast.show {
+    bottom: 30px;
+  }
+  
+  .toast-icon {
+    background-color: #28c76f;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    font-size: 0.9rem;
+  }
+  
+  .toast-message {
+    font-weight: 600;
+  }
+  
+  /* Navbar overrides for form page */
+  body.form-page header {
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
+  
+  body.form-page .nav-center {
+    color: #333 !important;
+  }
+  
+  body.form-page .nav-links li a {
+    color: #333 !important;
+  }
+  
+  body.form-page .nav-links li a:hover {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  body.form-page .mobile-menu-btn span {
+    background-color: #333 !important;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .room8-form {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+    
+    .form-header h2 {
+      font-size: 2rem;
+    }
+    
+    .form-section {
+      padding: 100px 15px 40px; /* Adjusted top padding for mobile */
+      margin: 0 15px 60px;
+    }
+    
+    .success-icon {
+      width: 60px;
+      height: 60px;
+      font-size: 1.8rem;
+    }
+    
+    .form-success h3 {
+      font-size: 1.6rem;
+    }
+  }
+  
+  /* Animation */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }

@@ -1,0 +1,146 @@
+
+/* Registration Page Specific Styles */
+.register-container {
+    max-width: 500px;
+    margin: 80px auto;
+    padding: 40px 30px;
+    background-color: #f9f6ff;
+    background-image: radial-gradient(circle at 1px 1px, #e3d9ff 1px, transparent 0);
+    background-size: 24px 24px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+}
+
+.register-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.register-header h1 {
+    font-family: 'Montserrat', sans-serif;
+    color: #7b2cbf;
+    font-size: 2.4rem;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+}
+
+.register-header p {
+    font-family: 'Lora', serif;
+    color: #555;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.register-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.register-form input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e3d9ff;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: white;
+}
+
+.register-form input:focus {
+    outline: none;
+    border-color: #7b2cbf;
+    box-shadow: 0 0 0 3px rgba(123, 44, 191, 0.1);
+}
+
+.register-form label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-family: 'Lora', serif;
+    font-size: 1rem;
+}
+
+.submit-btn {
+    grid-column: 1 / -1;
+    padding: 14px 30px;
+    background-color: #7b2cbf;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 100%;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(123, 44, 191, 0.2);
+}
+
+.submit-btn:hover {
+    background-color: #6b1ba7;
+    transform: translateY(-2px);
+}
+
+.submit-btn:active {
+    transform: translateY(1px);
+}
+
+.login-link {
+    grid-column: 1 / -1;
+    text-align: center;
+    margin-top: 20px;
+    font-family: 'Lora', serif;
+    color: #555;
+}
+
+.login-link a {
+    color: #7b2cbf;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.login-link a:hover {
+    color: #5b1a91;
+}
+
+/* Form Validation Styles */
+.form-group.error input {
+    border-color: #e74c3c;
+    background-color: rgba(231, 76, 60, 0.05);
+}
+
+.error-message {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    margin-top: 5px;
+    font-family: 'Lora', serif;
+    height: 20px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .register-container {
+        margin: 60px 15px;
+        padding: 30px 20px;
+    }
+
+    .register-form {
+        grid-template-columns: 1fr;
+    }
+
+    .register-header h1 {
+        font-size: 2rem;
+    }
+}

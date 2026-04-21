@@ -1,0 +1,213 @@
+/* ============================================================
+   Room8 — Mobile & Responsive Styles
+   Import this in main.jsx or App.jsx after style.css
+   ============================================================ */
+
+/* ── iOS / Mobile base fixes ─────────────────────────────── */
+html {
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tap highlight suppression */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Ensure inputs don't zoom on iOS (font-size ≥ 16px) */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Fix 100vh on mobile (excludes browser chrome) */
+.full-mobile-height {
+  height: 100dvh;
+}
+
+/* ── Safe-area padding helpers ───────────────────────────── */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Scrollable containers ───────────────────────────────── */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar { display: none; }
+
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Responsive grid helpers ─────────────────────────────── */
+.grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-3col-photos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+/* ── Auth page responsive ────────────────────────────────── */
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 32px 24px !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* ── Nav links mobile ────────────────────────────────────── */
+@media (max-width: 768px) {
+  .nav-links {
+    display: none !important;
+  }
+
+  .nav-links.open {
+    display: flex !important;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #fff;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    z-index: 999;
+  }
+
+  .nav-links.open li a,
+  .nav-links.open li button {
+    color: #0F2D5E !important;
+    font-size: 1.3rem !important;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px;
+    z-index: 1000;
+  }
+}
+
+/* ── Onboarding pages mobile ─────────────────────────────── */
+@media (max-width: 540px) {
+  /* Stack the 2-column name grid on small screens */
+  .profile-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Option card grids — smaller cards on mobile */
+  .option-card-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ── Profile page mobile ─────────────────────────────────── */
+@media (max-width: 540px) {
+  .profile-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Messages page ───────────────────────────────────────── */
+@media (max-width: 767px) {
+  .messages-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Home landing page ───────────────────────────────────── */
+@media (max-width: 600px) {
+  .home-hero-buttons {
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  .home-hero-buttons a,
+  .home-hero-buttons button {
+    width: 100%;
+    max-width: 300px;
+    text-align: center;
+  }
+
+  .home-stats-strip {
+    gap: 20px !important;
+  }
+
+  .home-features-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-steps-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-mission-section {
+    flex-direction: column !important;
+  }
+}
+
+/* ── Bottom nav mobile ───────────────────────────────────── */
+@media (max-width: 375px) {
+  /* Ultra-small phones — shrink label text */
+  .bottom-nav-label {
+    font-size: 0.52rem !important;
+  }
+}
+
+/* ── Swipe deck mobile ───────────────────────────────────── */
+@media (max-width: 420px) {
+  .swipe-action-buttons {
+    gap: 28px !important;
+  }
+}
+
+/* ── Discover / Board mobile ─────────────────────────────── */
+@media (max-width: 540px) {
+  .discover-tab-bar button {
+    font-size: 0.78rem !important;
+  }
+}
+
+/* ── Likes grid mobile ───────────────────────────────────── */
+@media (max-width: 480px) {
+  .likes-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+}
+
+/* ── Typography scale ────────────────────────────────────── */
+@media (max-width: 480px) {
+  h1 { font-size: clamp(1.8rem, 8vw, 2.4rem); }
+  h2 { font-size: clamp(1.4rem, 6vw, 2rem); }
+  h3 { font-size: clamp(1.1rem, 5vw, 1.5rem); }
+}
+
+/* ── Focus visible (accessibility) ──────────────────────── */
+:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Smooth transitions globally ────────────────────────── */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

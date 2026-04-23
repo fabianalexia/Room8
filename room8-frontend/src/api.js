@@ -146,6 +146,14 @@ export function blockUser(blockerId, blockedId) {
   });
 }
 
+export function unmatchUser(userId, peerId) {
+  return doFetch(`${API_URL}/api/match/${peerId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
 // ---------------- Compatibility ----------------
 export function getCompatibility(userId) {
   return doFetch(`${API_URL}/api/compatibility/${userId}`);

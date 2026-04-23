@@ -14,6 +14,7 @@ from routes.survey_routes import survey_bp
 from routes.board_routes import board_bp
 from routes.report_routes import report_bp
 from routes.safety_routes import safety_bp
+from routes.match_routes import match_bp
 from routes.debug_routes import debug_bp
 
 # Load .env if present (development)
@@ -100,6 +101,7 @@ def create_app():
     app.register_blueprint(board_bp)
     app.register_blueprint(report_bp)
     app.register_blueprint(safety_bp)
+    app.register_blueprint(match_bp)
     app.register_blueprint(debug_bp)
 
     try:

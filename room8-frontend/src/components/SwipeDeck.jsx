@@ -170,10 +170,19 @@ function ReportModal({ person, userId, onClose, onDone }) {
 }
 
 // ── Profile card ───────────────────────────────────────────────
-function ProfileCard({ person, viewerPrefs, onReport }) {
+function ProfileCard({ person, viewerPrefs, onReport, onBlock }) {
   const theirPrefs  = person.dorm_prefs || {};
   const compatTags  = getCompatTags(viewerPrefs, theirPrefs);
   const compatPct   = getCompatPercent(viewerPrefs, theirPrefs);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const menuRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e) => { if (!menuRef.current?.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
 
   return (
     <div style={{
@@ -232,21 +241,58 @@ function ProfileCard({ person, viewerPrefs, onReport }) {
         </div>
       )}
 
-      {/* Report button — top right */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onReport(); }}
-        style={{
-          position: "absolute", top: 14, right: 14, zIndex: 10,
-          background: "rgba(3,9,20,0.6)", border: `1px solid ${BORDER}`,
-          color: WHITE, width: 34, height: 34, borderRadius: "50%",
-          cursor: "pointer", fontSize: "1rem",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          backdropFilter: "blur(6px)",
-        }}
-        title="Report or block"
-      >
-        ⋯
-      </button>
+      {/* ⋯ menu — top right */}
+      <div ref={menuRef} style={{ position: "absolute", top: 14, right: 14, zIndex: 10 }}>
+        <button
+          onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+          style={{
+            background: menuOpen ? "rgba(255,255,255,0.18)" : "rgba(3,9,20,0.6)",
+            border: `1px solid ${BORDER}`,
+            color: WHITE, width: 34, height: 34, borderRadius: "50%",
+            cursor: "pointer", fontSize: "1rem",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            backdropFilter: "blur(6px)",
+            transition: "background 0.15s",
+          }}
+        >
+          ⋯
+        </button>
+        {menuOpen && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "absolute", top: "calc(100% + 6px)", right: 0,
+              background: "#0E1F3D",
+              border: `1px solid rgba(255,255,255,0.12)`,
+              borderRadius: 10, overflow: "hidden",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+              minWidth: 148,
+            }}
+          >
+            {[
+              { label: "Report 🚩", action: () => { setMenuOpen(false); onReport(); } },
+              { label: "Block 🚫",  action: () => { setMenuOpen(false); onBlock(); } },
+            ].map((item) => (
+              <button
+                key={item.label}
+                onClick={(e) => { e.stopPropagation(); item.action(); }}
+                style={{
+                  display: "block", width: "100%", padding: "11px 16px",
+                  background: "none", border: "none",
+                  color: "#F87171", fontSize: "0.85rem",
+                  cursor: "pointer", textAlign: "left",
+                  fontFamily: "'Inter', sans-serif", fontWeight: 500,
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Info overlay — bottom */}
       <div style={{
@@ -470,6 +516,7 @@ export default function SwipeDeck() {
                     person={person}
                     viewerPrefs={viewerPrefs}
                     onReport={() => setReportTarget(person)}
+                    onBlock={() => handleBlock(person)}
                   />
                 </div>
               </TinderCard>
@@ -501,41 +548,6 @@ export default function SwipeDeck() {
           />
         </div>
 
-        {/* Report / Block row */}
-        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-          <button
-            onClick={() => setReportTarget(candidates[currentIndex])}
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              color: "rgba(255,255,255,0.5)",
-              padding: "7px 16px", borderRadius: 8,
-              fontSize: "0.78rem", fontWeight: 600,
-              cursor: "pointer", fontFamily: "'Inter', sans-serif",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(239,68,68,0.5)"; e.currentTarget.style.color = "#F87171"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}
-          >
-            Report 🚩
-          </button>
-          <button
-            onClick={() => handleBlock(candidates[currentIndex])}
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              color: "rgba(255,255,255,0.5)",
-              padding: "7px 16px", borderRadius: 8,
-              fontSize: "0.78rem", fontWeight: 600,
-              cursor: "pointer", fontFamily: "'Inter', sans-serif",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(239,68,68,0.5)"; e.currentTarget.style.color = "#F87171"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}
-          >
-            Block 🚫
-          </button>
-        </div>
       </>
     );
   };

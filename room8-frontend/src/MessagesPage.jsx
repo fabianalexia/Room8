@@ -79,16 +79,8 @@ function NoMatchesEmpty() {
   );
 }
 
-function MatchesPanel({ onSelect, selectedId, isMobile }) {
-  const user = getCurrentUser();
-  const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    getMatches(user.id).then(setMatches).catch(console.error).finally(() => setLoading(false));
-  }, []); // eslint-disable-line
-
+// Receives matches + loading from parent so unmatch/block updates reflect immediately
+function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile }) {
   const newMatches = matches.filter((m) => !m.last_message);
   const messaged   = matches.filter((m) =>  m.last_message);
 
@@ -233,29 +225,19 @@ function EmptyChat() {
           </div>
         ))}
       </div>
-
-      <h3 style={{
-        color: WHITE, margin: "0 0 10px",
-        fontWeight: 800, fontSize: "1.1rem",
-      }}>
+      <h3 style={{ color: WHITE, margin: "0 0 10px", fontWeight: 800, fontSize: "1.1rem" }}>
         Select a conversation
       </h3>
       <p style={{ color: MUTED, maxWidth: 240, fontSize: "0.88rem", lineHeight: 1.6, margin: "0 0 28px" }}>
         Choose a match from the left to start chatting.
       </p>
-
       <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 280 }}>
         <p style={{ color: "rgba(245,158,11,0.6)", fontSize: "0.7rem", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", margin: "0 0 4px" }}>
           Conversation starters
         </p>
-        {[
-          "What's your sleep schedule like?",
-          "What's your major?",
-          "Are you neat or more relaxed?",
-        ].map((p) => (
+        {["What's your sleep schedule like?", "What's your major?", "Are you neat or more relaxed?"].map((p) => (
           <div key={p} style={{
-            background: SURFACE,
-            border: `1px solid ${BORDER}`,
+            background: SURFACE, border: `1px solid ${BORDER}`,
             borderRadius: 8, padding: "10px 14px",
             color: MUTED, fontSize: "0.85rem", textAlign: "left",
           }}>
@@ -269,15 +251,22 @@ function EmptyChat() {
 
 export default function MessagesPage() {
   const user = getCurrentUser();
-  const [selected,    setSelected]    = useState(null);
-  const [isMobile,    setIsMobile]    = useState(window.innerWidth < 768);
-  const [mobileView,  setMobileView]  = useState("list");
+  const [selected,       setSelected]       = useState(null);
+  const [isMobile,       setIsMobile]       = useState(window.innerWidth < 768);
+  const [mobileView,     setMobileView]     = useState("list");
+  const [matches,        setMatches]        = useState([]);
+  const [matchesLoading, setMatchesLoading] = useState(true);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
+
+  useEffect(() => {
+    if (!user) { setMatchesLoading(false); return; }
+    getMatches(user.id).then(setMatches).catch(console.error).finally(() => setMatchesLoading(false));
+  }, []); // eslint-disable-line
 
   const handleSelect = useCallback((match) => {
     setSelected(match);
@@ -289,19 +278,37 @@ export default function MessagesPage() {
     setSelected(null);
   }, []);
 
+  // Called after unmatch or block — removes the peer from the list and clears the chat
+  const removeMatch = useCallback((peerId) => {
+    setMatches((prev) => prev.filter((m) => m.id !== peerId));
+    setSelected((prev) => {
+      if (prev?.id === peerId) {
+        if (isMobile) setMobileView("list");
+        return null;
+      }
+      return prev;
+    });
+  }, [isMobile]);
+
+  const chatProps = selected ? {
+    userId:    user?.id,
+    peerId:    selected.id,
+    peerName:  selected.name,
+    peerPhoto: selected.photo,
+    onUnmatch: () => removeMatch(selected.id),
+    onBlock:   () => removeMatch(selected.id),
+  } : null;
+
   if (isMobile) {
     return (
       <div style={{ height: "calc(100vh - 64px)", background: DARK, overflow: "hidden" }}>
         {mobileView === "list" ? (
-          <MatchesPanel onSelect={handleSelect} selectedId={selected?.id} isMobile />
-        ) : (
-          <Chat
-            userId={user?.id}
-            peerId={selected?.id}
-            peerName={selected?.name}
-            peerPhoto={selected?.photo}
-            onBack={handleBack}
+          <MatchesPanel
+            matches={matches} loading={matchesLoading}
+            onSelect={handleSelect} selectedId={selected?.id} isMobile
           />
+        ) : (
+          <Chat {...chatProps} onBack={handleBack} />
         )}
       </div>
     );
@@ -309,16 +316,16 @@ export default function MessagesPage() {
 
   return (
     <div style={{
-      display: "grid",
-      gridTemplateColumns: "340px 1fr",
-      height: "calc(100vh - 64px)",
-      background: DARK,
-      overflow: "hidden",
+      display: "grid", gridTemplateColumns: "340px 1fr",
+      height: "calc(100vh - 64px)", background: DARK, overflow: "hidden",
     }}>
-      <MatchesPanel onSelect={handleSelect} selectedId={selected?.id} isMobile={false} />
+      <MatchesPanel
+        matches={matches} loading={matchesLoading}
+        onSelect={handleSelect} selectedId={selected?.id} isMobile={false}
+      />
       <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {selected
-          ? <Chat userId={user?.id} peerId={selected.id} peerName={selected.name} peerPhoto={selected.photo} onBack={() => setSelected(null)} />
+          ? <Chat {...chatProps} onBack={() => setSelected(null)} />
           : <EmptyChat />
         }
       </div>

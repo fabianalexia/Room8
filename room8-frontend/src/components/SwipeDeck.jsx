@@ -557,8 +557,10 @@ export default function SwipeDeck() {
       flex: 1, display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       width: "100%", height: "100%",
+      paddingTop: 80,
       background: `linear-gradient(180deg, ${DARKER} 0%, #071020 100%)`,
       position: "relative", overflow: "hidden",
+      boxSizing: "border-box",
     }}>
       {/* Subtle radial glow */}
       <div style={{

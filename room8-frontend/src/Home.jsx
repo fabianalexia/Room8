@@ -691,7 +691,7 @@ export default function Home() {
 
           {/* MASSIVE headline — clipped reveal */}
           {["Find Your","People."].map((line,i)=>(
-            <div key={line} style={{ overflow:"hidden", position:"relative", zIndex:1 }}>
+            <div key={line} style={{ overflow:"hidden", position:"relative", zIndex:1, background:"transparent" }}>
               <motion.h1
                 initial={{ y:"108%" }}
                 animate={{ y:0 }}

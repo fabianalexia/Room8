@@ -98,8 +98,8 @@ def get_profile(user_id):
     return jsonify(user.public())
 
 
-@profile_bp.route("/complete", methods=["GET"])
-def get_profile_complete():
+@profile_bp.route("/status", methods=["GET"])
+def get_profile_status():
     user_id = request.args.get("user_id", type=int)
     if not user_id:
         return jsonify({"error": "user_id required"}), 400
@@ -109,8 +109,17 @@ def get_profile_complete():
     return jsonify({"profile_complete": bool(user.profile_complete)})
 
 
-@profile_bp.route("/complete", methods=["PATCH"])
-def patch_profile_complete():
+@profile_bp.route("/complete", methods=["GET", "PATCH", "POST"])
+def profile_complete():
+    if request.method == "GET":
+        user_id = request.args.get("user_id", type=int)
+        if not user_id:
+            return jsonify({"error": "user_id required"}), 400
+        user = db.session.get(User, user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify({"profile_complete": bool(user.profile_complete)})
+
     data = request.get_json(force=True) or {}
     user_id = data.get("user_id")
     if not user_id:

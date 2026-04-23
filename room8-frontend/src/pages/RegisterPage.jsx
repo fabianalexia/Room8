@@ -43,7 +43,7 @@ export default function RegisterPage() {
         password:   form.password,
       });
       setCurrentUser(res.user);
-      navigate("/profile/setup", { replace: true });
+      navigate("/setup", { replace: true });
     } catch (e) {
       setErr(e?.message || "Could not create account. Please try again.");
     } finally {

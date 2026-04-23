@@ -129,9 +129,13 @@ export function getProfile(userId) {
   return doFetch(`${API_URL}/api/profile/${userId}`);
 }
 
+export function getProfileStatus(userId) {
+  return doFetch(`${API_URL}/api/profile/status?user_id=${userId}`);
+}
+
 export function markProfileComplete(userId) {
   return doFetch(`${API_URL}/api/profile/complete`, {
-    method: "PATCH",
+    method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user_id: userId }),
   });

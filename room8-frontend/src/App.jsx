@@ -11,6 +11,7 @@ import Purpose               from "./Purpose";
 import SchoolsPage           from "./pages/SchoolsPage";
 import LoginPage             from "./pages/LoginPage";
 import RegisterPage          from "./pages/RegisterPage";
+import SetupPage              from "./pages/SetupPage";
 import ProfileSetupPage      from "./pages/ProfileSetupPage";
 import OnboardingSchoolPage   from "./pages/OnboardingSchoolPage";
 import OnboardingLifestylePage from "./pages/OnboardingLifestylePage";
@@ -21,7 +22,7 @@ import SwipeDeck               from "./components/SwipeDeck";
 import MessagesPage            from "./MessagesPage";
 
 // Pages that replace the global chrome with their own nav
-const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/onboarding/school", "/onboarding/lifestyle", "/profile/setup"];
+const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/setup", "/onboarding/school", "/onboarding/lifestyle", "/profile/setup"];
 
 function AppShell() {
   return (
@@ -54,6 +55,9 @@ function Layout() {
         <Route path="/login"         element={<LoginPage />} />
         <Route path="/register"      element={<RegisterPage />} />
 
+        <Route path="/setup" element={
+          <ProtectedRoute><SetupPage /></ProtectedRoute>
+        } />
         <Route path="/profile/setup" element={
           <ProtectedRoute><ProfileSetupPage /></ProtectedRoute>
         } />

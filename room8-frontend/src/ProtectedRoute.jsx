@@ -10,7 +10,7 @@ export default function ProtectedRoute({ children, requireComplete = false }) {
 
   if (!user) return <Navigate to="/login" replace />;
   if (requireComplete && user.profile_complete === false) {
-    return <Navigate to="/profile/setup" replace />;
+    return <Navigate to="/setup" replace />;
   }
   return children;
 }

@@ -129,6 +129,14 @@ export function getProfile(userId) {
   return doFetch(`${API_URL}/api/profile/${userId}`);
 }
 
+export function markProfileComplete(userId) {
+  return doFetch(`${API_URL}/api/profile/complete`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
 // ---------------- Report / Block ----------------
 export function reportUser(reporterId, reportedId, reason = "inappropriate", notes = "") {
   return doFetch(`${API_URL}/api/report`, {

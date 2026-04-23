@@ -1,8 +1,8 @@
-import os
 import json
 import uuid
+import cloudinary
+import cloudinary.uploader
 from flask import Blueprint, request, jsonify
-from werkzeug.utils import secure_filename
 from room8_models import db
 from room8_models.user import User
 
@@ -15,21 +15,18 @@ def _allowed(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def _save_photo(app, file, user_id, unique=False):
-    upload_dir = os.path.join(app.root_path, "uploads")
-    os.makedirs(upload_dir, exist_ok=True)
-    ext = secure_filename(file.filename).rsplit(".", 1)[-1].lower()
-    if unique:
-        filename = f"user_{user_id}_{uuid.uuid4().hex[:8]}.{ext}"
-    else:
-        filename = f"user_{user_id}.{ext}"
-    file.save(os.path.join(upload_dir, filename))
-    return f"/uploads/{filename}"
+def _upload_photo(file, public_id):
+    result = cloudinary.uploader.upload(
+        file,
+        public_id=public_id,
+        overwrite=True,
+        resource_type="image",
+    )
+    return result["secure_url"]
 
 
 @profile_bp.route("/<int:user_id>", methods=["PUT"])
 def update_profile(user_id):
-    from flask import current_app
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -80,14 +77,10 @@ def update_profile(user_id):
         elif isinstance(raw, dict):
             user.dorm_prefs = json.dumps(raw)
 
-    # Primary photo upload — also adds to gallery
+    # Primary photo upload — upload to Cloudinary, add to gallery
     if file and file.filename and _allowed(file.filename):
-        app_obj = current_app._get_current_object()
-        path = _save_photo(app_obj, file, user_id, unique=False)
-        base = request.url_root.rstrip("/")
-        full_url = f"{base}{path}"
+        full_url = _upload_photo(file, f"room8/profile/{user_id}")
         user.photo = full_url
-        # Add to photos gallery if not already present
         gallery = user.get_photos()
         if full_url not in gallery:
             gallery.insert(0, full_url)
@@ -105,10 +98,34 @@ def get_profile(user_id):
     return jsonify(user.public())
 
 
+@profile_bp.route("/complete", methods=["GET"])
+def get_profile_complete():
+    user_id = request.args.get("user_id", type=int)
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"profile_complete": bool(user.profile_complete)})
+
+
+@profile_bp.route("/complete", methods=["PATCH"])
+def patch_profile_complete():
+    data = request.get_json(force=True) or {}
+    user_id = data.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+    user = db.session.get(User, int(user_id))
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    user.profile_complete = True
+    db.session.commit()
+    return jsonify({"ok": True, "profile_complete": True})
+
+
 @profile_bp.route("/<int:user_id>/photos", methods=["POST"])
 def add_photo(user_id):
     """Add an additional photo to the user's gallery."""
-    from flask import current_app
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -119,16 +136,13 @@ def add_photo(user_id):
     if not _allowed(file.filename):
         return jsonify({"error": "File type not allowed"}), 400
 
-    app_obj = current_app._get_current_object()
-    path = _save_photo(app_obj, file, user_id, unique=True)
-    base = request.url_root.rstrip("/")
-    full_url = f"{base}{path}"
+    uid = uuid.uuid4().hex[:8]
+    full_url = _upload_photo(file, f"room8/gallery/{user_id}/{uid}")
 
     gallery = user.get_photos()
     gallery.append(full_url)
     user.photos = json.dumps(gallery)
 
-    # Make this the primary photo if user has none
     if not user.photo:
         user.photo = full_url
 

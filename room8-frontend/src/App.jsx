@@ -21,7 +21,7 @@ import SwipeDeck               from "./components/SwipeDeck";
 import MessagesPage            from "./MessagesPage";
 
 // Pages that replace the global chrome with their own nav
-const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/onboarding/school", "/onboarding/lifestyle"];
+const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/onboarding/school", "/onboarding/lifestyle", "/profile/setup"];
 
 function AppShell() {
   return (
@@ -77,7 +77,7 @@ function Layout() {
           <ProtectedRoute><MessagesPage /></ProtectedRoute>
         } />
         <Route path="/app" element={
-          <ProtectedRoute><AppShell /></ProtectedRoute>
+          <ProtectedRoute requireComplete><AppShell /></ProtectedRoute>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

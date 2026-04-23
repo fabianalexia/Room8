@@ -29,7 +29,7 @@ export default function LoginPage() {
     try {
       const res = await apiLogin(form);
       setCurrentUser(res.user);
-      navigate("/app", { replace: true });
+      navigate(res.user.profile_complete === false ? "/profile/setup" : "/app", { replace: true });
     } catch (error) {
       setErr(error.message || "Login failed. Please check your credentials.");
     } finally {

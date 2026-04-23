@@ -1,7 +1,7 @@
 // src/pages/OnboardingLifestylePage.jsx  —  Step 3 of 3
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, setCurrentUser, updateProfile } from "../api";
+import { getCurrentUser, setCurrentUser, updateProfile, markProfileComplete } from "../api";
 import { StepIndicator } from "./ProfileSetupPage";
 import { SectionLabel, OptionCard } from "./OnboardingSchoolPage";
 
@@ -112,7 +112,8 @@ export default function OnboardingLifestylePage() {
       fd.append("looking_for", lookingFor);
 
       const res = await updateProfile(user.id, fd);
-      setCurrentUser({ ...user, ...res.user });
+      await markProfileComplete(user.id);
+      setCurrentUser({ ...user, ...res.user, profile_complete: true });
       navigate("/app", { replace: true });
     } catch {
       setErr("Could not save preferences. Please try again.");
@@ -206,7 +207,13 @@ export default function OnboardingLifestylePage() {
             {loading ? "Saving…" : "Find My Room8"}
           </button>
 
-          <button type="button" onClick={() => navigate("/app", { replace: true })}
+          <button type="button" onClick={async () => {
+            if (user) {
+              await markProfileComplete(user.id).catch(() => {});
+              setCurrentUser({ ...user, profile_complete: true });
+            }
+            navigate("/app", { replace: true });
+          }}
             style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: "0.88rem", textAlign: "center" }}>
             Skip and start swiping
           </button>

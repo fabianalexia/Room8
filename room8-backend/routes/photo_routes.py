@@ -1,6 +1,6 @@
-import os
-from flask import Blueprint, request, jsonify, current_app
-from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
+from flask import Blueprint, request, jsonify
 from room8_models import db
 from room8_models.user import User
 
@@ -29,15 +29,24 @@ def upload_photo():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    upload_dir = os.path.join(current_app.root_path, "uploads")
-    os.makedirs(upload_dir, exist_ok=True)
+    result = cloudinary.uploader.upload(
+        file,
+        public_id=f"room8/profile/{user_id}",
+        overwrite=True,
+        resource_type="image",
+    )
+    url = result["secure_url"]
 
-    ext = secure_filename(file.filename).rsplit(".", 1)[-1]
-    filename = f"user_{user_id}.{ext}"
-    file.save(os.path.join(upload_dir, filename))
+    user.photo = url
+    # Keep gallery in sync — replace old primary or prepend
+    gallery = user.get_photos()
+    if gallery and gallery[0] != url:
+        # Remove any previous primary-slot entry for this user, then prepend
+        gallery = [p for p in gallery if not p.endswith(f"/room8/profile/{user_id}")]
+        gallery.insert(0, url)
+        user.photos = __import__("json").dumps(gallery)
+    elif not gallery:
+        user.photos = __import__("json").dumps([url])
 
-    base = request.url_root.rstrip("/")
-    user.photo = f"{base}/uploads/{filename}"
     db.session.commit()
-
     return jsonify({"ok": True, "user": user.public()})

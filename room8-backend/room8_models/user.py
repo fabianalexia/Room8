@@ -34,6 +34,9 @@ class User(db.Model):
     location      = db.Column(db.String(200))
     photos        = db.Column(db.Text)           # JSON array of photo URLs
 
+    # Onboarding completion flag
+    profile_complete = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
     def get_dorm_prefs(self):
         if not self.dorm_prefs:
             return {}
@@ -75,4 +78,6 @@ class User(db.Model):
             # location & gallery
             "location":     self.location,
             "photos":       self.get_photos(),
+            # onboarding
+            "profile_complete": bool(self.profile_complete),
         }

@@ -3,6 +3,8 @@ from flask import Flask, send_from_directory
 from flask_cors import CORS
 from sqlalchemy import text
 
+import cloudinary
+import cloudinary.uploader
 from room8_models import db
 from routes.auth_routes import auth_bp
 from routes.candidates_routes import candidates_bp
@@ -36,6 +38,13 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+
+    # ── Cloudinary ─────────────────────────────────────────────
+    cloudinary.config(
+        cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.environ.get("CLOUDINARY_API_KEY"),
+        api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
+    )
 
     # ── CORS ───────────────────────────────────────────────────
     raw_origins = os.environ.get(
@@ -79,8 +88,9 @@ def create_app():
             ("users", "looking_for",  "TEXT"),
             ("users", "location",     "VARCHAR(200)"),
             ("users", "photos",       "TEXT"),
-            ("users", "first_name",   "VARCHAR(100)"),
-            ("users", "last_name",    "VARCHAR(100)"),
+            ("users", "first_name",      "VARCHAR(100)"),
+            ("users", "last_name",       "VARCHAR(100)"),
+            ("users", "profile_complete", "BOOLEAN DEFAULT 0"),
         ])
 
     # Serve uploaded profile photos

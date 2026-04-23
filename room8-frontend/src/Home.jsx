@@ -651,7 +651,7 @@ export default function Home() {
               display:"inline-flex", alignItems:"center", gap:9,
               background:"rgba(245,158,11,0.09)", border:"1px solid rgba(245,158,11,0.24)",
               borderRadius:100, padding:"7px 20px", marginBottom:32,
-              backdropFilter:"blur(10px)",
+              marginTop:32,
             }}
           >
             <motion.span
@@ -673,6 +673,7 @@ export default function Home() {
               fontSize:"clamp(0.72rem,1.4vw,0.88rem)",
               color:"rgba(255,255,255,0.38)",
               letterSpacing:"0.26em", textTransform:"uppercase",
+              background:"none", backdropFilter:"none",
             }}
           >
             Your Campus. Your People. Your Home.

@@ -138,6 +138,14 @@ export function reportUser(reporterId, reportedId, reason = "inappropriate", not
   });
 }
 
+export function blockUser(blockerId, blockedId) {
+  return doFetch(`${API_URL}/api/block`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ blocker_id: blockerId, blocked_id: blockedId }),
+  });
+}
+
 // ---------------- Compatibility ----------------
 export function getCompatibility(userId) {
   return doFetch(`${API_URL}/api/compatibility/${userId}`);

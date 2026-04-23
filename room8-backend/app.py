@@ -13,6 +13,7 @@ from routes.photo_routes import photo_bp
 from routes.survey_routes import survey_bp
 from routes.board_routes import board_bp
 from routes.report_routes import report_bp
+from routes.safety_routes import safety_bp
 from routes.debug_routes import debug_bp
 
 # Load .env if present (development)
@@ -58,6 +59,7 @@ def create_app():
     from room8_models.survey import Survey          # noqa: F401
     from room8_models.board import Post, PostLike, PostReply  # noqa: F401
     from room8_models.report import Report                    # noqa: F401
+    from room8_models.block import Block                      # noqa: F401
 
     with app.app_context():
         db.create_all()
@@ -97,6 +99,7 @@ def create_app():
     app.register_blueprint(survey_bp)
     app.register_blueprint(board_bp)
     app.register_blueprint(report_bp)
+    app.register_blueprint(safety_bp)
     app.register_blueprint(debug_bp)
 
     try:

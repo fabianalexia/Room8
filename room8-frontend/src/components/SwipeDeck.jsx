@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import TinderCard from "react-tinder-card";
-import { getCurrentUser, getCandidates, likeUser, skipUser, reportUser } from "../api";
+import { getCurrentUser, getCandidates, likeUser, skipUser, reportUser, blockUser } from "../api";
 
 const NAVY  = "#0F2D5E";
 const GOLD  = "#F59E0B";
@@ -384,6 +384,15 @@ export default function SwipeDeck() {
     pressButton("left");
   };
 
+  const handleBlock = async (person) => {
+    if (!person) return;
+    setCurrentIndex((prev) => prev - 1);
+    setCandidates((prev) => prev.filter((c) => c.id !== person.id));
+    try {
+      await blockUser(user.id, person.id);
+    } catch (e) { console.error(e); }
+  };
+
   const renderContent = () => {
     if (!user) {
       return (
@@ -490,6 +499,42 @@ export default function SwipeDeck() {
             shadow={`0 6px 28px rgba(245,158,11,0.5)`}
             label="♥" labelColor={DARK} size={72}
           />
+        </div>
+
+        {/* Report / Block row */}
+        <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <button
+            onClick={() => setReportTarget(candidates[currentIndex])}
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.5)",
+              padding: "7px 16px", borderRadius: 8,
+              fontSize: "0.78rem", fontWeight: 600,
+              cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(239,68,68,0.5)"; e.currentTarget.style.color = "#F87171"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}
+          >
+            Report 🚩
+          </button>
+          <button
+            onClick={() => handleBlock(candidates[currentIndex])}
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.5)",
+              padding: "7px 16px", borderRadius: 8,
+              fontSize: "0.78rem", fontWeight: 600,
+              cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(239,68,68,0.5)"; e.currentTarget.style.color = "#F87171"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}
+          >
+            Block 🚫
+          </button>
         </div>
       </>
     );

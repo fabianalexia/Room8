@@ -5,6 +5,7 @@ from room8_models import db
 from room8_models.user import User
 from room8_models.swipe import Swipe
 from room8_models.message import Message
+from room8_models.block import Block
 
 candidates_bp = Blueprint("candidates", __name__, url_prefix="/api")
 
@@ -16,6 +17,17 @@ def _exclude_swiped(user_id):
     }
 
 
+def _exclude_blocked(user_id):
+    """IDs the user has blocked, plus IDs that have blocked the user."""
+    blocked_by_me = {
+        row[0] for row in db.session.query(Block.blocked_id).filter_by(blocker_id=user_id).all()
+    }
+    blocking_me = {
+        row[0] for row in db.session.query(Block.blocker_id).filter_by(blocked_id=user_id).all()
+    }
+    return blocked_by_me | blocking_me
+
+
 @candidates_bp.get("/candidates/<int:user_id>")
 def get_candidates(user_id: int):
     from flask import request as flask_request
@@ -24,11 +36,13 @@ def get_candidates(user_id: int):
         return jsonify({"ok": False, "error": "no_such_user"}), 404
 
     reset = flask_request.args.get("reset") == "true"
-    swiped_ids = set() if reset else _exclude_swiped(user_id)
+    swiped_ids  = set() if reset else _exclude_swiped(user_id)
+    blocked_ids = _exclude_blocked(user_id)
     base_q = (
         db.session.query(User)
         .filter(User.id != user_id)
         .filter(~User.id.in_(swiped_ids))
+        .filter(~User.id.in_(blocked_ids))
     )
 
     # Filter by same school if the user has one set

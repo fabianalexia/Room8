@@ -701,9 +701,6 @@ export default function Home() {
                   letterSpacing:"-0.04em",
                   fontSize:"clamp(100px, 15vw, 175px)",
                   color: i===1 ? GOLD : WHITE,
-                  textShadow: i===1
-                    ? "0 0 60px rgba(245,158,11,0.6), 0 0 120px rgba(245,158,11,0.3)"
-                    : "0 0 60px rgba(120,160,255,0.4), 0 0 120px rgba(37,99,235,0.2)",
                 }}
               >{line}</motion.h1>
             </div>

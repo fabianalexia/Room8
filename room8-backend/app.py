@@ -90,7 +90,7 @@ def create_app():
             ("users", "photos",       "TEXT"),
             ("users", "first_name",      "VARCHAR(100)"),
             ("users", "last_name",       "VARCHAR(100)"),
-            ("users", "profile_complete", "BOOLEAN DEFAULT 0"),
+            ("users", "profile_complete", "BOOLEAN DEFAULT FALSE"),
         ])
 
     # Serve uploaded profile photos
@@ -125,13 +125,24 @@ def create_app():
 
 
 def _add_columns(db, columns):
-    """Safely add columns to existing SQLite tables (no-op if already present)."""
+    """Add missing columns to existing tables. Uses IF NOT EXISTS (PostgreSQL 9.6+,
+    SQLite 3.37+) so no error is raised when the column already exists."""
     for table, col, col_type in columns:
         try:
-            db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+            db.session.execute(
+                text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {col_type}")
+            )
             db.session.commit()
         except Exception:
+            # Fallback for SQLite < 3.37 which doesn't support IF NOT EXISTS
             db.session.rollback()
+            try:
+                db.session.execute(
+                    text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}")
+                )
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
 
 app = create_app()

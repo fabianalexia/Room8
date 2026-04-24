@@ -16,8 +16,11 @@ def _allowed(filename):
 
 
 def _upload_photo(file, public_id):
+    """Upload to Cloudinary from a FileStorage object, stream, bytes, or base64 data URI."""
+    # FileStorage — pass the underlying stream so Cloudinary reads bytes correctly
+    source = file.stream if hasattr(file, "stream") else file
     result = cloudinary.uploader.upload(
-        file,
+        source,
         public_id=public_id,
         overwrite=True,
         resource_type="image",
@@ -33,10 +36,13 @@ def update_profile(user_id):
 
     if request.content_type and "multipart" in request.content_type:
         data = request.form
+        # Accept FileStorage OR a base64 string sent as a form field named "photo_b64"
         file = request.files.get("photo")
+        photo_b64 = request.form.get("photo_b64")
     else:
         data = request.get_json(force=True) or {}
         file = None
+        photo_b64 = data.get("photo") if isinstance(data.get("photo"), str) and (data.get("photo") or "").startswith("data:") else None
 
     # Basic profile
     for field in ("bio", "budget", "looking_for", "location"):
@@ -78,8 +84,15 @@ def update_profile(user_id):
             user.dorm_prefs = json.dumps(raw)
 
     # Primary photo upload — upload to Cloudinary, add to gallery
+    # Accepts multipart FileStorage or a base64 data URI
+    upload_source = None
     if file and file.filename and _allowed(file.filename):
-        full_url = _upload_photo(file, f"room8/profile/{user_id}")
+        upload_source = file
+    elif photo_b64 and photo_b64.startswith("data:"):
+        upload_source = photo_b64
+
+    if upload_source is not None:
+        full_url = _upload_photo(upload_source, f"room8/profile/{user_id}")
         user.photo = full_url
         gallery = user.get_photos()
         if full_url not in gallery:

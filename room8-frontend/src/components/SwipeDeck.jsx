@@ -95,14 +95,17 @@ function ReportModal({ person, userId, onClose, onDone }) {
     <div style={{
       position: "fixed", inset: 0, zIndex: 200,
       background: "rgba(0,0,0,0.7)",
-      display: "flex", alignItems: "flex-end", justifyContent: "center",
       backdropFilter: "blur(8px)",
     }} onClick={onClose}>
       <div style={{
+        position: "fixed", top: "50%", left: "50%",
+        transform: "translate(-50%, -50%)",
         background: "#0A1628",
-        borderRadius: "20px 20px 0 0",
-        padding: "28px 24px 40px", width: "100%", maxWidth: 480,
+        borderRadius: 20,
+        padding: "28px 24px 32px", width: "calc(100% - 40px)", maxWidth: 480,
+        maxHeight: "90vh", overflowY: "auto",
         border: `1px solid ${BORDER}`,
+        boxSizing: "border-box",
       }} onClick={(e) => e.stopPropagation()}>
         {done ? (
           <div style={{ textAlign: "center", padding: "20px 0" }}>

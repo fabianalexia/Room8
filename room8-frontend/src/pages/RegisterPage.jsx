@@ -32,6 +32,7 @@ export default function RegisterPage() {
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
+    if (!form.email.toLowerCase().endsWith(".edu")) { setErr("Please use a .edu email address."); return; }
     if (form.password !== form.confirm_password) { setErr("Passwords do not match."); return; }
     if (form.password.length < 6) { setErr("Password must be at least 6 characters."); return; }
     setLoading(true);
@@ -148,7 +149,7 @@ export default function RegisterPage() {
                 background: "rgba(245,158,11,0.1)",
                 border: "1px solid rgba(245,158,11,0.2)",
               }}>
-                .edu recommended
+                .edu required
               </span>
             </label>
             <input type="email" name="email" value={form.email} onChange={update}
@@ -157,8 +158,8 @@ export default function RegisterPage() {
               onBlur={(e) => (e.target.style.borderColor = BORDER)}
             />
             {showEduHint && (
-              <p style={{ marginTop: 5, fontSize: "0.77rem", color: MUTED, fontFamily: BF }}>
-                A .edu email unlocks campus-specific matching. Any email works too.
+              <p style={{ marginTop: 5, fontSize: "0.77rem", color: "#F87171", fontFamily: BF }}>
+                Please use a .edu email address.
               </p>
             )}
             {showEduSuccess && (

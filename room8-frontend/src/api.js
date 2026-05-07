@@ -68,6 +68,30 @@ export function login({ email, password }) {
   });
 }
 
+export function forgotPassword(email) {
+  return doFetch(`${API_URL}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resetPassword(token, new_password) {
+  return doFetch(`${API_URL}/api/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, new_password }),
+  });
+}
+
+export function resendVerification(userId) {
+  return doFetch(`${API_URL}/api/auth/resend-verification`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
 // ---------------- Candidates / Matches / Swipes ----------------
 export function getCandidates(userId, reset = false) {
   const url = reset

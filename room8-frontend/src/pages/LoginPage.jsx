@@ -1,6 +1,6 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { login as apiLogin, setCurrentUser } from "../api";
 import logoImg from "../assets/images/logo.png";
 
@@ -16,6 +16,9 @@ const BF = "'Inter', sans-serif";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const verified = searchParams.get("verified") === "true";
+
   const [form, setForm]     = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [err, setErr]       = useState("");
@@ -66,6 +69,20 @@ export default function LoginPage() {
         boxShadow: "0 24px 80px rgba(0,0,0,0.4)",
         position: "relative",
       }}>
+        {/* Email verified banner */}
+        {verified && (
+          <div style={{
+            background: "rgba(134,239,172,0.12)",
+            border: "1px solid rgba(134,239,172,0.35)",
+            borderRadius: 10, padding: "11px 16px",
+            color: "#86efac", fontSize: "0.88rem",
+            marginBottom: 20, fontFamily: BF,
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <span>✓</span> Email verified! You can now sign in.
+          </div>
+        )}
+
         {/* Logo + heading */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <img
@@ -111,7 +128,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <div style={{ marginBottom: 28 }}>
+          <div style={{ marginBottom: 8 }}>
             <label style={labelStyle}>Password</label>
             <input
               type="password" name="password" value={form.password}
@@ -120,6 +137,17 @@ export default function LoginPage() {
               onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.6)")}
               onBlur={(e) => (e.target.style.borderColor = BORDER)}
             />
+          </div>
+
+          <div style={{ textAlign: "right", marginBottom: 24 }}>
+            <Link to="/forgot-password" style={{
+              color: MUTED, fontSize: "0.8rem", textDecoration: "none", fontFamily: BF,
+            }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = GOLD)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = MUTED)}
+            >
+              Forgot password?
+            </Link>
           </div>
 
           <button type="submit" disabled={loading} style={{

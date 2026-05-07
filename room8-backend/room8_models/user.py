@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from room8_models import db
 
 
@@ -36,6 +37,14 @@ class User(db.Model):
 
     # Onboarding completion flag
     profile_complete = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
+    # Email verification
+    email_verified       = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+    verification_token   = db.Column(db.String(200))
+
+    # Password reset
+    reset_token        = db.Column(db.String(200))
+    reset_token_expiry = db.Column(db.DateTime)
 
     def get_dorm_prefs(self):
         if not self.dorm_prefs:
@@ -80,4 +89,6 @@ class User(db.Model):
             "photos":       self.get_photos(),
             # onboarding
             "profile_complete": bool(self.profile_complete),
+            # verification
+            "email_verified": bool(self.email_verified),
         }

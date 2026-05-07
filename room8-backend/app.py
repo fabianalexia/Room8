@@ -5,6 +5,7 @@ from sqlalchemy import text
 
 import cloudinary
 import cloudinary.uploader
+from extensions import mail
 from room8_models import db
 from routes.auth_routes import auth_bp
 from routes.candidates_routes import candidates_bp
@@ -45,6 +46,16 @@ def create_app():
         api_key=os.environ.get("CLOUDINARY_API_KEY"),
         api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
     )
+
+    # ── Flask-Mail ─────────────────────────────────────────────
+    app.config["MAIL_SERVER"]         = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
+    app.config["MAIL_PORT"]           = int(os.environ.get("MAIL_PORT", 587))
+    app.config["MAIL_USE_TLS"]        = os.environ.get("MAIL_USE_TLS", "true").lower() != "false"
+    app.config["MAIL_USE_SSL"]        = os.environ.get("MAIL_USE_SSL", "false").lower() == "true"
+    app.config["MAIL_USERNAME"]       = os.environ.get("MAIL_USERNAME")
+    app.config["MAIL_PASSWORD"]       = os.environ.get("MAIL_PASSWORD")
+    app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_DEFAULT_SENDER", "Room8 <noreply@findroom8.com>")
+    mail.init_app(app)
 
     # ── CORS ───────────────────────────────────────────────────
     raw_origins = os.environ.get(
@@ -90,7 +101,11 @@ def create_app():
             ("users", "photos",       "TEXT"),
             ("users", "first_name",      "VARCHAR(100)"),
             ("users", "last_name",       "VARCHAR(100)"),
-            ("users", "profile_complete", "BOOLEAN DEFAULT FALSE"),
+            ("users", "profile_complete",    "BOOLEAN DEFAULT FALSE"),
+            ("users", "email_verified",       "BOOLEAN DEFAULT FALSE"),
+            ("users", "verification_token",   "VARCHAR(200)"),
+            ("users", "reset_token",          "VARCHAR(200)"),
+            ("users", "reset_token_expiry",   "TIMESTAMP"),
         ])
 
     # Serve uploaded profile photos

@@ -11,6 +11,8 @@ import Purpose               from "./Purpose";
 import SchoolsPage           from "./pages/SchoolsPage";
 import LoginPage             from "./pages/LoginPage";
 import RegisterPage          from "./pages/RegisterPage";
+import ForgotPasswordPage    from "./pages/ForgotPasswordPage";
+import ResetPasswordPage     from "./pages/ResetPasswordPage";
 import SetupPage              from "./pages/SetupPage";
 import ProfileSetupPage      from "./pages/ProfileSetupPage";
 import OnboardingSchoolPage   from "./pages/OnboardingSchoolPage";
@@ -52,8 +54,10 @@ function Layout() {
         <Route path="/"              element={<Home />} />
         <Route path="/purpose"       element={<Purpose />} />
         <Route path="/schools"       element={<SchoolsPage />} />
-        <Route path="/login"         element={<LoginPage />} />
-        <Route path="/register"      element={<RegisterPage />} />
+        <Route path="/login"            element={<LoginPage />} />
+        <Route path="/register"         element={<RegisterPage />} />
+        <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
+        <Route path="/reset-password"   element={<ResetPasswordPage />} />
 
         <Route path="/setup" element={
           <ProtectedRoute><SetupPage /></ProtectedRoute>

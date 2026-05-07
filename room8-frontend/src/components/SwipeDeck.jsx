@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import TinderCard from "react-tinder-card";
-import { getCurrentUser, getCandidates, likeUser, skipUser, reportUser, blockUser } from "../api";
+import { getCurrentUser, getCandidates, likeUser, skipUser, reportUser, blockUser, resendVerification } from "../api";
 
 const NAVY  = "#0F2D5E";
 const GOLD  = "#F59E0B";
@@ -389,7 +389,8 @@ export default function SwipeDeck() {
   const [loading,      setLoading]      = useState(true);
   const [matchToast,   setMatchToast]   = useState("");
   const [swipeHint,    setSwipeHint]    = useState(null);
-  const [reportTarget, setReportTarget] = useState(null);
+  const [reportTarget,  setReportTarget]  = useState(null);
+  const [resendSent,    setResendSent]    = useState(false);
   const toastTimer = useRef(null);
 
   const loadCandidates = (reset = false) => {
@@ -614,6 +615,38 @@ export default function SwipeDeck() {
           </div>
         )}
       </div>
+
+      {/* Email verification banner */}
+      {user && user.email_verified === false && (
+        <div style={{
+          position: "absolute", top: 64, left: 0, right: 0, zIndex: 90,
+          background: "rgba(245,158,11,0.12)",
+          borderBottom: "1px solid rgba(245,158,11,0.25)",
+          padding: "10px 20px",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        }}>
+          <span style={{ color: "rgba(245,158,11,0.9)", fontSize: "0.8rem", fontWeight: 600 }}>
+            ⚠ Please verify your email — check your inbox
+          </span>
+          <button
+            onClick={async () => {
+              try {
+                await resendVerification(user.id);
+                setResendSent(true);
+                setTimeout(() => setResendSent(false), 4000);
+              } catch (e) { console.error(e); }
+            }}
+            style={{
+              background: "none", border: "1px solid rgba(245,158,11,0.4)",
+              color: GOLD, padding: "4px 12px", borderRadius: 6,
+              fontSize: "0.75rem", fontWeight: 700, cursor: "pointer",
+              whiteSpace: "nowrap", flexShrink: 0,
+            }}
+          >
+            {resendSent ? "Sent ✓" : "Resend"}
+          </button>
+        </div>
+      )}
 
       {/* Match toast */}
       {matchToast && (

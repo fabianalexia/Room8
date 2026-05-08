@@ -1,5 +1,5 @@
 import os
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from sqlalchemy import text
 
@@ -110,6 +110,10 @@ def create_app():
 
     # Serve uploaded profile photos
     upload_folder = os.environ.get("UPLOAD_FOLDER", "uploads")
+
+    @app.route("/api/health")
+    def health():
+        return jsonify({"status": "ok"}), 200
 
     @app.route("/uploads/<path:filename>")
     def serve_upload(filename):

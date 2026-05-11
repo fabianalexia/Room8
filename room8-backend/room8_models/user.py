@@ -46,6 +46,12 @@ class User(db.Model):
     reset_token        = db.Column(db.String(200))
     reset_token_expiry = db.Column(db.DateTime)
 
+    # JWT invalidation — tokens issued before this timestamp are rejected
+    token_valid_after  = db.Column(db.DateTime)
+
+    # Verification token expiry (48 hours from send time)
+    verification_token_expiry = db.Column(db.DateTime)
+
     def get_dorm_prefs(self):
         if not self.dorm_prefs:
             return {}

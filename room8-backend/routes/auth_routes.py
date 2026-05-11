@@ -25,12 +25,16 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://findroom8.netlify.app")
 BACKEND_URL  = os.environ.get("BACKEND_URL",  "https://room8-4dq7.onrender.com")
 
+MIN_PASSWORD_LEN = 8
+VERIFICATION_TTL = timedelta(hours=48)
+
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _send_verification_email(user):
     token = secrets.token_urlsafe(32)
-    user.verification_token = token
+    user.verification_token        = token
+    user.verification_token_expiry = datetime.utcnow() + VERIFICATION_TTL
     db.session.commit()
     link = f"{BACKEND_URL}/api/auth/verify-email?token={token}"
     msg = Message(
@@ -42,7 +46,7 @@ def _send_verification_email(user):
         <p><a href="{link}" style="background:#F59E0B;color:#050D1F;padding:12px 24px;
            border-radius:8px;text-decoration:none;font-weight:700;">Verify Email</a></p>
         <p>Or copy this link:<br><a href="{link}">{link}</a></p>
-        <p>If you didn't create a Room8 account, you can ignore this email.</p>
+        <p>This link expires in 48 hours. If you didn't create a Room8 account, you can ignore this email.</p>
         """,
     )
     mail.send(msg)
@@ -72,8 +76,8 @@ def register():
         return jsonify({"error": "Email and password required"}), 400
     if not email.endswith(".edu"):
         return jsonify({"error": "Please use a .edu email address to register"}), 400
-    if len(password) < 6:
-        return jsonify({"error": "Password must be at least 6 characters"}), 400
+    if len(password) < MIN_PASSWORD_LEN:
+        return jsonify({"error": f"Password must be at least {MIN_PASSWORD_LEN} characters"}), 400
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "An account with that email already exists"}), 400
 
@@ -157,8 +161,16 @@ def verify_email():
     if not user or not token:
         return redirect(f"{FRONTEND_URL}/login?verified=false"), 302
 
-    user.email_verified     = True
-    user.verification_token = None
+    # Check 48-hour expiry
+    if user.verification_token_expiry and datetime.utcnow() > user.verification_token_expiry:
+        user.verification_token        = None
+        user.verification_token_expiry = None
+        db.session.commit()
+        return redirect(f"{FRONTEND_URL}/login?verified=expired"), 302
+
+    user.email_verified            = True
+    user.verification_token        = None
+    user.verification_token_expiry = None
     db.session.commit()
     return redirect(f"{FRONTEND_URL}/login?verified=true"), 302
 
@@ -237,8 +249,8 @@ def reset_password():
 
     if not token or not new_password:
         return jsonify({"error": "Token and new_password required"}), 400
-    if len(new_password) < 6:
-        return jsonify({"error": "Password must be at least 6 characters"}), 400
+    if len(new_password) < MIN_PASSWORD_LEN:
+        return jsonify({"error": f"Password must be at least {MIN_PASSWORD_LEN} characters"}), 400
 
     user = User.query.filter_by(reset_token=token).first()
     if not user or not user.reset_token_expiry:
@@ -249,6 +261,8 @@ def reset_password():
     user.password_hash      = generate_password_hash(new_password)
     user.reset_token        = None
     user.reset_token_expiry = None
+    # Invalidate all existing JWTs — any token issued before now is rejected
+    user.token_valid_after  = datetime.utcnow()
     db.session.commit()
 
     return jsonify({"ok": True, "message": "Password updated. You can now log in."}), 200

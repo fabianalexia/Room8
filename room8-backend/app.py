@@ -6,6 +6,7 @@ from sqlalchemy import text
 import cloudinary
 import cloudinary.uploader
 from datetime import timedelta
+from flask_talisman import Talisman
 from extensions import mail, jwt, limiter
 from room8_models import db
 from routes.auth_routes import auth_bp
@@ -53,6 +54,19 @@ def create_app():
     # cross-site form submissions in the future.
     app.config["JWT_COOKIE_CSRF_PROTECT"]   = False
     jwt.init_app(app)
+
+    # ── JWT token revocation via token_valid_after ─────────────
+    @jwt.token_in_blocklist_loader
+    def check_token_revoked(jwt_header, jwt_data):
+        from room8_models.user import User as _User
+        user_id = jwt_data.get("sub")
+        if not user_id:
+            return True
+        user = db.session.get(_User, user_id)
+        if not user or not user.token_valid_after:
+            return False  # no invalidation timestamp set — token is valid
+        return jwt_data.get("iat", 0) < user.token_valid_after.timestamp()
+
     # Use Redis for rate-limit storage in production; falls back to in-memory locally
     redis_url = os.environ.get("REDIS_URL")
     if redis_url:
@@ -92,6 +106,20 @@ def create_app():
         supports_credentials=True,
     )
 
+    # ── Security headers ───────────────────────────────────────
+    # force_https=False: Render terminates TLS; we don't need to redirect
+    # content_security_policy=False: REST API — no HTML pages served
+    # strict_transport_security=False: Render sets HSTS at the edge
+    Talisman(
+        app,
+        force_https=False,
+        strict_transport_security=False,
+        content_security_policy=False,
+        frame_options="DENY",
+        x_content_type_options=True,
+        referrer_policy="strict-origin-when-cross-origin",
+    )
+
     db.init_app(app)
 
     # Import all models so create_all sees every table
@@ -123,8 +151,10 @@ def create_app():
             ("users", "profile_complete",    "BOOLEAN DEFAULT FALSE"),
             ("users", "email_verified",       "BOOLEAN DEFAULT FALSE"),
             ("users", "verification_token",   "VARCHAR(200)"),
-            ("users", "reset_token",          "VARCHAR(200)"),
-            ("users", "reset_token_expiry",   "TIMESTAMP"),
+            ("users", "reset_token",                "VARCHAR(200)"),
+            ("users", "reset_token_expiry",         "TIMESTAMP"),
+            ("users", "token_valid_after",          "TIMESTAMP"),
+            ("users", "verification_token_expiry",  "TIMESTAMP"),
         ])
 
     # Serve uploaded profile photos

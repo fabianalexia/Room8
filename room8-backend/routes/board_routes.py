@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.board import Post, PostLike, PostReply
+from utils import sanitize
 
 board_bp = Blueprint("board", __name__, url_prefix="/api/board")
 
@@ -36,6 +37,7 @@ def create_post():
     if len(content) > 500:
         return jsonify({"error": "Post too long (max 500 chars)"}), 400
 
+    content = sanitize(content)
     post = Post(user_id=user_id, content=content)
     db.session.add(post)
     db.session.commit()
@@ -84,6 +86,7 @@ def add_reply(post_id):
     if len(content) > 300:
         return jsonify({"error": "Reply too long (max 300 chars)"}), 400
 
+    content = sanitize(content)
     post = db.session.get(Post, post_id)
     if not post:
         return jsonify({"error": "Post not found"}), 404

@@ -6,10 +6,13 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.user import User
+from utils import sanitize
 
 profile_bp = Blueprint("profile", __name__, url_prefix="/api/profile")
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+MAX_BIO_LEN        = 500
+MAX_LOOKING_FOR_LEN = 500
 
 
 def _allowed(filename):
@@ -51,14 +54,22 @@ def update_profile(user_id):
         file = None
         photo_b64 = data.get("photo") if isinstance(data.get("photo"), str) and (data.get("photo") or "").startswith("data:") else None
 
-    for field in ("bio", "budget", "looking_for", "location"):
-        if field in data:
-            setattr(user, field, data[field])
-
-    if "first_name" in data:
-        user.first_name = data["first_name"]
-    if "last_name" in data:
-        user.last_name = data["last_name"]
+    # Sanitize and enforce length limits on free-text fields
+    try:
+        if "bio" in data:
+            user.bio = sanitize(data["bio"], max_len=MAX_BIO_LEN)
+        if "looking_for" in data:
+            user.looking_for = sanitize(data["looking_for"], max_len=MAX_LOOKING_FOR_LEN)
+        if "budget" in data:
+            user.budget = sanitize(data["budget"])
+        if "location" in data:
+            user.location = sanitize(data["location"])
+        if "first_name" in data:
+            user.first_name = sanitize(data["first_name"])
+        if "last_name" in data:
+            user.last_name = sanitize(data["last_name"])
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
     if "age" in data and data["age"]:
         try:

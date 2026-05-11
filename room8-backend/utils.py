@@ -1,0 +1,57 @@
+# utils.py — shared sanitization helpers
+
+from html.parser import HTMLParser
+
+# Tags whose entire content (not just the tag itself) must be dropped
+_SKIP_CONTENT_TAGS = {"script", "style", "iframe", "object", "embed"}
+
+
+class _TagStripper(HTMLParser):
+    """HTML-tag stripper using Python's built-in parser.
+
+    Drops all tags.  Also drops the *content* of script/style/iframe
+    elements so that ``<script>alert(1)</script>`` becomes ``''``, not
+    ``'alert(1)'``.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._parts: list[str] = []
+        self._skip_depth: int = 0   # >0 means we're inside a skipped element
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() in _SKIP_CONTENT_TAGS:
+            self._skip_depth += 1
+
+    def handle_endtag(self, tag):
+        if tag.lower() in _SKIP_CONTENT_TAGS and self._skip_depth > 0:
+            self._skip_depth -= 1
+
+    def handle_data(self, data):
+        if self._skip_depth == 0:
+            self._parts.append(data)
+
+    def get_text(self) -> str:
+        return "".join(self._parts)
+
+
+def strip_tags(value: str | None) -> str | None:
+    """Remove all HTML tags (and script/style content) from a string.
+    Returns None unchanged."""
+    if not value:
+        return value
+    stripper = _TagStripper()
+    stripper.feed(value)
+    return stripper.get_text()
+
+
+def sanitize(value: str | None, max_len: int | None = None) -> str | None:
+    """Strip HTML tags and optionally enforce a maximum length.
+
+    Returns None when value is None/empty.
+    Raises ValueError when the stripped value exceeds max_len.
+    """
+    cleaned = strip_tags(value)
+    if cleaned is not None and max_len is not None and len(cleaned) > max_len:
+        raise ValueError(f"Value exceeds maximum length of {max_len} characters.")
+    return cleaned

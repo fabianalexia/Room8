@@ -34,7 +34,7 @@ export default function RegisterPage() {
     setErr("");
     if (!form.email.toLowerCase().endsWith(".edu")) { setErr("Please use a .edu email address."); return; }
     if (form.password !== form.confirm_password) { setErr("Passwords do not match."); return; }
-    if (form.password.length < 6) { setErr("Password must be at least 6 characters."); return; }
+    if (form.password.length < 8) { setErr("Password must be at least 8 characters."); return; }
     setLoading(true);
     try {
       const res = await register({
@@ -174,7 +174,7 @@ export default function RegisterPage() {
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Password</label>
             <input type="password" name="password" value={form.password} onChange={update}
-              placeholder="Min 6 characters" required style={inputStyle}
+              placeholder="Min 8 characters" required style={inputStyle}
               onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.6)")}
               onBlur={(e) => (e.target.style.borderColor = BORDER)}
             />

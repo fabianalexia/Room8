@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.report import Report
 from room8_models.swipe import Swipe
+from utils import sanitize
 
 report_bp = Blueprint("report", __name__, url_prefix="/api/report")
 
@@ -13,8 +14,8 @@ def submit_report():
     reporter_id = get_jwt_identity()
     data        = request.get_json(force=True) or {}
     reported_id = data.get("reported_id")
-    reason      = data.get("reason", "inappropriate")
-    notes       = data.get("notes", "")
+    reason      = sanitize(data.get("reason", "inappropriate"))
+    notes       = sanitize(data.get("notes", ""))
 
     if not reported_id:
         return jsonify({"error": "reported_id required"}), 400

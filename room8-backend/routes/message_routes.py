@@ -43,6 +43,11 @@ def send_message(peer_id):
 def get_conversation(peer_id):
     user_id = get_jwt_identity()
 
+    my_like   = Swipe.query.filter_by(user_id=user_id, target_id=peer_id, action="like").first()
+    peer_like = Swipe.query.filter_by(user_id=peer_id, target_id=user_id, action="like").first()
+    if not my_like or not peer_like:
+        return jsonify({"error": "You can only view conversations with your matches"}), 403
+
     messages = (
         Message.query.filter(
             ((Message.sender_id == user_id) & (Message.recipient_id == peer_id))

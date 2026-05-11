@@ -6,6 +6,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.user import User
+from room8_models.swipe import Swipe
+from room8_models.block import Block
 from utils import sanitize
 
 profile_bp = Blueprint("profile", __name__, url_prefix="/api/profile")
@@ -77,13 +79,9 @@ def update_profile(user_id):
         except ValueError:
             pass
 
-    for field in ("school", "class_year", "major"):
+    for field in ("school", "class_year", "major", "housing_type", "room_type"):
         if field in data:
-            setattr(user, field, data[field])
-
-    for field in ("housing_type", "room_type"):
-        if field in data:
-            setattr(user, field, data[field])
+            setattr(user, field, sanitize(data[field]))
 
     if "dorm_prefs" in data:
         raw = data["dorm_prefs"]
@@ -117,7 +115,28 @@ def update_profile(user_id):
 @profile_bp.route("/<int:user_id>", methods=["GET"])
 @jwt_required()
 def get_profile(user_id):
-    # Any authenticated user may view a profile (needed to see match cards)
+    viewer_id = get_jwt_identity()
+
+    # Own profile is always accessible
+    if viewer_id != user_id:
+        # Allow if there is a mutual match
+        my_like   = Swipe.query.filter_by(user_id=viewer_id, target_id=user_id, action="like").first()
+        peer_like = Swipe.query.filter_by(user_id=user_id, target_id=viewer_id, action="like").first()
+        is_match  = bool(my_like and peer_like)
+
+        # Allow if the target appears in viewer's candidate pool (viewer has not yet swiped them)
+        already_swiped = Swipe.query.filter_by(user_id=viewer_id, target_id=user_id).first()
+        is_candidate   = not already_swiped
+
+        # Block check — blocked users may not view each other
+        blocked = Block.query.filter(
+            ((Block.blocker_id == viewer_id) & (Block.blocked_id == user_id))
+            | ((Block.blocker_id == user_id) & (Block.blocked_id == viewer_id))
+        ).first()
+
+        if blocked or (not is_match and not is_candidate):
+            return _forbidden()
+
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404

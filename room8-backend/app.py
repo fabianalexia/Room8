@@ -30,6 +30,14 @@ except ImportError:
 
 
 def create_app():
+    # Fail fast if no secret key is configured — never silently use the dev fallback
+    if not os.environ.get("JWT_SECRET_KEY") and not os.environ.get("SECRET_KEY"):
+        if os.environ.get("FLASK_ENV") != "development":
+            raise RuntimeError(
+                "JWT_SECRET_KEY (or SECRET_KEY) environment variable must be set in production. "
+                "Refusing to start with the insecure dev default."
+            )
+
     app = Flask(__name__)
 
     # ── Database ───────────────────────────────────────────────

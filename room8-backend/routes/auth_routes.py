@@ -65,6 +65,7 @@ def _issue_tokens(user):
 # ── register ──────────────────────────────────────────────────────────────────
 
 @auth_bp.route("/register", methods=["POST"])
+@limiter.limit("5 per hour")
 def register():
     data = request.get_json(force=True) or {}
     email      = data.get("email", "").strip().lower()
@@ -113,6 +114,8 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password_hash, password):
+        if not user.email_verified:
+            return jsonify({"error": "Please verify your email before logging in."}), 403
         return _issue_tokens(user), 200
 
     return jsonify({"error": "Invalid email or password"}), 401
@@ -199,6 +202,7 @@ def resend_verification():
 # ── forgot password ───────────────────────────────────────────────────────────
 
 @auth_bp.route("/forgot-password", methods=["POST"])
+@limiter.limit("3 per hour")
 def forgot_password():
     data  = request.get_json(force=True) or {}
     email = data.get("email", "").strip().lower()

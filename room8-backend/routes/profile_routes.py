@@ -75,7 +75,10 @@ def update_profile(user_id):
 
     if "age" in data and data["age"]:
         try:
-            user.age = int(data["age"])
+            age = int(data["age"])
+            if not (16 <= age <= 99):
+                return jsonify({"error": "Age must be between 16 and 99"}), 400
+            user.age = age
         except ValueError:
             pass
 
@@ -116,6 +119,7 @@ def update_profile(user_id):
 @jwt_required()
 def get_profile(user_id):
     viewer_id = get_jwt_identity()
+    is_match  = False
 
     # Own profile is always accessible
     if viewer_id != user_id:
@@ -140,7 +144,12 @@ def get_profile(user_id):
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
-    return jsonify(user.public())
+
+    # Return full profile (with email) for own profile or mutual matches;
+    # candidates see a card view without email.
+    if viewer_id == user_id or is_match:
+        return jsonify(user.public())
+    return jsonify(user.public_card())
 
 
 @profile_bp.route("/status", methods=["GET"])

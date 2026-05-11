@@ -62,10 +62,10 @@ def get_candidates(user_id: int):
             .all()
         )
         if same_school:
-            return jsonify([u.public() for u in same_school])
+            return jsonify([u.public_card() for u in same_school])
 
     people = base_q.order_by(User.id.asc()).all()
-    return jsonify([u.public() for u in people])
+    return jsonify([u.public_card() for u in people])
 
 
 @candidates_bp.get("/matches/<int:user_id>")
@@ -141,7 +141,7 @@ def get_likes(user_id: int):
         .all()
     )
 
-    return jsonify([u.public() for u in fans])
+    return jsonify([u.public_card() for u in fans])
 
 
 # Keys used in dorm_prefs that we score compatibility on

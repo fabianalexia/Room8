@@ -23,7 +23,7 @@ class Post(db.Model):
         return {
             "id":          self.id,
             "user_id":     self.user_id,
-            "author_name": author.public()["name"] if author else "Unknown",
+            "author_name": author.public_card()["name"] if author else "Unknown",
             "author_photo": author.photo if author else None,
             "author_school": author.school if author else None,
             "content":     self.content,
@@ -61,7 +61,7 @@ class PostReply(db.Model):
         return {
             "id":          self.id,
             "user_id":     self.user_id,
-            "author_name": author.public()["name"] if author else "Unknown",
+            "author_name": author.public_card()["name"] if author else "Unknown",
             "author_photo": author.photo if author else None,
             "content":     self.content,
             "created_at":  self.created_at.isoformat(),

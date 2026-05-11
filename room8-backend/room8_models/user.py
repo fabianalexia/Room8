@@ -68,6 +68,13 @@ class User(db.Model):
         except Exception:
             return []
 
+    def public_card(self):
+        """Public serialization for non-own, non-match contexts (candidates, board).
+        Identical to public() but omits email to prevent bulk harvesting."""
+        data = self.public()
+        data.pop("email", None)
+        return data
+
     def public(self):
         name = f"{self.first_name or ''} {self.last_name or ''}".strip()
         return {

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from extensions import limiter
 from room8_models import db
 from room8_models.board import Post, PostLike, PostReply
 from utils import sanitize
@@ -27,6 +28,7 @@ def list_posts():
 
 @board_bp.post("")
 @jwt_required()
+@limiter.limit("20 per hour")
 def create_post():
     user_id = get_jwt_identity()
     data    = request.get_json(force=True) or {}

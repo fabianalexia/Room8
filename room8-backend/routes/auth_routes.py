@@ -19,6 +19,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import mail, limiter
 from room8_models.user import User
 from room8_models import db
+from utils import sanitize
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -70,8 +71,8 @@ def register():
     data = request.get_json(force=True) or {}
     email      = data.get("email", "").strip().lower()
     password   = data.get("password", "")
-    first_name = data.get("first_name", "").strip()
-    last_name  = data.get("last_name", "").strip()
+    first_name = sanitize(data.get("first_name", "").strip())
+    last_name  = sanitize(data.get("last_name",  "").strip())
 
     if not email or not password:
         return jsonify({"error": "Email and password required"}), 400
@@ -124,7 +125,14 @@ def login():
 # ── logout ────────────────────────────────────────────────────────────────────
 
 @auth_bp.route("/logout", methods=["POST"])
+@jwt_required(optional=True)
 def logout():
+    user_id = get_jwt_identity()
+    if user_id:
+        user = db.session.get(User, user_id)
+        if user:
+            user.token_valid_after = datetime.utcnow()
+            db.session.commit()
     resp = jsonify({"ok": True})
     unset_jwt_cookies(resp)
     return resp
@@ -182,6 +190,7 @@ def verify_email():
 
 @auth_bp.route("/resend-verification", methods=["POST"])
 @jwt_required()
+@limiter.limit("3 per hour")
 def resend_verification():
     user_id = get_jwt_identity()
     user = db.session.get(User, user_id)

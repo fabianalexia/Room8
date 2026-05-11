@@ -15,6 +15,8 @@ def like():
 
     if not target_id:
         return jsonify({"error": "target_id required"}), 400
+    if target_id == user_id:
+        return jsonify({"error": "Cannot swipe yourself"}), 400
 
     # Upsert: ignore if already swiped
     existing = Swipe.query.filter_by(user_id=user_id, target_id=target_id).first()

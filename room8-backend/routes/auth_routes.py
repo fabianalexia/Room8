@@ -16,7 +16,7 @@ from flask_jwt_extended import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from extensions import mail
+from extensions import mail, limiter
 from room8_models.user import User
 from room8_models import db
 
@@ -98,6 +98,7 @@ def register():
 # ── login ─────────────────────────────────────────────────────────────────────
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit("10 per minute", error_message="Too many login attempts. Please wait a minute and try again.")
 def login():
     data     = request.get_json(force=True) or {}
     email    = data.get("email", "").strip().lower()

@@ -6,7 +6,7 @@ from sqlalchemy import text
 import cloudinary
 import cloudinary.uploader
 from datetime import timedelta
-from extensions import mail, jwt
+from extensions import mail, jwt, limiter
 from room8_models import db
 from routes.auth_routes import auth_bp
 from routes.candidates_routes import candidates_bp
@@ -53,6 +53,11 @@ def create_app():
     # cross-site form submissions in the future.
     app.config["JWT_COOKIE_CSRF_PROTECT"]   = False
     jwt.init_app(app)
+    # Use Redis for rate-limit storage in production; falls back to in-memory locally
+    redis_url = os.environ.get("REDIS_URL")
+    if redis_url:
+        app.config["RATELIMIT_STORAGE_URI"] = redis_url
+    limiter.init_app(app)
 
     # ── Cloudinary ─────────────────────────────────────────────
     cloudinary.config(
@@ -150,13 +155,6 @@ def create_app():
         from routes.debug_routes import debug_bp
         app.register_blueprint(debug_bp)
         print("⚠️  debug_bp loaded (development only)")
-
-    try:
-        from routes.user_routes import user_bp
-        app.register_blueprint(user_bp)
-        print("✅ user_bp loaded")
-    except Exception:
-        pass
 
     return app
 

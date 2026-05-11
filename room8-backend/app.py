@@ -18,7 +18,6 @@ from routes.board_routes import board_bp
 from routes.report_routes import report_bp
 from routes.safety_routes import safety_bp
 from routes.match_routes import match_bp
-from routes.debug_routes import debug_bp
 
 # Load .env if present (development)
 try:
@@ -131,7 +130,11 @@ def create_app():
     app.register_blueprint(report_bp)
     app.register_blueprint(safety_bp)
     app.register_blueprint(match_bp)
-    app.register_blueprint(debug_bp)
+
+    if os.environ.get("FLASK_ENV") == "development":
+        from routes.debug_routes import debug_bp
+        app.register_blueprint(debug_bp)
+        print("⚠️  debug_bp loaded (development only)")
 
     try:
         from routes.user_routes import user_bp

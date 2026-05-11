@@ -1,5 +1,6 @@
 # routes/candidates_routes.py
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import or_, and_
 from room8_models import db
 from room8_models.user import User
@@ -28,14 +29,21 @@ def _exclude_blocked(user_id):
     return blocked_by_me | blocking_me
 
 
+def _forbidden():
+    return jsonify({"error": "Forbidden"}), 403
+
+
 @candidates_bp.get("/candidates/<int:user_id>")
+@jwt_required()
 def get_candidates(user_id: int):
-    from flask import request as flask_request
+    if get_jwt_identity() != user_id:
+        return _forbidden()
+
     me = db.session.get(User, user_id)
     if not me:
         return jsonify({"ok": False, "error": "no_such_user"}), 404
 
-    reset = flask_request.args.get("reset") == "true"
+    reset = request.args.get("reset") == "true"
     swiped_ids  = set() if reset else _exclude_swiped(user_id)
     blocked_ids = _exclude_blocked(user_id)
     base_q = (
@@ -55,15 +63,17 @@ def get_candidates(user_id: int):
         )
         if same_school:
             return jsonify([u.public() for u in same_school])
-        # Graceful fallback: no one at this school yet — show all
-        # (good for testing; in production you'd return empty + "invite friends" prompt)
 
     people = base_q.order_by(User.id.asc()).all()
     return jsonify([u.public() for u in people])
 
 
 @candidates_bp.get("/matches/<int:user_id>")
+@jwt_required()
 def get_matches(user_id: int):
+    if get_jwt_identity() != user_id:
+        return _forbidden()
+
     me = db.session.get(User, user_id)
     if not me:
         return jsonify({"ok": False, "error": "no_such_user"}), 404
@@ -105,13 +115,16 @@ def get_matches(user_id: int):
 
 
 @candidates_bp.get("/likes/<int:user_id>")
+@jwt_required()
 def get_likes(user_id: int):
     """Users who liked me but we haven't matched yet."""
+    if get_jwt_identity() != user_id:
+        return _forbidden()
+
     me = db.session.get(User, user_id)
     if not me:
         return jsonify({"ok": False, "error": "no_such_user"}), 404
 
-    # IDs of people I have already liked back (mutual matches)
     i_liked_ids = {
         row[0]
         for row in db.session.query(Swipe.target_id)
@@ -119,7 +132,6 @@ def get_likes(user_id: int):
         .all()
     }
 
-    # Users who liked me and I haven't liked back yet
     fans = (
         db.session.query(User)
         .join(Swipe, Swipe.user_id == User.id)
@@ -151,15 +163,18 @@ def _compat_score(prefs_a: dict, prefs_b: dict) -> int:
 
 
 @candidates_bp.get("/compatibility/<int:user_id>")
+@jwt_required()
 def get_compatibility(user_id: int):
     """Returns the user's mutual matches ranked by dorm-pref compatibility score."""
+    if get_jwt_identity() != user_id:
+        return _forbidden()
+
     me = db.session.get(User, user_id)
     if not me:
         return jsonify({"ok": False, "error": "no_such_user"}), 404
 
     my_prefs = me.get_dorm_prefs()
 
-    # Fetch mutual matches (same query as get_matches)
     i_liked_ids = (
         db.session.query(Swipe.target_id)
         .filter_by(user_id=user_id, action="like")
@@ -179,7 +194,6 @@ def get_compatibility(user_id: int):
         score = _compat_score(my_prefs, their_prefs)
         data  = p.public()
         data["compatibility"] = score
-        # Breakdown: which keys match vs differ
         answered = [k for k in _COMPAT_KEYS if my_prefs.get(k) and their_prefs.get(k)]
         data["matching_prefs"]    = [k for k in answered if my_prefs[k] == their_prefs[k]]
         data["mismatching_prefs"] = [k for k in answered if my_prefs[k] != their_prefs[k]]

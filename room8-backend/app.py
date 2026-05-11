@@ -5,7 +5,8 @@ from sqlalchemy import text
 
 import cloudinary
 import cloudinary.uploader
-from extensions import mail
+from datetime import timedelta
+from extensions import mail, jwt
 from room8_models import db
 from routes.auth_routes import auth_bp
 from routes.candidates_routes import candidates_bp
@@ -38,6 +39,20 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+
+    # ── JWT ────────────────────────────────────────────────────
+    app.config["JWT_SECRET_KEY"]            = os.environ.get("JWT_SECRET_KEY", app.config["SECRET_KEY"])
+    app.config["JWT_TOKEN_LOCATION"]        = ["cookies"]
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"]  = timedelta(hours=24)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
+    # httpOnly is True by default for JWT cookies in flask-jwt-extended
+    app.config["JWT_COOKIE_SECURE"]         = os.environ.get("FLASK_ENV") != "development"
+    app.config["JWT_COOKIE_SAMESITE"]       = "Lax"
+    # Disable double-submit CSRF — SameSite=Lax provides sufficient protection
+    # for same-origin requests; enable JWT_COOKIE_CSRF_PROTECT=True if you add
+    # cross-site form submissions in the future.
+    app.config["JWT_COOKIE_CSRF_PROTECT"]   = False
+    jwt.init_app(app)
 
     # ── Cloudinary ─────────────────────────────────────────────
     cloudinary.config(

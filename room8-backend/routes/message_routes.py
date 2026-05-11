@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.message import Message
 
@@ -6,13 +7,14 @@ message_bp = Blueprint("message", __name__, url_prefix="/api/chat")
 
 
 @message_bp.route("/<int:peer_id>", methods=["POST"])
+@jwt_required()
 def send_message(peer_id):
-    data = request.get_json(force=True) or {}
-    user_id = data.get("user_id")
-    text = data.get("text", "").strip()
+    user_id = get_jwt_identity()
+    data    = request.get_json(force=True) or {}
+    text    = data.get("text", "").strip()
 
-    if not user_id or not text:
-        return jsonify({"error": "user_id and text required"}), 400
+    if not text:
+        return jsonify({"error": "text required"}), 400
 
     msg = Message(sender_id=user_id, recipient_id=peer_id, text=text)
     db.session.add(msg)
@@ -22,10 +24,9 @@ def send_message(peer_id):
 
 
 @message_bp.route("/<int:peer_id>", methods=["GET"])
+@jwt_required()
 def get_conversation(peer_id):
-    user_id = request.args.get("user_id", type=int)
-    if not user_id:
-        return jsonify({"error": "user_id query param required"}), 400
+    user_id = get_jwt_identity()
 
     messages = (
         Message.query.filter(

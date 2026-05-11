@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.board import Post, PostLike, PostReply
 
@@ -8,8 +9,9 @@ PAGE_SIZE = 20
 
 
 @board_bp.get("")
+@jwt_required()
 def list_posts():
-    viewer_id = request.args.get("user_id", type=int)
+    viewer_id = get_jwt_identity()
     offset    = request.args.get("offset", 0, type=int)
 
     posts = (
@@ -23,13 +25,12 @@ def list_posts():
 
 
 @board_bp.post("")
+@jwt_required()
 def create_post():
+    user_id = get_jwt_identity()
     data    = request.get_json(force=True) or {}
-    user_id = data.get("user_id")
     content = (data.get("content") or "").strip()
 
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
     if not content:
         return jsonify({"error": "content required"}), 400
     if len(content) > 500:
@@ -42,12 +43,9 @@ def create_post():
 
 
 @board_bp.post("/<int:post_id>/like")
+@jwt_required()
 def toggle_like(post_id):
-    data    = request.get_json(force=True) or {}
-    user_id = data.get("user_id")
-
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = get_jwt_identity()
 
     post = db.session.get(Post, post_id)
     if not post:
@@ -66,6 +64,7 @@ def toggle_like(post_id):
 
 
 @board_bp.get("/<int:post_id>/replies")
+@jwt_required()
 def get_replies(post_id):
     post = db.session.get(Post, post_id)
     if not post:
@@ -74,13 +73,12 @@ def get_replies(post_id):
 
 
 @board_bp.post("/<int:post_id>/replies")
+@jwt_required()
 def add_reply(post_id):
+    user_id = get_jwt_identity()
     data    = request.get_json(force=True) or {}
-    user_id = data.get("user_id")
     content = (data.get("content") or "").strip()
 
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
     if not content:
         return jsonify({"error": "content required"}), 400
     if len(content) > 300:

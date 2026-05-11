@@ -2,6 +2,7 @@ import json
 import cloudinary
 import cloudinary.uploader
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.user import User
 
@@ -16,7 +17,6 @@ def _allowed(filename):
 
 def _cloudinary_upload(source, public_id):
     """Upload to Cloudinary from a FileStorage object, raw bytes, or base64 data URI."""
-    # FileStorage — pass the underlying stream so Cloudinary reads bytes correctly
     if hasattr(source, "stream"):
         source = source.stream
     return cloudinary.uploader.upload(
@@ -55,18 +55,9 @@ def _resolve_source(request_obj):
 
 
 @photo_bp.route("/photo", methods=["POST"])
+@jwt_required()
 def upload_photo():
-    # user_id comes from form field or JSON body
-    user_id = request.form.get("user_id", type=int)
-    if user_id is None:
-        body = request.get_json(silent=True) or {}
-        try:
-            user_id = int(body.get("user_id", 0)) or None
-        except (TypeError, ValueError):
-            user_id = None
-
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = get_jwt_identity()
 
     user = db.session.get(User, user_id)
     if not user:

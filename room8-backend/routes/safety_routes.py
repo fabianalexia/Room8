@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.block import Block
 from room8_models.swipe import Swipe
@@ -7,13 +8,14 @@ safety_bp = Blueprint("safety", __name__, url_prefix="/api")
 
 
 @safety_bp.post("/block")
+@jwt_required()
 def block_user():
+    blocker_id = get_jwt_identity()
     data       = request.get_json(force=True) or {}
-    blocker_id = data.get("blocker_id")
     blocked_id = data.get("blocked_id")
 
-    if not blocker_id or not blocked_id:
-        return jsonify({"error": "blocker_id and blocked_id required"}), 400
+    if not blocked_id:
+        return jsonify({"error": "blocked_id required"}), 400
 
     # Upsert block record
     if not Block.query.filter_by(blocker_id=blocker_id, blocked_id=blocked_id).first():

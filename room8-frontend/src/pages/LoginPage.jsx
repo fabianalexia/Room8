@@ -31,6 +31,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await apiLogin(form);
+      // JWT is in an httpOnly cookie set by the server — only store display info locally
       setCurrentUser(res.user);
       navigate(res.user.profile_complete === false ? "/setup" : "/app", { replace: true });
     } catch (error) {

@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.swipe import Swipe
 
@@ -6,13 +7,14 @@ swipe_bp = Blueprint("swipe", __name__, url_prefix="/api/swipe")
 
 
 @swipe_bp.route("/like", methods=["POST"])
+@jwt_required()
 def like():
-    data = request.get_json(force=True) or {}
-    user_id = data.get("user_id")
+    user_id   = get_jwt_identity()
+    data      = request.get_json(force=True) or {}
     target_id = data.get("target_id")
 
-    if not user_id or not target_id:
-        return jsonify({"error": "user_id and target_id required"}), 400
+    if not target_id:
+        return jsonify({"error": "target_id required"}), 400
 
     # Upsert: ignore if already swiped
     existing = Swipe.query.filter_by(user_id=user_id, target_id=target_id).first()
@@ -29,13 +31,14 @@ def like():
 
 
 @swipe_bp.route("/skip", methods=["POST"])
+@jwt_required()
 def skip():
-    data = request.get_json(force=True) or {}
-    user_id = data.get("user_id")
+    user_id   = get_jwt_identity()
+    data      = request.get_json(force=True) or {}
     target_id = data.get("target_id")
 
-    if not user_id or not target_id:
-        return jsonify({"error": "user_id and target_id required"}), 400
+    if not target_id:
+        return jsonify({"error": "target_id required"}), 400
 
     existing = Swipe.query.filter_by(user_id=user_id, target_id=target_id).first()
     if not existing:

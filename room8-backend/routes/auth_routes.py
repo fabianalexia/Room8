@@ -5,6 +5,15 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, request, jsonify, redirect
 from flask_mail import Message
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    set_access_cookies,
+    set_refresh_cookies,
+    unset_jwt_cookies,
+    jwt_required,
+    get_jwt_identity,
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from extensions import mail
@@ -37,6 +46,16 @@ def _send_verification_email(user):
         """,
     )
     mail.send(msg)
+
+
+def _issue_tokens(user):
+    """Return a response with JWT access + refresh cookies set."""
+    access_token  = create_access_token(identity=user.id)
+    refresh_token = create_refresh_token(identity=user.id)
+    resp = jsonify({"ok": True, "user": user.public()})
+    set_access_cookies(resp, access_token)
+    set_refresh_cookies(resp, refresh_token)
+    return resp
 
 
 # ── register ──────────────────────────────────────────────────────────────────
@@ -73,7 +92,7 @@ def register():
     except Exception as e:
         print(f"[mail] verification send failed: {e}")
 
-    return jsonify({"ok": True, "user": new_user.public()}), 201
+    return _issue_tokens(new_user), 201
 
 
 # ── login ─────────────────────────────────────────────────────────────────────
@@ -89,9 +108,42 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password_hash, password):
-        return jsonify({"ok": True, "user": user.public()}), 200
+        return _issue_tokens(user), 200
 
     return jsonify({"error": "Invalid email or password"}), 401
+
+
+# ── logout ────────────────────────────────────────────────────────────────────
+
+@auth_bp.route("/logout", methods=["POST"])
+def logout():
+    resp = jsonify({"ok": True})
+    unset_jwt_cookies(resp)
+    return resp
+
+
+# ── me (current user from JWT) ────────────────────────────────────────────────
+
+@auth_bp.route("/me", methods=["GET"])
+@jwt_required()
+def me():
+    user_id = get_jwt_identity()
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"ok": True, "user": user.public()})
+
+
+# ── refresh ───────────────────────────────────────────────────────────────────
+
+@auth_bp.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    user_id      = get_jwt_identity()
+    access_token = create_access_token(identity=user_id)
+    resp = jsonify({"ok": True})
+    set_access_cookies(resp, access_token)
+    return resp
 
 
 # ── verify email ──────────────────────────────────────────────────────────────
@@ -113,13 +165,10 @@ def verify_email():
 # ── resend verification ───────────────────────────────────────────────────────
 
 @auth_bp.route("/resend-verification", methods=["POST"])
+@jwt_required()
 def resend_verification():
-    data    = request.get_json(force=True) or {}
-    user_id = data.get("user_id")
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
-
-    user = db.session.get(User, int(user_id))
+    user_id = get_jwt_identity()
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
     if user.email_verified:

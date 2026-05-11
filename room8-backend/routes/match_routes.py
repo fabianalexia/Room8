@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.swipe import Swipe
 
@@ -6,12 +7,9 @@ match_bp = Blueprint("match", __name__, url_prefix="/api")
 
 
 @match_bp.delete("/match/<int:peer_id>")
+@jwt_required()
 def unmatch(peer_id):
-    data    = request.get_json(force=True) or {}
-    user_id = data.get("user_id")
-
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = get_jwt_identity()
 
     # Break the match: flip both swipe directions to "skip"
     for uid, tid in [(user_id, peer_id), (peer_id, user_id)]:

@@ -1,5 +1,6 @@
 import json
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.survey import Survey
 
@@ -7,13 +8,14 @@ survey_bp = Blueprint("survey", __name__, url_prefix="/api")
 
 
 @survey_bp.route("/survey", methods=["POST"])
+@jwt_required()
 def save_survey():
-    data = request.get_json(force=True) or {}
-    user_id = data.get("user_id")
+    user_id = get_jwt_identity()
+    data    = request.get_json(force=True) or {}
     answers = data.get("answers")
 
-    if not user_id or not answers:
-        return jsonify({"error": "user_id and answers required"}), 400
+    if not answers:
+        return jsonify({"error": "answers required"}), 400
 
     existing = Survey.query.filter_by(user_id=user_id).first()
     if existing:

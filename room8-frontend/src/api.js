@@ -6,6 +6,8 @@ export const API_URL = (import.meta.env.VITE_API_URL || "http://127.0.0.1:5000")
   .replace(/\/+$/, "");
 
 // ---------------- Local storage helpers ----------------
+// We only store lightweight display info (name, email, profile_complete).
+// The JWT lives in an httpOnly cookie managed by the browser — never localStorage.
 const LS_KEY = "user";
 
 export function getCurrentUser() {
@@ -18,11 +20,18 @@ export function getCurrentUser() {
 }
 
 export function setCurrentUser(u) {
-  localStorage.setItem(LS_KEY, JSON.stringify(u));
+  // Persist only non-sensitive display fields
+  const { id, first_name, last_name, email, profile_complete, photo } = u;
+  localStorage.setItem(LS_KEY, JSON.stringify({ id, first_name, last_name, email, profile_complete, photo }));
 }
 
 export function logout() {
   localStorage.removeItem(LS_KEY);
+  // Fire-and-forget: ask the server to clear the JWT cookie
+  fetch(`${API_URL}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => {});
 }
 
 // ---------------- Fetch helper ----------------
@@ -84,12 +93,14 @@ export function resetPassword(token, new_password) {
   });
 }
 
-export function resendVerification(userId) {
+export function resendVerification() {
   return doFetch(`${API_URL}/api/auth/resend-verification`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId }),
   });
+}
+
+export function refreshToken() {
+  return doFetch(`${API_URL}/api/auth/refresh`, { method: "POST" });
 }
 
 // ---------------- Candidates / Matches / Swipes ----------------
@@ -112,7 +123,7 @@ export function likeUser(userId, targetId) {
   return doFetch(`${API_URL}/api/swipe/like`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, target_id: targetId }),
+    body: JSON.stringify({ target_id: targetId }),
   }); // -> { ok: true, matched: boolean }
 }
 
@@ -120,22 +131,20 @@ export function skipUser(userId, targetId) {
   return doFetch(`${API_URL}/api/swipe/skip`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, target_id: targetId }),
+    body: JSON.stringify({ target_id: targetId }),
   }); // -> { ok: true }
 }
 
 // ---------------- Chat ----------------
 export function getChat(userId, peerId) {
-  // GET /api/chat/:peerId?user_id=ME
-  return doFetch(`${API_URL}/api/chat/${peerId}?user_id=${encodeURIComponent(userId)}`);
+  return doFetch(`${API_URL}/api/chat/${peerId}`);
 }
 
 export function sendMessage(peerId, userId, text) {
-  // POST /api/chat/:peerId { user_id, text }
   return doFetch(`${API_URL}/api/chat/${peerId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, text }),
+    body: JSON.stringify({ text }),
   }); // -> { ok: true }
 }
 
@@ -153,15 +162,13 @@ export function getProfile(userId) {
   return doFetch(`${API_URL}/api/profile/${userId}`);
 }
 
-export function getProfileStatus(userId) {
-  return doFetch(`${API_URL}/api/profile/status?user_id=${userId}`);
+export function getProfileStatus() {
+  return doFetch(`${API_URL}/api/profile/status`);
 }
 
-export function markProfileComplete(userId) {
+export function markProfileComplete() {
   return doFetch(`${API_URL}/api/profile/complete`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId }),
   });
 }
 
@@ -170,7 +177,7 @@ export function reportUser(reporterId, reportedId, reason = "inappropriate", not
   return doFetch(`${API_URL}/api/report`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reporter_id: reporterId, reported_id: reportedId, reason, notes }),
+    body: JSON.stringify({ reported_id: reportedId, reason, notes }),
   });
 }
 
@@ -178,15 +185,13 @@ export function blockUser(blockerId, blockedId) {
   return doFetch(`${API_URL}/api/block`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ blocker_id: blockerId, blocked_id: blockedId }),
+    body: JSON.stringify({ blocked_id: blockedId }),
   });
 }
 
 export function unmatchUser(userId, peerId) {
   return doFetch(`${API_URL}/api/match/${peerId}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId }),
   });
 }
 
@@ -197,22 +202,20 @@ export function getCompatibility(userId) {
 
 // ---------------- Community Board ----------------
 export function getPosts(userId, offset = 0) {
-  return doFetch(`${API_URL}/api/board?user_id=${userId}&offset=${offset}`);
+  return doFetch(`${API_URL}/api/board?offset=${offset}`);
 }
 
 export function createPost(userId, content) {
   return doFetch(`${API_URL}/api/board`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, content }),
+    body: JSON.stringify({ content }),
   });
 }
 
 export function togglePostLike(userId, postId) {
   return doFetch(`${API_URL}/api/board/${postId}/like`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId }),
   });
 }
 
@@ -224,7 +227,7 @@ export function addReply(userId, postId, content) {
   return doFetch(`${API_URL}/api/board/${postId}/replies`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, content }),
+    body: JSON.stringify({ content }),
   });
 }
 
@@ -233,7 +236,7 @@ export function saveSurvey(userId, answers) {
   return doFetch(`${API_URL}/api/survey`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, answers }),
+    body: JSON.stringify({ answers }),
   });
 }
 
@@ -255,10 +258,9 @@ export function removePhoto(userId, url) {
   });
 }
 
-// ---------------- Profile photo upload (legacy) ----------------
+// ---------------- Profile photo upload ----------------
 export async function uploadProfilePhoto(userId, file) {
   const form = new FormData();
-  form.append("user_id", String(userId));
   form.append("file", file); // expects input[type=file].files[0]
 
   const res = await fetch(`${API_URL}/api/profile/photo`, {

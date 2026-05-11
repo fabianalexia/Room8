@@ -94,7 +94,7 @@ def seed():
             ),
         ]
         for d in demo:
-            db.session.add(User(**d))
+            db.session.add(User(**d, profile_complete=True, email_verified=True))
         db.session.commit()
 
     users = User.query.order_by(User.id).all()

@@ -194,22 +194,30 @@ function PricingCard({ plan, delay }) {
 
 export default function SchoolsPage() {
   const [form, setForm] = useState({
-    name: "", title: "", institution: "", email: "", students: "", message: "",
+    name: "", title: "", business: "", email: "", students: "", message: "",
   });
   const [status, setStatus] = useState(""); // "sending" | "sent" | "error"
 
   const update = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.institution || !form.email) return;
+    if (!form.name || !form.business || !form.email) return;
     setStatus("sending");
-    const subject = encodeURIComponent(`Room8 Partnership Inquiry — ${form.institution}`);
-    const body = encodeURIComponent(
-      `Name: ${form.name}\nTitle: ${form.title || "N/A"}\nInstitution: ${form.institution}\nEmail: ${form.email}\nEnrolled Students: ${form.students || "N/A"}\n\nMessage:\n${form.message || "N/A"}`
-    );
-    window.location.href = `mailto:partner@room8app.com?subject=${subject}&body=${body}`;
-    setTimeout(() => setStatus("sent"), 600);
+    try {
+      const res = await fetch("https://formspree.io/f/xkoyqbjv", {
+        method: "POST",
+        headers: { "Accept": "application/json" },
+        body: new FormData(e.target),
+      });
+      if (res.ok) {
+        setStatus("sent");
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
   };
 
   const inputStyle = {
@@ -492,7 +500,7 @@ export default function SchoolsPage() {
             </FadeUp>
           ) : (
             <FadeUp delay={0.1}>
-              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <form action="https://formspree.io/f/xkoyqbjv" method="POST" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="form-two-col">
                   <div>
                     <label style={{ color: MUTED, fontSize: "0.78rem", fontWeight: 600, display: "block", marginBottom: 6, fontFamily: BF, letterSpacing: "0.05em" }}>
@@ -525,7 +533,7 @@ export default function SchoolsPage() {
                     Institution *
                   </label>
                   <input
-                    name="institution" value={form.institution} onChange={update} required
+                    name="business" value={form.business} onChange={update} required
                     placeholder="University of Example"
                     style={inputStyle}
                     onFocus={e => e.target.style.borderColor = "rgba(245,158,11,0.5)"}

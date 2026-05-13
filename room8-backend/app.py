@@ -58,10 +58,11 @@ def create_app():
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
     # httpOnly is True by default for JWT cookies in flask-jwt-extended
     app.config["JWT_COOKIE_SECURE"]         = os.environ.get("FLASK_ENV") != "development"
-    app.config["JWT_COOKIE_SAMESITE"]       = "Lax"
-    # Disable double-submit CSRF — SameSite=Lax provides sufficient protection
-    # for same-origin requests; enable JWT_COOKIE_CSRF_PROTECT=True if you add
-    # cross-site form submissions in the future.
+    # SameSite=None is required for cross-domain cookies (swiperoom8.com → room8-4dq7.onrender.com).
+    # SameSite=Lax blocks cookies on cross-site POST requests, breaking login entirely.
+    # SameSite=None requires Secure=True (enforced above in production).
+    # CORS already restricts which origins can send credentialed requests.
+    app.config["JWT_COOKIE_SAMESITE"]       = "None"
     app.config["JWT_COOKIE_CSRF_PROTECT"]   = False
     jwt.init_app(app)
 
@@ -103,6 +104,8 @@ def create_app():
     # ── CORS ───────────────────────────────────────────────────
     raw_origins = os.environ.get(
         "CORS_ORIGINS",
+        "https://swiperoom8.com,https://www.swiperoom8.com,"
+        "https://findroom8.netlify.app,"
         "http://127.0.0.1:5173,http://localhost:5173,http://localhost:5174"
     )
     allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]

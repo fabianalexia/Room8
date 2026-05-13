@@ -21,6 +21,7 @@ from routes.report_routes import report_bp
 from routes.safety_routes import safety_bp
 from routes.match_routes import match_bp
 from routes.roommate_routes import roommate_bp
+from routes.migration_routes import migration_bp  # ONE-TIME — delete after use
 
 # Load .env if present (development)
 try:
@@ -192,6 +193,7 @@ def create_app():
     app.register_blueprint(safety_bp)
     app.register_blueprint(match_bp)
     app.register_blueprint(roommate_bp)
+    app.register_blueprint(migration_bp)  # ONE-TIME — delete after use
 
     if os.environ.get("FLASK_ENV") == "development":
         from routes.debug_routes import debug_bp

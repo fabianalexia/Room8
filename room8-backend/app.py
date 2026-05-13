@@ -53,17 +53,13 @@ def create_app():
 
     # ── JWT ────────────────────────────────────────────────────
     app.config["JWT_SECRET_KEY"]            = os.environ.get("JWT_SECRET_KEY", app.config["SECRET_KEY"])
-    app.config["JWT_TOKEN_LOCATION"]        = ["cookies"]
+    # Bearer token in Authorization header — avoids cross-domain cookie issues
+    # between swiperoom8.com (Netlify) and room8-4dq7.onrender.com (Render).
+    app.config["JWT_TOKEN_LOCATION"]        = ["headers"]
+    app.config["JWT_HEADER_NAME"]           = "Authorization"
+    app.config["JWT_HEADER_TYPE"]           = "Bearer"
     app.config["JWT_ACCESS_TOKEN_EXPIRES"]  = timedelta(hours=24)
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
-    # httpOnly is True by default for JWT cookies in flask-jwt-extended
-    app.config["JWT_COOKIE_SECURE"]         = os.environ.get("FLASK_ENV") != "development"
-    # SameSite=None is required for cross-domain cookies (swiperoom8.com → room8-4dq7.onrender.com).
-    # SameSite=Lax blocks cookies on cross-site POST requests, breaking login entirely.
-    # SameSite=None requires Secure=True (enforced above in production).
-    # CORS already restricts which origins can send credentialed requests.
-    app.config["JWT_COOKIE_SAMESITE"]       = "None"
-    app.config["JWT_COOKIE_CSRF_PROTECT"]   = False
     jwt.init_app(app)
 
     # ── JWT token revocation via token_valid_after ─────────────

@@ -8,9 +8,6 @@ from flask_mail import Message
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
-    set_access_cookies,
-    set_refresh_cookies,
-    unset_jwt_cookies,
     jwt_required,
     get_jwt_identity,
 )
@@ -54,13 +51,10 @@ def _send_verification_email(user):
 
 
 def _issue_tokens(user):
-    """Return a response with JWT access + refresh cookies set."""
+    """Return tokens in the response body for client-side storage."""
     access_token  = create_access_token(identity=user.id)
     refresh_token = create_refresh_token(identity=user.id)
-    resp = jsonify({"ok": True, "user": user.public()})
-    set_access_cookies(resp, access_token)
-    set_refresh_cookies(resp, refresh_token)
-    return resp
+    return jsonify({"ok": True, "user": user.public(), "access_token": access_token, "refresh_token": refresh_token})
 
 
 # ── register ──────────────────────────────────────────────────────────────────
@@ -133,9 +127,7 @@ def logout():
         if user:
             user.token_valid_after = datetime.utcnow()
             db.session.commit()
-    resp = jsonify({"ok": True})
-    unset_jwt_cookies(resp)
-    return resp
+    return jsonify({"ok": True})
 
 
 # ── me (current user from JWT) ────────────────────────────────────────────────
@@ -157,9 +149,7 @@ def me():
 def refresh():
     user_id      = get_jwt_identity()
     access_token = create_access_token(identity=user_id)
-    resp = jsonify({"ok": True})
-    set_access_cookies(resp, access_token)
-    return resp
+    return jsonify({"ok": True, "access_token": access_token})
 
 
 # ── verify email ──────────────────────────────────────────────────────────────

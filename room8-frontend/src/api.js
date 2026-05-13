@@ -6,9 +6,20 @@ export const API_URL = (import.meta.env.VITE_API_URL || "http://127.0.0.1:5000")
   .replace(/\/+$/, "");
 
 // ---------------- Local storage helpers ----------------
-// We only store lightweight display info (name, email, profile_complete).
-// The JWT lives in an httpOnly cookie managed by the browser — never localStorage.
-const LS_KEY = "user";
+const LS_KEY     = "user";
+const LS_JWT_KEY = "room8_jwt";
+
+export function getToken() {
+  return localStorage.getItem(LS_JWT_KEY) || null;
+}
+
+export function setToken(token) {
+  if (token) localStorage.setItem(LS_JWT_KEY, token);
+}
+
+export function removeToken() {
+  localStorage.removeItem(LS_JWT_KEY);
+}
 
 export function getCurrentUser() {
   try {
@@ -20,25 +31,33 @@ export function getCurrentUser() {
 }
 
 export function setCurrentUser(u) {
-  // Persist only non-sensitive display fields
   const { id, first_name, last_name, email, profile_complete, photo } = u;
   localStorage.setItem(LS_KEY, JSON.stringify({ id, first_name, last_name, email, profile_complete, photo }));
 }
 
 export function logout() {
+  removeToken();
   localStorage.removeItem(LS_KEY);
-  // Fire-and-forget: ask the server to clear the JWT cookie
+  // Fire-and-forget: invalidate the token server-side
   fetch(`${API_URL}/api/auth/logout`, {
     method: "POST",
-    credentials: "include",
+    headers: { "Content-Type": "application/json", ...authHeader() },
   }).catch(() => {});
+}
+
+function authHeader() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 // ---------------- Fetch helper ----------------
 async function doFetch(url, opts = {}) {
   const res = await fetch(url, {
-    credentials: "include",
     ...opts,
+    headers: {
+      ...authHeader(),
+      ...(opts.headers || {}),
+    },
   });
 
   if (!res.ok) {
@@ -61,20 +80,24 @@ export function health() {
 }
 
 // ---------------- Auth ----------------
-export function register({ first_name, last_name, email, password }) {
-  return doFetch(`${API_URL}/api/auth/register`, {
+export async function register({ first_name, last_name, email, password }) {
+  const data = await doFetch(`${API_URL}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ first_name, last_name, email, password }),
   });
+  if (data?.access_token) setToken(data.access_token);
+  return data;
 }
 
-export function login({ email, password }) {
-  return doFetch(`${API_URL}/api/auth/login`, {
+export async function login({ email, password }) {
+  const data = await doFetch(`${API_URL}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
+  if (data?.access_token) setToken(data.access_token);
+  return data;
 }
 
 export function forgotPassword(email) {
@@ -99,8 +122,10 @@ export function resendVerification() {
   });
 }
 
-export function refreshToken() {
-  return doFetch(`${API_URL}/api/auth/refresh`, { method: "POST" });
+export async function refreshToken() {
+  const data = await doFetch(`${API_URL}/api/auth/refresh`, { method: "POST" });
+  if (data?.access_token) setToken(data.access_token);
+  return data;
 }
 
 // ---------------- Candidates / Matches / Swipes ----------------
@@ -283,7 +308,7 @@ export async function uploadProfilePhoto(userId, file) {
   const res = await fetch(`${API_URL}/api/profile/photo`, {
     method: "POST",
     body: form, // NOTE: no Content-Type header; browser sets multipart boundary
-    credentials: "include",
+    headers: authHeader(),
   });
 
   if (!res.ok) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getMatches } from "./api";
+import { getCurrentUser, getMatches, getNotifications, markNotificationRead } from "./api";
 import Chat from "./components/Chat";
 
 const NAVY   = "#0F2D5E";
@@ -79,8 +79,107 @@ function NoMatchesEmpty() {
   );
 }
 
+function NotificationBell({ notifications, onDismiss }) {
+  const [open, setOpen] = useState(false);
+  const unread = notifications.filter((n) => !n.read).length;
+
+  if (notifications.length === 0) return null;
+
+  const LABEL = {
+    roommate_request:   "wants to confirm you as roommates",
+    roommate_confirmed: "You're confirmed roommates!",
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          position: "relative",
+          background: open ? "rgba(255,255,255,0.1)" : "none",
+          border: "none",
+          color: open ? "#F59E0B" : "rgba(255,255,255,0.6)",
+          width: 36, height: 36, borderRadius: "50%",
+          cursor: "pointer", fontSize: "1.1rem",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "background 0.15s",
+        }}
+        title="Notifications"
+      >
+        🔔
+        {unread > 0 && (
+          <span style={{
+            position: "absolute", top: 4, right: 4,
+            width: 10, height: 10, borderRadius: "50%",
+            background: "#F59E0B",
+            border: "2px solid #030914",
+          }} />
+        )}
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0,
+          background: "#0E1F3D",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 10, overflow: "hidden",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
+          minWidth: 260, maxWidth: 320, zIndex: 300,
+        }}>
+          <div style={{
+            padding: "10px 14px 8px",
+            fontSize: "0.7rem", fontWeight: 700,
+            color: "rgba(245,158,11,0.8)",
+            textTransform: "uppercase", letterSpacing: 1,
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+          }}>
+            Notifications
+          </div>
+          {notifications.map((n) => (
+            <div
+              key={n.id}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 14px",
+                background: n.read ? "transparent" : "rgba(245,158,11,0.06)",
+                borderBottom: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
+              <div style={{
+                width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+                background: n.from_photo ? `url(${n.from_photo}) center/cover` : "#0F2D5E",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#fff", fontWeight: 700, fontSize: "0.85rem",
+              }}>
+                {!n.from_photo && (n.from_name?.[0]?.toUpperCase() || "?")}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, color: "#fff", fontSize: "0.82rem", fontWeight: 600, lineHeight: 1.4 }}>
+                  {n.type === "roommate_confirmed" ? "🎉 " : "🏠 "}
+                  <span style={{ color: "#F59E0B" }}>{n.from_name}</span>{" "}
+                  {LABEL[n.type] || n.type}
+                </p>
+              </div>
+              {!n.read && (
+                <button
+                  onClick={() => onDismiss(n.id)}
+                  style={{
+                    background: "none", border: "none",
+                    color: "rgba(255,255,255,0.35)",
+                    cursor: "pointer", fontSize: "0.75rem", flexShrink: 0,
+                  }}
+                  title="Dismiss"
+                >✕</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Receives matches + loading from parent so unmatch/block updates reflect immediately
-function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile }) {
+function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifications, onDismissNotification }) {
   const newMatches = matches.filter((m) => !m.last_message);
   const messaged   = matches.filter((m) =>  m.last_message);
 
@@ -106,6 +205,7 @@ function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile }) {
         }}>
           Messages
         </h1>
+        <NotificationBell notifications={notifications} onDismiss={onDismissNotification} />
       </div>
 
       {/* Scrollable content */}
@@ -256,6 +356,7 @@ export default function MessagesPage() {
   const [mobileView,     setMobileView]     = useState("list");
   const [matches,        setMatches]        = useState([]);
   const [matchesLoading, setMatchesLoading] = useState(true);
+  const [notifications,  setNotifications]  = useState([]);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -266,7 +367,13 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!user) { setMatchesLoading(false); return; }
     getMatches(user.id).then(setMatches).catch(console.error).finally(() => setMatchesLoading(false));
+    getNotifications().then(setNotifications).catch(console.error);
   }, []); // eslint-disable-line
+
+  const handleDismissNotification = useCallback((notifId) => {
+    markNotificationRead(notifId).catch(console.error);
+    setNotifications((prev) => prev.map((n) => n.id === notifId ? { ...n, read: true } : n));
+  }, []);
 
   const handleSelect = useCallback((match) => {
     setSelected(match);
@@ -306,6 +413,7 @@ export default function MessagesPage() {
           <MatchesPanel
             matches={matches} loading={matchesLoading}
             onSelect={handleSelect} selectedId={selected?.id} isMobile
+            notifications={notifications} onDismissNotification={handleDismissNotification}
           />
         ) : (
           <Chat {...chatProps} onBack={handleBack} />
@@ -322,6 +430,7 @@ export default function MessagesPage() {
       <MatchesPanel
         matches={matches} loading={matchesLoading}
         onSelect={handleSelect} selectedId={selected?.id} isMobile={false}
+        notifications={notifications} onDismissNotification={handleDismissNotification}
       />
       <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {selected

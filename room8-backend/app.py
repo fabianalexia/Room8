@@ -20,6 +20,7 @@ from routes.board_routes import board_bp
 from routes.report_routes import report_bp
 from routes.safety_routes import safety_bp
 from routes.match_routes import match_bp
+from routes.roommate_routes import roommate_bp
 
 # Load .env if present (development)
 try:
@@ -136,6 +137,8 @@ def create_app():
     from room8_models.board import Post, PostLike, PostReply  # noqa: F401
     from room8_models.report import Report                    # noqa: F401
     from room8_models.block import Block                      # noqa: F401
+    from room8_models.roommate_confirmation import RoommateConfirmation  # noqa: F401
+    from room8_models.notification import Notification                   # noqa: F401
 
     with app.app_context():
         db.create_all()
@@ -188,6 +191,7 @@ def create_app():
     app.register_blueprint(report_bp)
     app.register_blueprint(safety_bp)
     app.register_blueprint(match_bp)
+    app.register_blueprint(roommate_bp)
 
     if os.environ.get("FLASK_ENV") == "development":
         from routes.debug_routes import debug_bp

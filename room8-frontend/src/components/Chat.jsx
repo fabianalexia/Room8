@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { getChat, sendMessage as apiSendMessage, reportUser, blockUser, unmatchUser } from "../api";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { getChat, sendMessage as apiSendMessage, reportUser, blockUser, unmatchUser, getRoommateStatus, confirmRoommate } from "../api";
 
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
@@ -37,6 +37,9 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
   const [reportReason,    setReportReason]    = useState("inappropriate");
   const [reportSubmitting,setReportSubmitting]= useState(false);
   const [reportDone,      setReportDone]      = useState(false);
+  const [confirmStatus,   setConfirmStatus]   = useState({ i_confirmed: false, they_confirmed: false, both_confirmed: false });
+  const [confirming,      setConfirming]      = useState(false);
+  const [showConfirmBanner, setShowConfirmBanner] = useState(false);
   const menuRef   = useRef(null);
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
@@ -49,6 +52,31 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [userId, peerId]);
+
+  const fetchRoommateStatus = useCallback(() => {
+    if (!peerId) return;
+    getRoommateStatus(peerId)
+      .then((s) => {
+        setConfirmStatus(s);
+        // Show the banner if peer has requested but we haven't confirmed yet
+        if (s.they_confirmed && !s.i_confirmed) setShowConfirmBanner(true);
+        else setShowConfirmBanner(false);
+      })
+      .catch(console.error);
+  }, [peerId]);
+
+  useEffect(() => {
+    setConfirmStatus({ i_confirmed: false, they_confirmed: false, both_confirmed: false });
+    setShowConfirmBanner(false);
+    fetchRoommateStatus();
+  }, [peerId]); // eslint-disable-line
+
+  // Poll roommate status every 12 seconds while chat is open
+  useEffect(() => {
+    if (!peerId) return;
+    const id = setInterval(fetchRoommateStatus, 12000);
+    return () => clearInterval(id);
+  }, [peerId, fetchRoommateStatus]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,6 +93,20 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
+
+  const handleConfirmRoommate = async () => {
+    if (confirming || confirmStatus.both_confirmed) return;
+    setConfirming(true);
+    try {
+      const result = await confirmRoommate(peerId);
+      setConfirmStatus((prev) => ({ ...prev, ...result }));
+      if (result.both_confirmed) setShowConfirmBanner(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setConfirming(false);
+    }
+  };
 
   const handleSend = async () => {
     const text = input.trim();
@@ -169,10 +211,80 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
         }}>
           {!peerPhoto && initials}
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ color: WHITE, fontWeight: 700, fontSize: "0.95rem", fontFamily: HF }}>{peerName || "Chat"}</div>
-          <div style={{ color: "rgba(245,158,11,0.7)", fontSize: "0.7rem", fontFamily: BF }}>Matched with you</div>
+          <div style={{ color: confirmStatus.both_confirmed ? "#34D399" : "rgba(245,158,11,0.7)", fontSize: "0.7rem", fontFamily: BF }}>
+            {confirmStatus.both_confirmed
+              ? "Confirmed roommates"
+              : confirmStatus.i_confirmed
+              ? "Awaiting their confirmation…"
+              : "Matched with you"}
+          </div>
         </div>
+
+        {/* Confirm Roommate button */}
+        {!confirmStatus.both_confirmed && (
+          <button
+            onClick={handleConfirmRoommate}
+            disabled={confirming || confirmStatus.i_confirmed}
+            title={
+              confirmStatus.i_confirmed
+                ? "You've confirmed — waiting for them"
+                : "Confirm this person as your roommate"
+            }
+            style={{
+              flexShrink: 0,
+              padding: "6px 12px",
+              borderRadius: 20,
+              border: `1.5px solid ${confirmStatus.i_confirmed ? "rgba(52,211,153,0.4)" : "rgba(245,158,11,0.5)"}`,
+              background: confirmStatus.i_confirmed
+                ? "rgba(52,211,153,0.1)"
+                : confirming
+                ? "rgba(245,158,11,0.15)"
+                : "rgba(245,158,11,0.12)",
+              color: confirmStatus.i_confirmed ? "#34D399" : GOLD,
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              fontFamily: BF,
+              cursor: confirmStatus.i_confirmed || confirming ? "default" : "pointer",
+              whiteSpace: "nowrap",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              if (!confirmStatus.i_confirmed && !confirming) {
+                e.currentTarget.style.background = "rgba(245,158,11,0.25)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!confirmStatus.i_confirmed && !confirming) {
+                e.currentTarget.style.background = "rgba(245,158,11,0.12)";
+              }
+            }}
+          >
+            {confirming
+              ? "Confirming…"
+              : confirmStatus.i_confirmed
+              ? "✓ Confirmed"
+              : "Confirm Roommate"}
+          </button>
+        )}
+
+        {confirmStatus.both_confirmed && (
+          <div style={{
+            flexShrink: 0,
+            padding: "6px 12px",
+            borderRadius: 20,
+            border: "1.5px solid rgba(52,211,153,0.4)",
+            background: "rgba(52,211,153,0.1)",
+            color: "#34D399",
+            fontSize: "0.72rem",
+            fontWeight: 700,
+            fontFamily: BF,
+            whiteSpace: "nowrap",
+          }}>
+            Roommates
+          </div>
+        )}
 
         {/* ⋯ menu */}
         <div ref={menuRef} style={{ position: "relative", flexShrink: 0 }}>
@@ -223,6 +335,55 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
           )}
         </div>
       </div>
+
+      {/* Roommate request banner — peer has confirmed, we haven't yet */}
+      {showConfirmBanner && !confirmStatus.both_confirmed && (
+        <div style={{
+          background: "rgba(245,158,11,0.12)",
+          borderBottom: "1px solid rgba(245,158,11,0.25)",
+          padding: "12px 20px",
+          display: "flex", alignItems: "center", gap: 12,
+          flexShrink: 0,
+        }}>
+          <span style={{ fontSize: "1.1rem" }}>🏠</span>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, color: WHITE, fontWeight: 700, fontSize: "0.88rem", fontFamily: BF }}>
+              {peerName?.split(" ")[0]} wants to be your roommate!
+            </p>
+            <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.55)", fontSize: "0.78rem", fontFamily: BF }}>
+              Click "Confirm Roommate" to finalize.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowConfirmBanner(false)}
+            style={{
+              background: "none", border: "none", color: "rgba(255,255,255,0.4)",
+              cursor: "pointer", fontSize: "1rem", padding: 4, flexShrink: 0,
+            }}
+          >✕</button>
+        </div>
+      )}
+
+      {/* Both confirmed celebration banner */}
+      {confirmStatus.both_confirmed && (
+        <div style={{
+          background: "rgba(52,211,153,0.1)",
+          borderBottom: "1px solid rgba(52,211,153,0.25)",
+          padding: "12px 20px",
+          display: "flex", alignItems: "center", gap: 12,
+          flexShrink: 0,
+        }}>
+          <span style={{ fontSize: "1.2rem" }}>🎉</span>
+          <div>
+            <p style={{ margin: 0, color: "#34D399", fontWeight: 700, fontSize: "0.88rem", fontFamily: BF }}>
+              You're confirmed roommates with {peerName?.split(" ")[0]}!
+            </p>
+            <p style={{ margin: "2px 0 0", color: "rgba(52,211,153,0.7)", fontSize: "0.78rem", fontFamily: BF }}>
+              Your school's housing office has been notified.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div style={{

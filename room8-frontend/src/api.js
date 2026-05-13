@@ -240,6 +240,23 @@ export function saveSurvey(userId, answers) {
   });
 }
 
+// ---------------- Roommate Confirmation ----------------
+export function getRoommateStatus(peerId) {
+  return doFetch(`${API_URL}/api/roommate/status/${peerId}`);
+}
+
+export function confirmRoommate(peerId) {
+  return doFetch(`${API_URL}/api/roommate/confirm/${peerId}`, { method: "POST" });
+}
+
+export function getNotifications() {
+  return doFetch(`${API_URL}/api/roommate/notifications`);
+}
+
+export function markNotificationRead(notifId) {
+  return doFetch(`${API_URL}/api/roommate/notifications/${notifId}/read`, { method: "POST" });
+}
+
 // ---------------- Photo gallery ----------------
 export function addPhoto(userId, file) {
   const form = new FormData();

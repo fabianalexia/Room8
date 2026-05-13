@@ -45,9 +45,18 @@ export function logout() {
   }).catch(() => {});
 }
 
+function isValidJwt(token) {
+  // A JWT has exactly 3 base64url segments separated by dots
+  return typeof token === "string" && token.split(".").length === 3;
+}
+
 function authHeader() {
   const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  if (!isValidJwt(token)) {
+    removeToken(); // clear garbage so it doesn't keep causing 422s
+    return {};
+  }
+  return { Authorization: `Bearer ${token}` };
 }
 
 // ---------------- Fetch helper ----------------
@@ -61,10 +70,13 @@ async function doFetch(url, opts = {}) {
   });
 
   if (!res.ok) {
+    // Token is missing or malformed — clear it so the user gets redirected to login
+    if (res.status === 401 || res.status === 422) removeToken();
     let msg = `HTTP ${res.status}`;
     try {
       const j = await res.json();
       if (j?.error) msg = j.error;
+      else if (j?.msg) msg = j.msg;
     } catch { /* non-JSON body */ }
     throw new Error(msg);
   }

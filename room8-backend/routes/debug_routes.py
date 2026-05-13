@@ -107,6 +107,15 @@ def seed():
 
 
 
+@debug_bp.post("/verify-all")
+def verify_all():
+    db.session.execute(
+        db.text("UPDATE users SET email_verified = true, profile_complete = true")
+    )
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
 @debug_bp.post("/reset")
 def reset():
     """Clear swipes and messages (keep users)."""

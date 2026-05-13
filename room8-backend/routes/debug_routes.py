@@ -15,6 +15,11 @@ DEMO_SCHOOL = "New York University (NYU)"
 @debug_bp.post("/seed")
 def seed():
     """Seed realistic demo users with full college profiles."""
+    db.session.execute(
+        db.text("UPDATE users SET email_verified = true, profile_complete = true WHERE email LIKE '%demo.com'")
+    )
+    db.session.commit()
+
     if User.query.count() == 0:
         demo = [
             dict(

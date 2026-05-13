@@ -106,16 +106,6 @@ def seed():
     return jsonify({"ok": True, "count": len(users), "users": [u.public() for u in users]})
 
 
-@debug_bp.post("/verify-all")
-def verify_all():
-    """Force email_verified=true and profile_complete=true for every user."""
-    db.session.execute(
-        db.text("UPDATE users SET email_verified = true, profile_complete = true")
-    )
-    db.session.commit()
-    count = User.query.count()
-    return jsonify({"ok": True, "updated": count})
-
 
 @debug_bp.post("/reset")
 def reset():

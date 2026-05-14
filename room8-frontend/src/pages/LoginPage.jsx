@@ -1,7 +1,7 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { login as apiLogin, setCurrentUser } from "../api";
+import { login as apiLogin, setCurrentUser, setToken, getToken } from "../api";
 import logoImg from "../assets/images/logo.png";
 
 const NAVY  = "#0F2D5E";
@@ -31,10 +31,24 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await apiLogin(form);
-      // JWT is in an httpOnly cookie set by the server — only store display info locally
+      console.log("[login] response:", res);
+
+      // Explicitly store the token (api.js also does this, belt-and-suspenders)
+      if (res?.access_token) {
+        setToken(res.access_token);
+      }
+      console.log("[login] token in localStorage:", getToken());
+
+      if (!res?.user) {
+        throw new Error("No user in login response");
+      }
+
       setCurrentUser(res.user);
-      navigate(res.user.profile_complete === false ? "/setup" : "/app", { replace: true });
+      const dest = res.user.profile_complete === false ? "/setup" : "/app";
+      console.log("[login] navigating to:", dest);
+      navigate(dest, { replace: true });
     } catch (error) {
+      console.error("[login] error:", error);
       setErr(error.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);

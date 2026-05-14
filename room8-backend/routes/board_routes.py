@@ -46,6 +46,20 @@ def create_post():
     return jsonify({"ok": True, "post": post.public(viewer_id=user_id)}), 201
 
 
+@board_bp.delete("/<int:post_id>")
+@jwt_required()
+def delete_post(post_id):
+    user_id = int(get_jwt_identity())
+    post = db.session.get(Post, post_id)
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+    if post.user_id != user_id:
+        return jsonify({"error": "Forbidden"}), 403
+    db.session.delete(post)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
 @board_bp.post("/<int:post_id>/like")
 @jwt_required()
 def toggle_like(post_id):

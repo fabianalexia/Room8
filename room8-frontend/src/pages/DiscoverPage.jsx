@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getCurrentUser, likeUser,
-  getPosts, createPost, togglePostLike, getReplies, addReply,
+  getPosts, createPost, togglePostLike, deletePost, getReplies, addReply,
   getCompatibility,
 } from "../api";
 
@@ -55,7 +55,7 @@ function MiniAvatar({ src, name, size = 36 }) {
 // COMMUNITY BOARD
 // ══════════════════════════════════════════════════════════════
 
-function PostCard({ post, userId, onLikeToggle, onReplyAdded }) {
+function PostCard({ post, userId, onLikeToggle, onReplyAdded, onDelete }) {
   const [showReplies, setShowReplies] = useState(false);
   const [replies,     setReplies]     = useState([]);
   const [loadingRep,  setLoadingRep]  = useState(false);
@@ -103,6 +103,22 @@ function PostCard({ post, userId, onLikeToggle, onReplyAdded }) {
           </div>
           <span style={{ color: MUTED, fontSize: "0.73rem" }}>{relTime(post.created_at)}</span>
         </div>
+        {post.user_id === userId && (
+          <button
+            onClick={() => onDelete(post.id)}
+            title="Delete post"
+            style={{
+              background: "none", border: "none",
+              color: "rgba(255,255,255,0.25)", cursor: "pointer",
+              fontSize: "0.95rem", padding: "2px 4px", flexShrink: 0,
+              transition: "color 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#F87171")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}
+          >
+            🗑
+          </button>
+        )}
       </div>
 
       <p style={{ color: TEXT, fontSize: "0.95rem", lineHeight: 1.55, margin: "0 0 12px" }}>
@@ -228,6 +244,13 @@ function CommunityBoard({ user }) {
     ));
   };
 
+  const handleDelete = async (postId) => {
+    try {
+      await deletePost(postId);
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+    } catch (e) { console.error(e); }
+  };
+
   return (
     <div>
       {/* Compose box */}
@@ -292,6 +315,7 @@ function CommunityBoard({ user }) {
             userId={user.id}
             onLikeToggle={handleLikeToggle}
             onReplyAdded={handleReplyAdded}
+            onDelete={handleDelete}
           />
         ))
       )}

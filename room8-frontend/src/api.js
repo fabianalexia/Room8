@@ -254,6 +254,10 @@ export function createPost(userId, content) {
   });
 }
 
+export function deletePost(postId) {
+  return doFetch(`${API_URL}/api/board/${postId}`, { method: "DELETE" });
+}
+
 export function togglePostLike(userId, postId) {
   return doFetch(`${API_URL}/api/board/${postId}/like`, {
     method: "POST",

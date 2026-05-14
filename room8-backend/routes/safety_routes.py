@@ -10,7 +10,7 @@ safety_bp = Blueprint("safety", __name__, url_prefix="/api")
 @safety_bp.post("/block")
 @jwt_required()
 def block_user():
-    blocker_id = get_jwt_identity()
+    blocker_id = int(get_jwt_identity())
     data       = request.get_json(force=True) or {}
     blocked_id = data.get("blocked_id")
 

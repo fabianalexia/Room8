@@ -13,7 +13,7 @@ MAX_MESSAGE_LEN = 1000
 @message_bp.route("/<int:peer_id>", methods=["POST"])
 @jwt_required()
 def send_message(peer_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
     # Only matched users may message each other
     my_like   = Swipe.query.filter_by(user_id=user_id, target_id=peer_id, action="like").first()
@@ -41,7 +41,7 @@ def send_message(peer_id):
 @message_bp.route("/<int:peer_id>", methods=["GET"])
 @jwt_required()
 def get_conversation(peer_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
     my_like   = Swipe.query.filter_by(user_id=user_id, target_id=peer_id, action="like").first()
     peer_like = Swipe.query.filter_by(user_id=peer_id, target_id=user_id, action="like").first()

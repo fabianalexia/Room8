@@ -11,7 +11,7 @@ survey_bp = Blueprint("survey", __name__, url_prefix="/api")
 @survey_bp.route("/survey", methods=["POST"])
 @jwt_required()
 def save_survey():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data    = request.get_json(force=True) or {}
     answers = data.get("answers")
 

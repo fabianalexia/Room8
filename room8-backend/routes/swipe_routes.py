@@ -9,7 +9,7 @@ swipe_bp = Blueprint("swipe", __name__, url_prefix="/api/swipe")
 @swipe_bp.route("/like", methods=["POST"])
 @jwt_required()
 def like():
-    user_id   = get_jwt_identity()
+    user_id   = int(get_jwt_identity())
     data      = request.get_json(force=True) or {}
     target_id = data.get("target_id")
 
@@ -35,7 +35,7 @@ def like():
 @swipe_bp.route("/skip", methods=["POST"])
 @jwt_required()
 def skip():
-    user_id   = get_jwt_identity()
+    user_id   = int(get_jwt_identity())
     data      = request.get_json(force=True) or {}
     target_id = data.get("target_id")
 

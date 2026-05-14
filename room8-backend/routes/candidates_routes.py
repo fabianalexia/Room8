@@ -36,7 +36,7 @@ def _forbidden():
 @candidates_bp.get("/candidates/<int:user_id>")
 @jwt_required()
 def get_candidates(user_id: int):
-    if get_jwt_identity() != user_id:
+    if int(get_jwt_identity()) != user_id:
         return _forbidden()
 
     me = db.session.get(User, user_id)
@@ -71,7 +71,7 @@ def get_candidates(user_id: int):
 @candidates_bp.get("/matches/<int:user_id>")
 @jwt_required()
 def get_matches(user_id: int):
-    if get_jwt_identity() != user_id:
+    if int(get_jwt_identity()) != user_id:
         return _forbidden()
 
     me = db.session.get(User, user_id)
@@ -118,7 +118,7 @@ def get_matches(user_id: int):
 @jwt_required()
 def get_likes(user_id: int):
     """Users who liked me but we haven't matched yet."""
-    if get_jwt_identity() != user_id:
+    if int(get_jwt_identity()) != user_id:
         return _forbidden()
 
     me = db.session.get(User, user_id)
@@ -166,7 +166,7 @@ def _compat_score(prefs_a: dict, prefs_b: dict) -> int:
 @jwt_required()
 def get_compatibility(user_id: int):
     """Returns the user's mutual matches ranked by dorm-pref compatibility score."""
-    if get_jwt_identity() != user_id:
+    if int(get_jwt_identity()) != user_id:
         return _forbidden()
 
     me = db.session.get(User, user_id)

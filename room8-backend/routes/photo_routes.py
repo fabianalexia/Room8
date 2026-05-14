@@ -57,7 +57,7 @@ def _resolve_source(request_obj):
 @photo_bp.route("/photo", methods=["POST"])
 @jwt_required()
 def upload_photo():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
     user = db.session.get(User, user_id)
     if not user:

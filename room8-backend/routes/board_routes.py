@@ -13,7 +13,7 @@ PAGE_SIZE = 20
 @board_bp.get("")
 @jwt_required()
 def list_posts():
-    viewer_id = get_jwt_identity()
+    viewer_id = int(get_jwt_identity())
     offset    = request.args.get("offset", 0, type=int)
 
     posts = (
@@ -30,7 +30,7 @@ def list_posts():
 @jwt_required()
 @limiter.limit("20 per hour")
 def create_post():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data    = request.get_json(force=True) or {}
     content = (data.get("content") or "").strip()
 
@@ -49,7 +49,7 @@ def create_post():
 @board_bp.post("/<int:post_id>/like")
 @jwt_required()
 def toggle_like(post_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
     post = db.session.get(Post, post_id)
     if not post:
@@ -79,7 +79,7 @@ def get_replies(post_id):
 @board_bp.post("/<int:post_id>/replies")
 @jwt_required()
 def add_reply(post_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     data    = request.get_json(force=True) or {}
     content = (data.get("content") or "").strip()
 

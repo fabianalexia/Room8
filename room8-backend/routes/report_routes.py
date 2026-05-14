@@ -11,7 +11,7 @@ report_bp = Blueprint("report", __name__, url_prefix="/api/report")
 @report_bp.post("")
 @jwt_required()
 def submit_report():
-    reporter_id = get_jwt_identity()
+    reporter_id = int(get_jwt_identity())
     data        = request.get_json(force=True) or {}
     reported_id = data.get("reported_id")
     reason      = sanitize(data.get("reason", "inappropriate"))

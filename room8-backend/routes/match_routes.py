@@ -9,7 +9,7 @@ match_bp = Blueprint("match", __name__, url_prefix="/api")
 @match_bp.delete("/match/<int:peer_id>")
 @jwt_required()
 def unmatch(peer_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
 
     # Verify a real mutual match exists before touching anything
     my_like   = Swipe.query.filter_by(user_id=user_id, target_id=peer_id, action="like").first()

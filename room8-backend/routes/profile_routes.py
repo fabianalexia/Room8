@@ -40,7 +40,7 @@ def _forbidden():
 @profile_bp.route("/<int:user_id>", methods=["PUT"])
 @jwt_required()
 def update_profile(user_id):
-    if get_jwt_identity() != user_id:
+    if int(get_jwt_identity()) != user_id:
         return _forbidden()
 
     user = db.session.get(User, user_id)
@@ -118,7 +118,7 @@ def update_profile(user_id):
 @profile_bp.route("/<int:user_id>", methods=["GET"])
 @jwt_required()
 def get_profile(user_id):
-    viewer_id = get_jwt_identity()
+    viewer_id = int(get_jwt_identity())
     is_match  = False
 
     # Own profile is always accessible
@@ -155,7 +155,7 @@ def get_profile(user_id):
 @profile_bp.route("/status", methods=["GET"])
 @jwt_required()
 def get_profile_status():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -165,7 +165,7 @@ def get_profile_status():
 @profile_bp.route("/complete", methods=["GET", "PATCH", "POST"])
 @jwt_required()
 def profile_complete():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -181,7 +181,7 @@ def profile_complete():
 @profile_bp.route("/<int:user_id>/photos", methods=["POST"])
 @jwt_required()
 def add_photo(user_id):
-    if get_jwt_identity() != user_id:
+    if int(get_jwt_identity()) != user_id:
         return _forbidden()
 
     user = db.session.get(User, user_id)
@@ -211,7 +211,7 @@ def add_photo(user_id):
 @profile_bp.route("/<int:user_id>/photos", methods=["DELETE"])
 @jwt_required()
 def remove_photo(user_id):
-    if get_jwt_identity() != user_id:
+    if int(get_jwt_identity()) != user_id:
         return _forbidden()
 
     user = db.session.get(User, user_id)

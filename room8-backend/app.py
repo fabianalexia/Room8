@@ -69,7 +69,7 @@ def create_app():
         user_id = jwt_data.get("sub")
         if not user_id:
             return True
-        user = db.session.get(_User, user_id)
+        user = db.session.get(_User, int(user_id))
         if not user or not user.token_valid_after:
             return False  # no invalidation timestamp set — token is valid
         return jwt_data.get("iat", 0) < user.token_valid_after.timestamp()

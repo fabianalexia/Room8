@@ -1,7 +1,7 @@
 // src/ProtectedRoute.jsx
 import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { getToken, setCurrentUser, logout } from "./api";
+import { getToken, getMe, setCurrentUser, logout } from "./api";
 
 export default function ProtectedRoute({ children, requireComplete = false }) {
   const [status, setStatus] = useState("loading"); // "loading" | "ok" | "unauth"
@@ -9,26 +9,25 @@ export default function ProtectedRoute({ children, requireComplete = false }) {
 
   useEffect(() => {
     const token = getToken();
+    console.log("[ProtectedRoute] token:", token ? `${token.slice(0, 20)}...` : null);
+
     if (!token) {
+      console.log("[ProtectedRoute] no token → unauth");
       setStatus("unauth");
       return;
     }
 
-    // Validate token and refresh user data via /api/auth/me.
-    // doFetch (called inside api helpers) automatically sends Authorization: Bearer.
-    fetch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error("unauthenticated");
-        return r.json();
-      })
+    // Use the shared doFetch-backed helper so the Authorization header
+    // is built identically to every other authenticated API call.
+    getMe()
       .then((data) => {
+        console.log("[ProtectedRoute] /me response:", data);
         setCurrentUser(data.user);
         setUser(data.user);
         setStatus("ok");
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("[ProtectedRoute] /me error:", err.message);
         logout();
         setStatus("unauth");
       });

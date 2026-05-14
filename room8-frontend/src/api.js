@@ -91,6 +91,10 @@ export function health() {
   return doFetch(`${API_URL}/api/health`);
 }
 
+export function getMe() {
+  return doFetch(`${API_URL}/api/auth/me`);
+}
+
 // ---------------- Auth ----------------
 export async function register({ first_name, last_name, email, password }) {
   const data = await doFetch(`${API_URL}/api/auth/register`, {

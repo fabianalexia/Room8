@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { getCurrentUser, getMatches, getNotifications, markNotificationRead } from "./api";
 import Chat from "./components/Chat";
 
@@ -350,7 +350,8 @@ function EmptyChat() {
 }
 
 export default function MessagesPage() {
-  const user = getCurrentUser();
+  const user     = getCurrentUser();
+  const location = useLocation();
   const [selected,       setSelected]       = useState(null);
   const [isMobile,       setIsMobile]       = useState(window.innerWidth < 768);
   const [mobileView,     setMobileView]     = useState("list");
@@ -364,11 +365,14 @@ export default function MessagesPage() {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
+  // Re-fetch matches every time this page is navigated to (location.key changes on each visit).
+  // This ensures a match created on LikesPage shows up immediately when the user lands here.
   useEffect(() => {
     if (!user) { setMatchesLoading(false); return; }
+    setMatchesLoading(true);
     getMatches(user.id).then(setMatches).catch(console.error).finally(() => setMatchesLoading(false));
     getNotifications().then(setNotifications).catch(console.error);
-  }, []); // eslint-disable-line
+  }, [location.key]); // eslint-disable-line
 
   const handleDismissNotification = useCallback((notifId) => {
     markNotificationRead(notifId).catch(console.error);

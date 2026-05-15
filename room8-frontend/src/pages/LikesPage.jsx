@@ -37,7 +37,12 @@ export default function LikesPage() {
       const res = await likeUser(user.id, fan.id);
       if (res?.matched) {
         setMatched((prev) => ({ ...prev, [fan.id]: true }));
-        setTimeout(() => setFans((prev) => prev.filter((f) => f.id !== fan.id)), 2000);
+        // After showing the match state, remove the card and navigate to Messages
+        // so the user lands on a fresh MessagesPage that fetches the new match.
+        setTimeout(() => {
+          setFans((prev) => prev.filter((f) => f.id !== fan.id));
+          navigate("/messages");
+        }, 1500);
       }
     } catch (e) { console.error(e); }
     finally { setLiking((prev) => ({ ...prev, [fan.id]: false })); }

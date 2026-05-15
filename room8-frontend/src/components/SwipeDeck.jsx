@@ -416,12 +416,17 @@ export default function SwipeDeck() {
     setSwipeHint(null);
     try {
       if (direction === "right") {
+        console.log("[swipe] liking", candidate.id, candidate.name);
         const res = await likeUser(user.id, candidate.id);
-        if (res?.matched) showToast(`You matched with ${candidate.name?.split(" ")[0]}! 🎉`);
+        console.log("[swipe] like response:", res);
+        if (res?.matched) {
+          console.log("[swipe] MATCHED with", candidate.name);
+          showToast(`You matched with ${candidate.name?.split(" ")[0]}! 🎉`);
+        }
       } else {
         await skipUser(user.id, candidate.id);
       }
-    } catch (err) { console.error("Swipe error:", err); }
+    } catch (err) { console.error("[swipe] error:", err); }
   };
 
   const pressButton = (direction) => {
@@ -651,7 +656,7 @@ export default function SwipeDeck() {
       {/* Match toast */}
       {matchToast && (
         <div style={{
-          position: "absolute", top: 74, left: "50%", transform: "translateX(-50%)",
+          position: "absolute", top: user?.email_verified === false ? 118 : 74, left: "50%", transform: "translateX(-50%)",
           background: GOLD, color: DARK,
           padding: "10px 22px", borderRadius: 8,
           fontWeight: 700, fontSize: "0.9rem", zIndex: 100,

@@ -7,6 +7,7 @@ from room8_models.user import User
 from room8_models.swipe import Swipe
 from room8_models.message import Message
 from room8_models.block import Block
+from room8_models.roommate_confirmation import RoommateConfirmation
 
 candidates_bp = Blueprint("candidates", __name__, url_prefix="/api")
 
@@ -29,6 +30,42 @@ def _exclude_blocked(user_id):
     return blocked_by_me | blocking_me
 
 
+def _exclude_matches(user_id):
+    """IDs that are mutual matches (both swiped right on each other). Always excluded, even on reset."""
+    i_liked = (
+        db.session.query(Swipe.target_id)
+        .filter_by(user_id=user_id, action="like")
+        .subquery()
+    )
+    return {
+        row[0]
+        for row in db.session.query(Swipe.user_id)
+        .filter(Swipe.action == "like", Swipe.target_id == user_id)
+        .filter(Swipe.user_id.in_(i_liked))
+        .all()
+    }
+
+
+def _exclude_confirmed_roommates(user_id):
+    """IDs that are fully confirmed roommates with the current user. Always excluded."""
+    confirmations = (
+        db.session.query(RoommateConfirmation)
+        .filter(
+            RoommateConfirmation.a_confirmed == True,
+            RoommateConfirmation.b_confirmed == True,
+            or_(
+                RoommateConfirmation.user_a_id == user_id,
+                RoommateConfirmation.user_b_id == user_id,
+            ),
+        )
+        .all()
+    )
+    return {
+        rc.user_b_id if rc.user_a_id == user_id else rc.user_a_id
+        for rc in confirmations
+    }
+
+
 def _forbidden():
     return jsonify({"error": "Forbidden"}), 403
 
@@ -44,13 +81,15 @@ def get_candidates(user_id: int):
         return jsonify({"ok": False, "error": "no_such_user"}), 404
 
     reset = request.args.get("reset") == "true"
-    swiped_ids  = set() if reset else _exclude_swiped(user_id)
-    blocked_ids = _exclude_blocked(user_id)
+    swiped_ids    = set() if reset else _exclude_swiped(user_id)
+    blocked_ids   = _exclude_blocked(user_id)
+    match_ids     = _exclude_matches(user_id)           # always excluded, even on reset
+    roommate_ids  = _exclude_confirmed_roommates(user_id)  # always excluded, even on reset
+    exclude_ids   = swiped_ids | blocked_ids | match_ids | roommate_ids
     base_q = (
         db.session.query(User)
         .filter(User.id != user_id)
-        .filter(~User.id.in_(swiped_ids))
-        .filter(~User.id.in_(blocked_ids))
+        .filter(~User.id.in_(exclude_ids))
     )
 
     # Filter by same school if the user has one set

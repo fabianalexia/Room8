@@ -98,6 +98,8 @@ def create_app():
     mail.init_app(app)
 
     # ── CORS ───────────────────────────────────────────────────
+    # Must be initialised BEFORE Talisman so flask-cors's after_request
+    # runs after Talisman's, giving it the final word on CORS headers.
     raw_origins = os.environ.get(
         "CORS_ORIGINS",
         "https://swiperoom8.com,https://www.swiperoom8.com,"
@@ -106,20 +108,13 @@ def create_app():
     )
     allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
 
-    cors_opts = {
-        "origins": allowed_origins,
-        "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
-        "supports_credentials": True,
-        "max_age": 600,
-    }
     CORS(
         app,
-        resources={
-            r"/api/*":     cors_opts,
-            r"/uploads/*": cors_opts,
-        },
+        origins=allowed_origins,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         supports_credentials=True,
+        max_age=3600,
     )
 
     # ── Security headers ───────────────────────────────────────
@@ -135,28 +130,6 @@ def create_app():
         x_content_type_options=True,
         referrer_policy="strict-origin-when-cross-origin",
     )
-
-    # ── Belt-and-suspenders CORS ────────────────────────────────
-    # flask-talisman's after_request hooks can suppress CORS headers on
-    # error responses (401/422 from @jwt_required, 429 from rate-limiter, 5xx).
-    # This after_request runs last (registered after Talisman) and guarantees
-    # the correct CORS headers appear on every response from /api/* routes.
-    @app.after_request
-    def ensure_cors(response):
-        origin = request.headers.get("Origin", "")
-        if origin in allowed_origins:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Vary"] = "Origin"
-            if request.method == "OPTIONS":
-                response.headers["Access-Control-Allow-Methods"] = (
-                    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-                )
-                response.headers["Access-Control-Allow-Headers"] = (
-                    "Content-Type, Authorization, X-Requested-With"
-                )
-                response.headers["Access-Control-Max-Age"] = "600"
-        return response
 
     db.init_app(app)
 

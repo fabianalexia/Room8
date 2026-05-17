@@ -1,10 +1,11 @@
 // src/pages/LikesPage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, getLikes, likeUser } from "../api";
 
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
+const GOLD_D = "#D97706";
 const DARK   = "#050D1F";
 const DARKER = "#030914";
 const WHITE  = "#FFFFFF";
@@ -13,14 +14,255 @@ const BORDER = "rgba(255,255,255,0.09)";
 const HF = "'Outfit', sans-serif";
 const BF = "'Inter', sans-serif";
 
+// ── Confetti particle, randomly placed, animated with CSS ──────
+const CONFETTI_COLORS = [GOLD, "#FDE68A", "#FCD34D", "#ffffff", "#93C5FD", "#86EFAC", "#F9A8D4"];
+
+function Confetti() {
+  const particles = useRef(
+    Array.from({ length: 42 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,       // vw %
+      size: 5 + Math.random() * 7,  // px
+      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+      duration: 2.2 + Math.random() * 2.2,
+      delay: Math.random() * 1.2,
+      shape: i % 3 === 0 ? "circle" : i % 3 === 1 ? "rect" : "star",
+      spin: Math.random() > 0.5,
+    }))
+  ).current;
+
+  return (
+    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            position: "absolute",
+            left: `${p.x}%`,
+            top: "-20px",
+            width: p.size,
+            height: p.shape === "rect" ? p.size * 0.5 : p.size,
+            borderRadius: p.shape === "circle" ? "50%" : p.shape === "rect" ? 2 : 0,
+            background: p.shape === "star" ? "none" : p.color,
+            color: p.color,
+            fontSize: p.shape === "star" ? p.size * 1.4 : undefined,
+            lineHeight: 1,
+            animation: `confettiFall ${p.duration}s ${p.delay}s ease-in forwards`,
+            transform: `rotate(${Math.random() * 360}deg)`,
+          }}
+        >
+          {p.shape === "star" ? "✦" : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Avatar with gold ring ───────────────────────────────────────
+function RingAvatar({ src, name, size = 100, delay = "0s" }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+      background: src ? `url(${src}) center/cover` : `linear-gradient(135deg, ${NAVY}, #1e4a8a)`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      color: WHITE, fontWeight: 800, fontSize: size * 0.36,
+      fontFamily: HF,
+      border: `3px solid ${GOLD}`,
+      boxShadow: `0 0 0 4px rgba(245,158,11,0.25), 0 0 28px rgba(245,158,11,0.5), 0 8px 32px rgba(0,0,0,0.6)`,
+      animation: `avatarPop 0.55s ${delay} cubic-bezier(0.175, 0.885, 0.32, 1.275) both`,
+    }}>
+      {!src && (name?.[0]?.toUpperCase() || "?")}
+    </div>
+  );
+}
+
+// ── Match Celebration Modal ─────────────────────────────────────
+function MatchCelebrationModal({ matchedUser, currentUser, onMessage, onKeepSwiping }) {
+  const [visible, setVisible] = useState(false);
+
+  // Lock body scroll + entrance animation
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    // Trigger entrance on next frame
+    requestAnimationFrame(() => setVisible(true));
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  const firstName = matchedUser.name?.split(" ")[0] || matchedUser.name || "them";
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 600,
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      background: "radial-gradient(ellipse at 50% 30%, rgba(15,45,94,0.98) 0%, rgba(3,9,20,0.98) 70%)",
+      backdropFilter: "blur(12px)",
+      opacity: visible ? 1 : 0,
+      transition: "opacity 0.35s ease",
+      padding: "20px 16px",
+      overflow: "hidden",
+    }}>
+      {/* Confetti rain */}
+      <Confetti />
+
+      {/* Glow orbs behind content */}
+      <div style={{
+        position: "absolute", width: 480, height: 480, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%)",
+        top: "50%", left: "50%", transform: "translate(-50%, -55%)",
+        pointerEvents: "none",
+      }} />
+
+      {/* ── Content card ── */}
+      <div style={{
+        position: "relative", zIndex: 1, display: "flex", flexDirection: "column",
+        alignItems: "center", maxWidth: 420, width: "100%",
+        textAlign: "center",
+      }}>
+
+        {/* Badge */}
+        <div style={{
+          background: "rgba(245,158,11,0.12)",
+          border: "1px solid rgba(245,158,11,0.3)",
+          borderRadius: 100, padding: "6px 20px", marginBottom: 32,
+          animation: "fadeSlideDown 0.5s 0.1s both",
+        }}>
+          <span style={{ fontFamily: BF, fontSize: "0.75rem", fontWeight: 700, color: GOLD, letterSpacing: "0.18em", textTransform: "uppercase" }}>
+            New Match
+          </span>
+        </div>
+
+        {/* Avatars side by side */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 0,
+          marginBottom: 36,
+          animation: "fadeSlideDown 0.5s 0.15s both",
+        }}>
+          <RingAvatar src={currentUser?.photo} name={currentUser?.first_name || currentUser?.name} size={96} delay="0.2s" />
+
+          {/* Heart connector */}
+          <div style={{
+            width: 44, height: 44, borderRadius: "50%",
+            background: `linear-gradient(135deg, ${GOLD}, ${GOLD_D})`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "1.3rem",
+            boxShadow: `0 0 24px rgba(245,158,11,0.6), 0 4px 16px rgba(0,0,0,0.4)`,
+            zIndex: 2, flexShrink: 0,
+            margin: "0 -8px",
+            animation: "heartPulse 1.2s 0.6s ease-in-out infinite",
+          }}>
+            ♥
+          </div>
+
+          <RingAvatar src={matchedUser.photo} name={firstName} size={96} delay="0.35s" />
+        </div>
+
+        {/* "It's a Match!" */}
+        <div style={{ animation: "fadeSlideDown 0.6s 0.3s both" }}>
+          <h1 style={{
+            fontFamily: HF, fontWeight: 900, margin: "0 0 10px",
+            fontSize: "clamp(2.4rem, 8vw, 3.2rem)",
+            letterSpacing: "-0.03em",
+            background: `linear-gradient(135deg, ${WHITE} 0%, ${GOLD} 60%, ${GOLD_D} 100%)`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            lineHeight: 1.05,
+          }}>
+            It's a Match!
+          </h1>
+          <p style={{
+            fontFamily: BF, color: "rgba(255,255,255,0.65)",
+            fontSize: "1rem", lineHeight: 1.6, margin: "0 0 6px",
+          }}>
+            You and <span style={{ color: WHITE, fontWeight: 700 }}>{firstName}</span> liked each other.
+          </p>
+          <p style={{
+            fontFamily: BF, color: "rgba(255,255,255,0.38)",
+            fontSize: "0.85rem", margin: 0,
+          }}>
+            Start a conversation and find your perfect Room8.
+          </p>
+        </div>
+
+        {/* Action buttons */}
+        <div style={{
+          display: "flex", flexDirection: "column", gap: 12,
+          width: "100%", marginTop: 36,
+          animation: "fadeSlideDown 0.6s 0.45s both",
+        }}>
+          <button
+            onClick={onMessage}
+            style={{
+              background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_D} 100%)`,
+              color: DARK, border: "none",
+              padding: "15px 28px", borderRadius: 12,
+              fontWeight: 800, fontSize: "1rem",
+              cursor: "pointer", fontFamily: HF,
+              boxShadow: "0 6px 28px rgba(245,158,11,0.5), 0 2px 8px rgba(0,0,0,0.3)",
+              letterSpacing: "0.01em",
+              transition: "transform 0.15s, box-shadow 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 36px rgba(245,158,11,0.55), 0 4px 12px rgba(0,0,0,0.4)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 6px 28px rgba(245,158,11,0.5), 0 2px 8px rgba(0,0,0,0.3)"; }}
+          >
+            💬 Send a Message
+          </button>
+
+          <button
+            onClick={onKeepSwiping}
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.75)",
+              border: "1.5px solid rgba(255,255,255,0.15)",
+              padding: "14px 28px", borderRadius: 12,
+              fontWeight: 600, fontSize: "0.95rem",
+              cursor: "pointer", fontFamily: BF,
+              backdropFilter: "blur(8px)",
+              transition: "background 0.15s, border-color 0.15s, color 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.28)"; e.currentTarget.style.color = WHITE; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; e.currentTarget.style.color = "rgba(255,255,255,0.75)"; }}
+          >
+            Keep Swiping
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes confettiFall {
+          0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+          80%  { opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes avatarPop {
+          from { opacity: 0; transform: scale(0.55); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes heartPulse {
+          0%, 100% { transform: scale(1); }
+          50%       { transform: scale(1.18); }
+        }
+        @keyframes fadeSlideDown {
+          from { opacity: 0; transform: translateY(-18px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ── Main page ───────────────────────────────────────────────────
 export default function LikesPage() {
   const navigate = useNavigate();
   const user     = getCurrentUser();
 
-  const [fans,    setFans]    = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [liking,  setLiking]  = useState({});
-  const [matched, setMatched] = useState({});
+  const [fans,        setFans]        = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [liking,      setLiking]      = useState({});
+  const [matched,     setMatched]     = useState({});
+  const [matchModal,  setMatchModal]  = useState(null); // { fan } | null
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
@@ -37,15 +279,27 @@ export default function LikesPage() {
       const res = await likeUser(user.id, fan.id);
       if (res?.matched) {
         setMatched((prev) => ({ ...prev, [fan.id]: true }));
-        // After showing the match state, remove the card and navigate to Messages
-        // so the user lands on a fresh MessagesPage that fetches the new match.
-        setTimeout(() => {
-          setFans((prev) => prev.filter((f) => f.id !== fan.id));
-          navigate("/messages");
-        }, 1500);
+        setMatchModal({ fan });   // open celebration modal — no auto-navigate
       }
     } catch (e) { console.error(e); }
     finally { setLiking((prev) => ({ ...prev, [fan.id]: false })); }
+  };
+
+  const handleMessage = () => {
+    // Remove matched fan from the likes list, then go to Messages
+    if (matchModal?.fan) {
+      setFans((prev) => prev.filter((f) => f.id !== matchModal.fan.id));
+    }
+    setMatchModal(null);
+    navigate("/messages");
+  };
+
+  const handleKeepSwiping = () => {
+    // Remove matched fan from the likes list, close modal, stay on Likes
+    if (matchModal?.fan) {
+      setFans((prev) => prev.filter((f) => f.id !== matchModal.fan.id));
+    }
+    setMatchModal(null);
   };
 
   return (
@@ -114,7 +368,7 @@ export default function LikesPage() {
             <p style={{ color: WHITE, fontFamily: HF, fontWeight: 700, fontSize: "1.1rem", marginBottom: 10 }}>
               No likes yet
             </p>
-            <p style={{ color: MUTED, fontSize: "0.88rem", marginBottom: 28, fontFamily: BF, maxWidth: 260, margin: "0 auto 28px" }}>
+            <p style={{ color: MUTED, fontSize: "0.88rem", fontFamily: BF, maxWidth: 260, margin: "0 auto 28px" }}>
               Keep swiping — when someone likes you, they'll show up here.
             </p>
             <button onClick={() => navigate("/app")} style={{
@@ -147,6 +401,16 @@ export default function LikesPage() {
           </div>
         )}
       </div>
+
+      {/* Match celebration modal */}
+      {matchModal && (
+        <MatchCelebrationModal
+          matchedUser={matchModal.fan}
+          currentUser={user}
+          onMessage={handleMessage}
+          onKeepSwiping={handleKeepSwiping}
+        />
+      )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

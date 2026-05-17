@@ -366,11 +366,24 @@ export default function MessagesPage() {
   }, []);
 
   // Re-fetch matches every time this page is navigated to (location.key changes on each visit).
-  // This ensures a match created on LikesPage shows up immediately when the user lands here.
+  // Also auto-opens a specific conversation when openUserId is passed via navigation state.
   useEffect(() => {
     if (!user) { setMatchesLoading(false); return; }
     setMatchesLoading(true);
-    getMatches(user.id).then(setMatches).catch(console.error).finally(() => setMatchesLoading(false));
+    const openUserId = location.state?.openUserId;
+    getMatches(user.id)
+      .then((data) => {
+        setMatches(data);
+        if (openUserId) {
+          const target = data.find((m) => m.id === openUserId);
+          if (target) {
+            setSelected(target);
+            if (window.innerWidth < 768) setMobileView("chat");
+          }
+        }
+      })
+      .catch(console.error)
+      .finally(() => setMatchesLoading(false));
     getNotifications().then(setNotifications).catch(console.error);
   }, [location.key]); // eslint-disable-line
 

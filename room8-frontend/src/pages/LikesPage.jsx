@@ -1,7 +1,7 @@
 // src/pages/LikesPage.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getLikes, likeUser } from "../api";
+import { getCurrentUser, getLikes, getMatches, likeUser } from "../api";
 
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
@@ -266,8 +266,13 @@ export default function LikesPage() {
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
-    getLikes(user.id)
-      .then((data) => setFans(Array.isArray(data) ? data : []))
+    // Fetch likes and current matches in parallel so we can filter out
+    // anyone who is already a mutual match (they'd show "Like Back" incorrectly).
+    Promise.all([getLikes(user.id), getMatches(user.id)])
+      .then(([likes, matches]) => {
+        const matchedIds = new Set((matches || []).map((m) => m.id));
+        setFans((Array.isArray(likes) ? likes : []).filter((f) => !matchedIds.has(f.id)));
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line
@@ -286,12 +291,11 @@ export default function LikesPage() {
   };
 
   const handleMessage = () => {
-    // Remove matched fan from the likes list, then go to Messages
-    if (matchModal?.fan) {
-      setFans((prev) => prev.filter((f) => f.id !== matchModal.fan.id));
-    }
+    const fan = matchModal?.fan;
+    if (fan) setFans((prev) => prev.filter((f) => f.id !== fan.id));
     setMatchModal(null);
-    navigate("/messages");
+    // Pass the matched user's id so MessagesPage can auto-open that conversation.
+    navigate("/messages", { state: { openUserId: fan?.id } });
   };
 
   const handleKeepSwiping = () => {

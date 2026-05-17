@@ -422,19 +422,25 @@ function ProfileModal({ person, onClose }) {
         background: "rgba(0,0,0,0.78)",
         backdropFilter: "blur(10px)",
         display: "flex", alignItems: "flex-end", justifyContent: "center",
+        overflow: "hidden",   // prevents layout blowout on small screens
       }}
       onClick={onClose}
     >
       <div
         style={{
           width: "100%", maxWidth: 520,
-          maxHeight: "92vh", overflowY: "auto",
+          maxHeight: "92dvh",                  // dvh respects mobile browser chrome
+          minHeight: 0,                         // flex overflow fix — allows child to scroll
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",     // iOS momentum scroll
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
           background: "#07111f",
           borderRadius: "24px 24px 0 0",
           border: "1px solid rgba(255,255,255,0.1)",
           boxShadow: "0 -24px 60px rgba(0,0,0,0.7)",
-          scrollbarWidth: "none",
         }}
+        className="r8-profile-modal"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Photo section ── */}
@@ -950,6 +956,8 @@ export default function SwipeDeck() {
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        /* Hide profile-modal scrollbar in WebKit browsers */
+        .r8-profile-modal::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
   );

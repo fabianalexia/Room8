@@ -379,6 +379,247 @@ function ProfileCard({ person, viewerPrefs, onReport, onBlock }) {
   );
 }
 
+// ── Profile Modal ──────────────────────────────────────────────
+const MODAL_PREF_LABELS = {
+  sleep_schedule: { label: "Sleep",       icon: "😴" },
+  cleanliness:    { label: "Cleanliness", icon: "🧹" },
+  study_habits:   { label: "Study",       icon: "📚" },
+  guests:         { label: "Guests",      icon: "👥" },
+  noise:          { label: "Noise",       icon: "🔊" },
+  social:         { label: "Social",      icon: "😊" },
+  partying:       { label: "Party",       icon: "🎉" },
+  smoking:        { label: "Smoking",     icon: "🚬" },
+};
+
+function humanizePref(val) {
+  if (!val) return null;
+  return val.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function ProfileModal({ person, onClose }) {
+  const [activePhoto, setActivePhoto] = useState(0);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const allPhotos = [person.photo, ...(person.photos || [])].filter(Boolean);
+  const prefs = person.dorm_prefs || {};
+  const prefEntries = Object.entries(MODAL_PREF_LABELS).filter(([key]) => prefs[key]);
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 500,
+        background: "rgba(0,0,0,0.78)",
+        backdropFilter: "blur(10px)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "100%", maxWidth: 520,
+          maxHeight: "92vh", overflowY: "auto",
+          background: "#07111f",
+          borderRadius: "24px 24px 0 0",
+          border: "1px solid rgba(255,255,255,0.1)",
+          boxShadow: "0 -24px 60px rgba(0,0,0,0.7)",
+          scrollbarWidth: "none",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── Photo section ── */}
+        <div style={{ position: "relative", height: 340, flexShrink: 0 }}>
+          {allPhotos.length > 0 ? (
+            <img
+              src={allPhotos[activePhoto]}
+              alt={person.name}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <div style={{
+              width: "100%", height: "100%",
+              background: "linear-gradient(135deg, #0A1628, #0F2D5E)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: "5rem", opacity: 0.2 }}>👤</span>
+            </div>
+          )}
+
+          {/* Gradient overlay */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(to top, rgba(7,17,31,1) 0%, rgba(7,17,31,0.3) 50%, transparent 100%)",
+          }} />
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            style={{
+              position: "absolute", top: 14, right: 14,
+              width: 34, height: 34, borderRadius: "50%",
+              background: "rgba(0,0,0,0.55)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              color: WHITE, cursor: "pointer", fontSize: "0.95rem",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(8px)",
+            }}
+          >✕</button>
+
+          {/* Photo thumbnails */}
+          {allPhotos.length > 1 && (
+            <div style={{
+              position: "absolute", bottom: 10, left: 12, right: 12,
+              display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none",
+            }}>
+              {allPhotos.map((p, i) => (
+                <img
+                  key={i} src={p} alt=""
+                  onClick={() => setActivePhoto(i)}
+                  style={{
+                    width: 44, height: 44, borderRadius: 8, objectFit: "cover",
+                    border: `2px solid ${i === activePhoto ? GOLD : "rgba(255,255,255,0.25)"}`,
+                    cursor: "pointer", flexShrink: 0,
+                    opacity: i === activePhoto ? 1 : 0.65,
+                    transition: "all 0.15s",
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Name overlay */}
+          <div style={{
+            position: "absolute",
+            bottom: allPhotos.length > 1 ? 64 : 18,
+            left: 18, right: 18,
+          }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <h2 style={{
+                margin: 0, color: WHITE,
+                fontSize: "clamp(1.6rem, 6vw, 2rem)",
+                fontWeight: 800, letterSpacing: "-0.025em",
+                textShadow: "0 2px 12px rgba(0,0,0,0.6)",
+              }}>
+                {person.name}
+              </h2>
+              {person.age && (
+                <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "1.3rem" }}>
+                  {person.age}
+                </span>
+              )}
+            </div>
+            {(person.class_year || person.major) && (
+              <p style={{ margin: "4px 0 0", color: "rgba(255,255,255,0.65)", fontSize: "0.86rem" }}>
+                {[person.class_year, person.major].filter(Boolean).join(" · ")}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Info section ── */}
+        <div style={{ padding: "18px 18px 36px" }}>
+          {/* School badge */}
+          {person.school && (
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "rgba(245,158,11,0.1)",
+              border: "1px solid rgba(245,158,11,0.25)",
+              borderRadius: 8, padding: "5px 12px", marginBottom: 16,
+            }}>
+              <span style={{ fontSize: "0.78rem" }}>🏫</span>
+              <span style={{ color: "rgba(245,158,11,0.9)", fontSize: "0.82rem", fontWeight: 600 }}>
+                {person.school}
+              </span>
+            </div>
+          )}
+
+          {/* Housing quick-facts */}
+          {(person.room_type || person.housing_type || person.budget) && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+              {[
+                person.room_type && person.room_type !== "any" && { label: "Room", val: person.room_type },
+                person.housing_type && { label: "Housing", val: person.housing_type.replace(/_/g, " ") },
+                person.budget && { label: "Budget", val: person.budget },
+              ].filter(Boolean).map(({ label, val }) => (
+                <div key={label} style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8, padding: "7px 12px",
+                }}>
+                  <p style={{ margin: "0 0 2px", color: MUTED, fontSize: "0.66rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</p>
+                  <p style={{ margin: 0, color: WHITE, fontSize: "0.86rem", fontWeight: 600, textTransform: "capitalize" }}>{val}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bio */}
+          {person.bio && (
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ margin: "0 0 8px", color: "rgba(255,255,255,0.4)", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>About</p>
+              <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", fontSize: "0.92rem", lineHeight: 1.68 }}>
+                {person.bio}
+              </p>
+            </div>
+          )}
+
+          {/* Lifestyle preferences */}
+          {prefEntries.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ margin: "0 0 10px", color: "rgba(255,255,255,0.4)", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+                Lifestyle Preferences
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {prefEntries.map(([key, { label, icon }]) => (
+                  <div key={key} style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 10, padding: "10px 12px",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+                      <span style={{ fontSize: "0.85rem" }}>{icon}</span>
+                      <span style={{ color: MUTED, fontSize: "0.67rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
+                    </div>
+                    <div style={{ color: WHITE, fontSize: "0.86rem", fontWeight: 600 }}>
+                      {humanizePref(prefs[key])}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Looking for */}
+          {person.looking_for && (
+            <div style={{
+              background: "rgba(245,158,11,0.06)",
+              border: "1px solid rgba(245,158,11,0.18)",
+              borderRadius: 12, padding: "14px 16px",
+            }}>
+              <p style={{ margin: "0 0 6px", color: "rgba(245,158,11,0.65)", fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                Looking For
+              </p>
+              <p style={{ margin: 0, color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.62, fontStyle: "italic" }}>
+                "{person.looking_for}"
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main SwipeDeck ─────────────────────────────────────────────
 export default function SwipeDeck() {
   const user = getCurrentUser();
@@ -391,6 +632,7 @@ export default function SwipeDeck() {
   const [swipeHint,    setSwipeHint]    = useState(null);
   const [reportTarget,  setReportTarget]  = useState(null);
   const [resendSent,    setResendSent]    = useState(false);
+  const [profileModal,  setProfileModal]  = useState(null);
   const toastTimer = useRef(null);
 
   const loadCandidates = (reset = false) => {
@@ -514,7 +756,10 @@ export default function SwipeDeck() {
                 onCardLeftScreen={() => {}}
                 preventSwipe={["up", "down"]}
               >
-                <div style={{ position: "relative", width: "min(360px, calc(100vw - 32px))", height: "min(520px, calc(100vh - 220px))" }}>
+                <div
+                  style={{ position: "relative", width: "min(360px, calc(100vw - 32px))", height: "min(520px, calc(100vh - 220px))" }}
+                  onClick={() => setProfileModal(person)}
+                >
                   {swipeHint === "right" && (
                     <div style={{ ...hintStyle, borderColor: GOLD, color: GOLD, right: 16, left: "auto" }}>LIKE</div>
                   )}
@@ -527,6 +772,18 @@ export default function SwipeDeck() {
                     onReport={() => setReportTarget(person)}
                     onBlock={() => handleBlock(person)}
                   />
+                  {/* Tap hint */}
+                  <div style={{
+                    position: "absolute", bottom: 80, right: 14,
+                    background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    borderRadius: 20, padding: "4px 10px",
+                    fontSize: "0.65rem", color: "rgba(255,255,255,0.55)",
+                    fontWeight: 600, letterSpacing: "0.05em",
+                    pointerEvents: "none",
+                  }}>
+                    tap to view profile
+                  </div>
                 </div>
               </TinderCard>
             ) : null
@@ -676,6 +933,14 @@ export default function SwipeDeck() {
           userId={user.id}
           onClose={() => setReportTarget(null)}
           onDone={handleReportDone}
+        />
+      )}
+
+      {/* Profile modal */}
+      {profileModal && (
+        <ProfileModal
+          person={profileModal}
+          onClose={() => setProfileModal(null)}
         />
       )}
 

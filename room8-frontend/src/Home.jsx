@@ -351,12 +351,12 @@ function WordReveal({ text, containerStyle, wordStyle, delay = 0 }) {
 /* ══════════════════════════════════════════════════════════════════
    PARALLAX SECTION — content shifts subtly as you scroll through
 ══════════════════════════════════════════════════════════════════ */
-function ParallaxSection({ children, style, strength = 22 }) {
+function ParallaxSection({ children, style, strength = 22, id }) {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target:ref, offset:["start end","end start"] });
   const y = useTransform(scrollYProgress, [0,1], [-strength, strength]);
   return (
-    <section ref={ref} style={{ ...style, overflow:"hidden" }}>
+    <section ref={ref} id={id} style={{ ...style, overflow:"hidden" }}>
       <motion.div style={{ y }}>
         {children}
       </motion.div>
@@ -737,18 +737,19 @@ export default function Home() {
                 boxShadow:"0 8px 36px rgba(245,158,11,0.48), 0 2px 8px rgba(245,158,11,0.3)",
               }}
             >Get Started Free →</motion.button>
-            <motion.a
-              whileHover={{ scale:1.04, y:-2 }} href="#how-it-works"
+            <motion.button
+              whileHover={{ scale:1.04, y:-2 }}
+              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
               style={{
                 color:"rgba(255,255,255,0.82)",
                 border:"1.5px solid rgba(255,255,255,0.22)",
                 padding:"15px 34px", borderRadius:10,
                 fontWeight:600, fontSize:"1rem",
-                textDecoration:"none", fontFamily:BF,
+                cursor:"pointer", fontFamily:BF,
                 backdropFilter:"blur(10px)",
                 background:"rgba(255,255,255,0.04)",
               }}
-            >See How It Works</motion.a>
+            >See How It Works</motion.button>
           </motion.div>
 
           {/* Dramatic scroll indicator */}

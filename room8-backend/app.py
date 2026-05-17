@@ -106,11 +106,18 @@ def create_app():
     )
     allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
 
+    cors_opts = {
+        "origins": allowed_origins,
+        "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+        "supports_credentials": True,
+        "max_age": 600,
+    }
     CORS(
         app,
         resources={
-            r"/api/*":     {"origins": allowed_origins},
-            r"/uploads/*": {"origins": allowed_origins},
+            r"/api/*":     cors_opts,
+            r"/uploads/*": cors_opts,
         },
         supports_credentials=True,
     )

@@ -1,8 +1,9 @@
 // src/api.js
 
 // ---------------- Base URL ----------------
-// Set VITE_API_URL in your frontend .env (e.g. http://127.0.0.1:5000)
-export const API_URL = (import.meta.env.VITE_API_URL || "http://127.0.0.1:5000")
+// Set VITE_API_URL in your .env or Netlify environment variables.
+// Falls back to the production backend so the app works even if the var is missing.
+export const API_URL = (import.meta.env.VITE_API_URL || "https://room8-4dq7.onrender.com")
   .replace(/\/+$/, "");
 
 // ---------------- Local storage helpers ----------------
@@ -321,23 +322,12 @@ export function removePhoto(userId, url) {
 }
 
 // ---------------- Profile photo upload ----------------
-export async function uploadProfilePhoto(userId, file) {
+export function uploadProfilePhoto(userId, file) {
   const form = new FormData();
-  form.append("file", file); // expects input[type=file].files[0]
-
-  const res = await fetch(`${API_URL}/api/profile/photo`, {
+  form.append("file", file);
+  // No Content-Type header — browser sets multipart/form-data boundary automatically
+  return doFetch(`${API_URL}/api/profile/photo`, {
     method: "POST",
-    body: form, // NOTE: no Content-Type header; browser sets multipart boundary
-    headers: authHeader(),
+    body: form,
   });
-
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const j = await res.json();
-      msg = j?.error || msg;
-    } catch {}
-    throw new Error(msg);
-  }
-  return res.json(); // -> { ok: true, user: { ...updated user... } }
 }

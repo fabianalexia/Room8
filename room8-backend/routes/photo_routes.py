@@ -1,4 +1,5 @@
 import json
+import os
 import cloudinary
 import cloudinary.uploader
 from flask import Blueprint, request, jsonify
@@ -16,22 +17,25 @@ def _allowed(filename):
 
 
 def _cloudinary_upload(source, public_id):
-    """Upload to Cloudinary from a FileStorage object, raw bytes, or base64 data URI."""
+    """Upload to Cloudinary. Raises Exception with a descriptive message on failure."""
+    if not os.environ.get("CLOUDINARY_CLOUD_NAME"):
+        raise Exception("Cloudinary is not configured (CLOUDINARY_CLOUD_NAME missing)")
     if hasattr(source, "stream"):
         source = source.stream
-    return cloudinary.uploader.upload(
+    result = cloudinary.uploader.upload(
         source,
         public_id=public_id,
         overwrite=True,
         resource_type="image",
     )
+    return result["secure_url"]
 
 
 def _resolve_source(request_obj):
     """
     Return (source, error_str) from either:
-      - multipart/form-data  → request.files["file"]
-      - JSON body            → request.json["photo"]  (base64 data URI or URL)
+      - multipart/form-data  → request.files["file"] or request.files["photo"]
+      - JSON body            → request.json["photo"]  (base64 data URI)
     Returns (None, error_message) when nothing usable is found.
     """
     ct = request_obj.content_type or ""
@@ -44,7 +48,6 @@ def _resolve_source(request_obj):
             return None, "File type not allowed"
         return f, None
 
-    # JSON / base64 path
     body = request_obj.get_json(silent=True) or {}
     photo = body.get("photo") or body.get("file")
     if not photo:
@@ -57,25 +60,35 @@ def _resolve_source(request_obj):
 @photo_bp.route("/photo", methods=["POST"])
 @jwt_required()
 def upload_photo():
-    user_id = int(get_jwt_identity())
+    try:
+        user_id = int(get_jwt_identity())
 
-    user = db.session.get(User, user_id)
-    if not user:
-        return jsonify({"error": "User not found"}), 404
+        user = db.session.get(User, user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
 
-    source, err = _resolve_source(request)
-    if err:
-        return jsonify({"error": err}), 400
+        source, err = _resolve_source(request)
+        if err:
+            return jsonify({"error": err}), 400
 
-    result = _cloudinary_upload(source, f"room8/profile/{user_id}")
-    url = result["secure_url"]
+        try:
+            result_url = _cloudinary_upload(source, f"room8/profile/{user_id}")
+        except Exception as e:
+            return jsonify({"error": f"Cloudinary upload failed: {str(e)}"}), 500
 
-    user.photo = url
-    gallery = user.get_photos()
-    # Replace any old primary slot entry then prepend
-    gallery = [p for p in gallery if "/room8/profile/" not in p]
-    gallery.insert(0, url)
-    user.photos = json.dumps(gallery)
+        user.photo = result_url
+        gallery = user.get_photos()
+        gallery = [p for p in gallery if "/room8/profile/" not in p]
+        gallery.insert(0, result_url)
+        user.photos = json.dumps(gallery)
 
-    db.session.commit()
-    return jsonify({"ok": True, "user": user.public()})
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+        return jsonify({"ok": True, "user": user.public()})
+
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500

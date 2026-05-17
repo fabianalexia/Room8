@@ -1,0 +1,12 @@
+[build]
+  base    = "room8-frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  VITE_API_URL = "https://room8-4dq7.onrender.com"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

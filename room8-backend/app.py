@@ -136,6 +136,28 @@ def create_app():
         referrer_policy="strict-origin-when-cross-origin",
     )
 
+    # ── Belt-and-suspenders CORS ────────────────────────────────
+    # flask-talisman's after_request hooks can suppress CORS headers on
+    # error responses (401/422 from @jwt_required, 429 from rate-limiter, 5xx).
+    # This after_request runs last (registered after Talisman) and guarantees
+    # the correct CORS headers appear on every response from /api/* routes.
+    @app.after_request
+    def ensure_cors(response):
+        origin = request.headers.get("Origin", "")
+        if origin in allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Vary"] = "Origin"
+            if request.method == "OPTIONS":
+                response.headers["Access-Control-Allow-Methods"] = (
+                    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+                )
+                response.headers["Access-Control-Allow-Headers"] = (
+                    "Content-Type, Authorization, X-Requested-With"
+                )
+                response.headers["Access-Control-Max-Age"] = "600"
+        return response
+
     db.init_app(app)
 
     # Import all models so create_all sees every table

@@ -326,33 +326,37 @@ def google_login():
 @auth_bp.route("/google/callback")
 def google_callback():
     if request.args.get("error"):
-        print(f"[google_callback] Google returned error: {request.args.get('error')}")
+        print(f"[google_callback] provider error: {request.args.get('error')}")
         return redirect(f"{OAUTH_CALLBACK_BASE}?error=access_denied")
     try:
+        print("[google_callback] step 1: starting")
         session.pop("google_oauth_state", None)
         google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI)
-        # Render is behind HTTPS load-balancer; request.url may be http internally
         callback_url = request.url.replace("http://", "https://", 1)
+        print(f"[google_callback] step 2: callback_url={callback_url}")
         google._state = None
         try:
-            google.fetch_token(GOOGLE_TOKEN_URL, client_secret=GOOGLE_CLIENT_SECRET,
-                               authorization_response=callback_url, force_pkce=False)
+            google.fetch_token(GOOGLE_TOKEN_URL, client_secret=GOOGLE_CLIENT_SECRET, authorization_response=callback_url, force_pkce=False)
+            print("[google_callback] step 3: token fetched")
         except Exception as fetch_err:
             import traceback
             print(f"[google_callback] FETCH_TOKEN FAILED: {fetch_err}")
             print(traceback.format_exc())
             return redirect(f"{OAUTH_CALLBACK_BASE}?error=fetch_token_failed")
         info = google.get(GOOGLE_USERINFO_URL).json()
-        email      = (info.get("email") or "").strip().lower()
+        print(f"[google_callback] step 4: userinfo={info}")
+        email = (info.get("email") or "").strip().lower()
         first_name = info.get("given_name") or info.get("name", "").split()[0]
-        last_name  = info.get("family_name") or " ".join(info.get("name", "").split()[1:])
+        last_name = info.get("family_name") or " ".join(info.get("name", "").split()[1:])
+        print(f"[google_callback] step 5: email={email}")
         if not email:
             return redirect(f"{OAUTH_CALLBACK_BASE}?error=no_email")
         token = _oauth_login_or_create(email, first_name, last_name)
+        print(f"[google_callback] step 6: token created, redirecting")
         return redirect(f"{OAUTH_CALLBACK_BASE}?token={token}")
     except Exception as e:
         import traceback
-        print(f"[google_callback] error: {e}")
+        print(f"[google_callback] OUTER error: {e}")
         print(traceback.format_exc())
         return redirect(f"{OAUTH_CALLBACK_BASE}?error=oauth_failed")
 

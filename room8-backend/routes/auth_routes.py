@@ -3,7 +3,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 
-from flask import Blueprint, request, jsonify, redirect
+from flask import Blueprint, request, jsonify, redirect, session
 from flask_mail import Message
 from flask_jwt_extended import (
     create_access_token,
@@ -12,6 +12,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from requests_oauthlib import OAuth2Session
 
 from extensions import mail, limiter
 from room8_models.user import User
@@ -25,6 +26,23 @@ BACKEND_URL  = os.environ.get("BACKEND_URL",  "https://room8-4dq7.onrender.com")
 
 MIN_PASSWORD_LEN = 8
 VERIFICATION_TTL = timedelta(hours=48)
+
+# ── OAuth constants ────────────────────────────────────────────────────────────
+OAUTH_CALLBACK_BASE = "https://swiperoom8.com/auth/callback"
+
+GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI  = f"{os.environ.get('BACKEND_URL', 'https://room8-4dq7.onrender.com')}/api/auth/google/callback"
+GOOGLE_AUTH_URL      = "https://accounts.google.com/o/oauth2/auth"
+GOOGLE_TOKEN_URL     = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL  = "https://www.googleapis.com/oauth2/v2/userinfo"
+
+LINKEDIN_CLIENT_ID     = os.environ.get("LINKEDIN_CLIENT_ID", "")
+LINKEDIN_CLIENT_SECRET = os.environ.get("LINKEDIN_CLIENT_SECRET", "")
+LINKEDIN_REDIRECT_URI  = f"{os.environ.get('BACKEND_URL', 'https://room8-4dq7.onrender.com')}/api/auth/linkedin/callback"
+LINKEDIN_AUTH_URL      = "https://www.linkedin.com/oauth/v2/authorization"
+LINKEDIN_TOKEN_URL     = "https://www.linkedin.com/oauth/v2/accessToken"
+LINKEDIN_USERINFO_URL  = "https://api.linkedin.com/v2/userinfo"
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -269,3 +287,93 @@ def reset_password():
     db.session.commit()
 
     return jsonify({"ok": True, "message": "Password updated. You can now log in."}), 200
+
+
+# ── OAuth helpers ─────────────────────────────────────────────────────────────
+
+def _oauth_login_or_create(email, first_name, last_name):
+    """Find existing user or create new one from OAuth. Returns a JWT access token."""
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        user = User(
+            email=email,
+            password_hash=generate_password_hash(secrets.token_hex(32)),
+            first_name=first_name,
+            last_name=last_name,
+            email_verified=True,
+            is_verified_student=email.endswith(".edu"),
+        )
+        db.session.add(user)
+        db.session.commit()
+    return create_access_token(identity=str(user.id))
+
+
+# ── Google OAuth ──────────────────────────────────────────────────────────────
+
+@auth_bp.route("/google")
+def google_login():
+    if not GOOGLE_CLIENT_ID:
+        return jsonify({"error": "Google OAuth not configured"}), 503
+    google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI,
+                           scope=["openid", "email", "profile"])
+    auth_url, state = google.authorization_url(GOOGLE_AUTH_URL,
+                                                access_type="offline",
+                                                prompt="select_account")
+    session["google_oauth_state"] = state
+    return redirect(auth_url)
+
+
+@auth_bp.route("/google/callback")
+def google_callback():
+    try:
+        state = session.pop("google_oauth_state", None)
+        google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI, state=state)
+        # Render is behind HTTPS load-balancer; request.url may be http internally
+        callback_url = request.url.replace("http://", "https://", 1)
+        google.fetch_token(GOOGLE_TOKEN_URL, client_secret=GOOGLE_CLIENT_SECRET,
+                           authorization_response=callback_url)
+        info = google.get(GOOGLE_USERINFO_URL).json()
+        email      = (info.get("email") or "").strip().lower()
+        first_name = info.get("given_name") or info.get("name", "").split()[0]
+        last_name  = info.get("family_name") or " ".join(info.get("name", "").split()[1:])
+        if not email:
+            return redirect(f"{OAUTH_CALLBACK_BASE}?error=no_email")
+        token = _oauth_login_or_create(email, first_name, last_name)
+        return redirect(f"{OAUTH_CALLBACK_BASE}?token={token}")
+    except Exception as e:
+        print(f"[google_callback] error: {e}")
+        return redirect(f"{OAUTH_CALLBACK_BASE}?error=oauth_failed")
+
+
+# ── LinkedIn OAuth ────────────────────────────────────────────────────────────
+
+@auth_bp.route("/linkedin")
+def linkedin_login():
+    if not LINKEDIN_CLIENT_ID:
+        return jsonify({"error": "LinkedIn OAuth not configured"}), 503
+    linkedin = OAuth2Session(LINKEDIN_CLIENT_ID, redirect_uri=LINKEDIN_REDIRECT_URI,
+                             scope=["openid", "email", "profile"])
+    auth_url, state = linkedin.authorization_url(LINKEDIN_AUTH_URL)
+    session["linkedin_oauth_state"] = state
+    return redirect(auth_url)
+
+
+@auth_bp.route("/linkedin/callback")
+def linkedin_callback():
+    try:
+        state = session.pop("linkedin_oauth_state", None)
+        linkedin = OAuth2Session(LINKEDIN_CLIENT_ID, redirect_uri=LINKEDIN_REDIRECT_URI, state=state)
+        callback_url = request.url.replace("http://", "https://", 1)
+        linkedin.fetch_token(LINKEDIN_TOKEN_URL, client_secret=LINKEDIN_CLIENT_SECRET,
+                             authorization_response=callback_url)
+        info = linkedin.get(LINKEDIN_USERINFO_URL).json()
+        email      = (info.get("email") or "").strip().lower()
+        first_name = info.get("given_name") or info.get("name", "").split()[0]
+        last_name  = info.get("family_name") or " ".join(info.get("name", "").split()[1:])
+        if not email:
+            return redirect(f"{OAUTH_CALLBACK_BASE}?error=no_email")
+        token = _oauth_login_or_create(email, first_name, last_name)
+        return redirect(f"{OAUTH_CALLBACK_BASE}?token={token}")
+    except Exception as e:
+        print(f"[linkedin_callback] error: {e}")
+        return redirect(f"{OAUTH_CALLBACK_BASE}?error=oauth_failed")

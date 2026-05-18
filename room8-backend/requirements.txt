@@ -16,3 +16,8 @@ Flask-Mail==0.10.0
 flask-jwt-extended==4.7.1
 flask-limiter==3.9.2
 flask-talisman==1.1.0
+google-auth==2.38.0
+google-auth-oauthlib==1.2.2
+google-auth-httplib2==0.2.0
+requests-oauthlib==2.0.0
+requests==2.32.3

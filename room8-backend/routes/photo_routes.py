@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 import cloudinary
 import cloudinary.uploader
 from flask import Blueprint, request, jsonify
@@ -88,8 +89,51 @@ def get_photos(user_id):
         return jsonify({"ok": True, "photos": photos, "primary": primary})
 
     except Exception as e:
-        print(f"[get_photos] ERROR user_id={user_id}: {type(e).__name__}: {e}")
-        return jsonify({"error": f"get_photos failed: {type(e).__name__}: {e}"}), 500
+        tb = traceback.format_exc()
+        print(f"[get_photos] ERROR user_id={user_id}:\n{tb}")
+        return jsonify({"error": str(e), "type": type(e).__name__, "traceback": tb}), 500
+
+
+# ── POST /api/profile/<user_id>/photos  (add gallery photo) ───────────────────
+@photo_bp.route("/<int:user_id>/photos", methods=["POST"])
+@jwt_required()
+def add_photo(user_id):
+    try:
+        caller_id = int(get_jwt_identity())
+        if caller_id != user_id:
+            return jsonify({"error": "Forbidden"}), 403
+
+        user = db.session.get(User, user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        file = request.files.get("photo")
+        if not file or not file.filename:
+            return jsonify({"error": "photo file required"}), 400
+        if not _allowed(file.filename):
+            return jsonify({"error": "File type not allowed"}), 400
+
+        import uuid
+        uid = uuid.uuid4().hex[:8]
+        result_url = _cloudinary_upload(file, f"room8/gallery/{user_id}/{uid}")
+
+        gallery = user.get_photos()
+        gallery.append(result_url)
+        user.photos = json.dumps(gallery)
+        if not user.photo:
+            user.photo = result_url
+
+        db.session.commit()
+        return jsonify({"ok": True, "user": user.public()})
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(f"[add_photo] ERROR user_id={user_id}:\n{tb}")
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify({"error": str(e), "type": type(e).__name__, "traceback": tb}), 500
 
 
 # ── POST /api/profile/photo  (upload / replace primary photo) ─────────────────
@@ -107,11 +151,7 @@ def upload_photo():
         if err:
             return jsonify({"error": err}), 400
 
-        try:
-            result_url = _cloudinary_upload(source, f"room8/profile/{user_id}")
-        except Exception as e:
-            print(f"[upload_photo] Cloudinary ERROR user_id={user_id}: {type(e).__name__}: {e}")
-            return jsonify({"error": f"Cloudinary upload failed: {type(e).__name__}: {e}"}), 500
+        result_url = _cloudinary_upload(source, f"room8/profile/{user_id}")
 
         user.photo = result_url
         gallery = user.get_photos()
@@ -119,15 +159,14 @@ def upload_photo():
         gallery.insert(0, result_url)
         user.photos = json.dumps(gallery)
 
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            print(f"[upload_photo] DB ERROR user_id={user_id}: {type(e).__name__}: {e}")
-            return jsonify({"error": f"Database error: {type(e).__name__}: {e}"}), 500
-
+        db.session.commit()
         return jsonify({"ok": True, "user": user.public()})
 
     except Exception as e:
-        print(f"[upload_photo] UNEXPECTED ERROR: {type(e).__name__}: {e}")
-        return jsonify({"error": f"Unexpected error: {type(e).__name__}: {e}"}), 500
+        tb = traceback.format_exc()
+        print(f"[upload_photo] ERROR:\n{tb}")
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify({"error": str(e), "type": type(e).__name__, "traceback": tb}), 500

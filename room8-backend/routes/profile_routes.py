@@ -1,5 +1,6 @@
 import json
 import uuid
+import traceback
 import cloudinary
 import cloudinary.uploader
 from flask import Blueprint, request, jsonify
@@ -233,11 +234,8 @@ def add_photo(user_id):
         if not _allowed(file.filename):
             return jsonify({"error": "File type not allowed"}), 400
 
-        try:
-            uid = uuid.uuid4().hex[:8]
-            full_url = _upload_photo(file, f"room8/gallery/{user_id}/{uid}")
-        except Exception as e:
-            return jsonify({"error": f"Photo upload failed: {str(e)}"}), 500
+        uid = uuid.uuid4().hex[:8]
+        full_url = _upload_photo(file, f"room8/gallery/{user_id}/{uid}")
 
         gallery = user.get_photos()
         gallery.append(full_url)
@@ -246,16 +244,17 @@ def add_photo(user_id):
         if not user.photo:
             user.photo = full_url
 
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({"error": f"Database error: {str(e)}"}), 500
-
+        db.session.commit()
         return jsonify({"ok": True, "user": user.public()})
 
     except Exception as e:
-        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+        tb = traceback.format_exc()
+        print(f"[add_photo] ERROR user_id={user_id}:\n{tb}")
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify({"error": str(e), "type": type(e).__name__, "traceback": tb}), 500
 
 
 @profile_bp.route("/<int:user_id>/photos", methods=["DELETE"])

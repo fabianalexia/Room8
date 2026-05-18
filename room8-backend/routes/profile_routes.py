@@ -21,11 +21,25 @@ def _allowed(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def _init_cloudinary():
+    """Configure Cloudinary from env vars. Raises with a clear message if any are missing."""
+    import os as _os
+    cloud_name = _os.environ.get("CLOUDINARY_CLOUD_NAME")
+    api_key    = _os.environ.get("CLOUDINARY_API_KEY")
+    api_secret = _os.environ.get("CLOUDINARY_API_SECRET")
+    missing = [k for k, v in {
+        "CLOUDINARY_CLOUD_NAME": cloud_name,
+        "CLOUDINARY_API_KEY":    api_key,
+        "CLOUDINARY_API_SECRET": api_secret,
+    }.items() if not v]
+    if missing:
+        raise Exception(f"Cloudinary env vars not set: {', '.join(missing)}")
+    cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
+
+
 def _upload_photo(file, public_id):
     """Upload to Cloudinary. Raises Exception with a descriptive message on failure."""
-    import os
-    if not os.environ.get("CLOUDINARY_CLOUD_NAME"):
-        raise Exception("Cloudinary is not configured (CLOUDINARY_CLOUD_NAME missing)")
+    _init_cloudinary()
     source = file.stream if hasattr(file, "stream") else file
     result = cloudinary.uploader.upload(
         source,

@@ -440,15 +440,15 @@ export default function LikesPage() {
             }}>
               <div style={{
                 width: 40, height: 40, borderRadius: "50%",
-                background: "rgba(34,197,94,0.15)",
-                border: "1px solid rgba(34,197,94,0.3)",
+                background: "rgba(245,166,35,0.15)",
+                border: "1px solid rgba(245,166,35,0.3)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: "1.15rem", flexShrink: 0,
               }}>💬</div>
               <div>
                 <h2 style={{
                   margin: 0, fontFamily: HF, fontWeight: 800,
-                  fontSize: "1.25rem", color: "#86efac",
+                  fontSize: "1.25rem", color: "#F5A623",
                   letterSpacing: "-0.025em",
                 }}>
                   Your Matches
@@ -472,8 +472,8 @@ export default function LikesPage() {
                   <div style={{
                     width: 56, height: 56, borderRadius: "50%", flexShrink: 0,
                     background: m.photo ? `url(${m.photo}) center/cover` : `linear-gradient(135deg, ${NAVY}, #1e4a8a)`,
-                    border: `2.5px solid rgba(134,239,172,0.5)`,
-                    boxShadow: "0 0 12px rgba(34,197,94,0.2)",
+                    border: `2.5px solid rgba(245,166,35,0.6)`,
+                    boxShadow: "0 0 12px rgba(245,166,35,0.25)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     color: WHITE, fontWeight: 800, fontSize: "1.3rem",
                   }}>
@@ -501,16 +501,16 @@ export default function LikesPage() {
                   <button
                     onClick={() => navigate("/messages", { state: { openUserId: m.id } })}
                     style={{
-                      background: "rgba(34,197,94,0.15)",
-                      border: "1px solid rgba(34,197,94,0.35)",
-                      color: "#86efac",
+                      background: "#F5A623",
+                      border: "none",
+                      color: DARK,
                       padding: "9px 16px", borderRadius: 10,
                       fontWeight: 700, fontSize: "0.82rem",
                       cursor: "pointer", fontFamily: HF, flexShrink: 0,
-                      transition: "background 0.15s",
+                      transition: "opacity 0.15s",
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(34,197,94,0.25)"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "rgba(34,197,94,0.15)"}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = "0.85"}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
                   >
                     💬 Message
                   </button>

@@ -129,8 +129,6 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password_hash, password):
-        if not user.email_verified:
-            return jsonify({"error": "Please verify your email before logging in."}), 403
         return _issue_tokens(user), 200
 
     return jsonify({"error": "Invalid email or password"}), 401

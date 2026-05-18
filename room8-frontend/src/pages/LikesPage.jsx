@@ -1,7 +1,8 @@
 // src/pages/LikesPage.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, getLikes, getMatches, likeUser } from "../api";
+import { sendNotification } from "../notifications";
 
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
@@ -265,19 +266,33 @@ export default function LikesPage() {
   const [matchModal,  setMatchModal]  = useState(null); // { fan } | null
   const [matchesList, setMatchesList] = useState([]);
 
-  useEffect(() => {
-    if (!user) { navigate("/login"); return; }
-    // Fetch likes and current matches in parallel so we can filter out
-    // anyone who is already a mutual match (they'd show "Like Back" incorrectly).
-    Promise.all([getLikes(user.id), getMatches(user.id)])
+  const fetchData = useCallback(() => {
+    return Promise.all([getLikes(user.id), getMatches(user.id)])
       .then(([likes, matchData]) => {
         const matchedIds = new Set((matchData || []).map((m) => m.id));
-        setFans((Array.isArray(likes) ? likes : []).filter((f) => !matchedIds.has(f.id)));
+        // Preserve any locally-matched fans so they don't reappear
+        setFans((prev) => {
+          const locallyMatched = new Set(Object.keys(matched).map(Number));
+          return (Array.isArray(likes) ? likes : []).filter(
+            (f) => !matchedIds.has(f.id) && !locallyMatched.has(f.id)
+          );
+        });
         setMatchesList(Array.isArray(matchData) ? matchData : []);
       })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      .catch(console.error);
   }, []); // eslint-disable-line
+
+  useEffect(() => {
+    if (!user) { navigate("/login"); return; }
+    fetchData().finally(() => setLoading(false));
+  }, []); // eslint-disable-line
+
+  // Poll every 30 seconds to refresh liked-you list
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => { fetchData(); }, 30_000);
+    return () => clearInterval(id);
+  }, [fetchData]);
 
   const handleLikeBack = async (fan) => {
     if (liking[fan.id]) return;
@@ -287,6 +302,10 @@ export default function LikesPage() {
       if (res?.matched) {
         setMatched((prev) => ({ ...prev, [fan.id]: true }));
         setMatchModal({ fan });   // open celebration modal — no auto-navigate
+        sendNotification(
+          "You have a new match on Room8!",
+          `You and ${fan.name?.split(" ")[0] || "someone"} liked each other.`
+        );
       }
     } catch (e) { console.error(e); }
     finally { setLiking((prev) => ({ ...prev, [fan.id]: false })); }

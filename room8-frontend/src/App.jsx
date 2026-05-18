@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { requestNotificationPermission } from "./notifications";
 
 import Header        from "./components/Header";
 import Footer        from "./components/Footer";
@@ -100,5 +101,6 @@ function Layout() {
 }
 
 export default function App() {
+  useEffect(() => { requestNotificationPermission(); }, []);
   return <Layout />;
 }

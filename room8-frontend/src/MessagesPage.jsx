@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getCurrentUser, getMatches, getProfile, getNotifications, markNotificationRead } from "./api";
 import { ProfileModal } from "./components/SwipeDeck";
 import Chat from "./components/Chat";
+import { sendNotification } from "./notifications";
 
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
@@ -361,6 +362,10 @@ export default function MessagesPage() {
   const [notifications,  setNotifications]  = useState([]);
   const [profileView, setProfileView] = useState(null);
 
+  // Refs to track previous state for new-match / new-message detection
+  const prevMatchIds      = useRef(new Set());
+  const prevLastMessages  = useRef({});  // peerId -> last_message string
+
   const handleViewProfile = useCallback(async (match) => {
     try {
       const full = await getProfile(match.id);
@@ -376,27 +381,73 @@ export default function MessagesPage() {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  // Re-fetch matches every time this page is navigated to (location.key changes on each visit).
+  // Fetch matches + notifications; detect new matches and new messages for push notifications.
+  const refreshData = useCallback((isInitial = false, openUserId = null) => {
+    if (!user) return;
+    const matchPromise = getMatches(user.id).then((data) => {
+      setMatches(data);
+
+      if (isInitial) {
+        // Seed refs so we don't fire notifications for existing data on mount
+        prevMatchIds.current = new Set(data.map((m) => m.id));
+        const msgs = {};
+        data.forEach((m) => { msgs[m.id] = m.last_message || null; });
+        prevLastMessages.current = msgs;
+      } else {
+        // Check for new matches
+        data.forEach((m) => {
+          if (!prevMatchIds.current.has(m.id)) {
+            sendNotification(
+              "You have a new match on Room8!",
+              `You and ${m.name?.split(" ")[0] || "someone"} liked each other.`
+            );
+          }
+        });
+        prevMatchIds.current = new Set(data.map((m) => m.id));
+
+        // Check for new messages
+        data.forEach((m) => {
+          const prev = prevLastMessages.current[m.id];
+          if (m.last_message && m.last_message !== prev && !m.last_message_mine) {
+            sendNotification(
+              `New message from ${m.name?.split(" ")[0] || "your match"}`,
+              m.last_message.length > 80 ? m.last_message.slice(0, 80) + "…" : m.last_message
+            );
+          }
+          prevLastMessages.current[m.id] = m.last_message || null;
+        });
+      }
+
+      if (openUserId) {
+        const target = data.find((m) => m.id === openUserId);
+        if (target) {
+          setSelected(target);
+          if (window.innerWidth < 768) setMobileView("chat");
+        }
+      }
+    });
+
+    const notifPromise = getNotifications().then(setNotifications);
+    return Promise.all([matchPromise, notifPromise]);
+  }, []); // eslint-disable-line
+
+  // Re-fetch every time this page is navigated to (location.key changes on each visit).
   // Also auto-opens a specific conversation when openUserId is passed via navigation state.
   useEffect(() => {
     if (!user) { setMatchesLoading(false); return; }
     setMatchesLoading(true);
     const openUserId = location.state?.openUserId;
-    getMatches(user.id)
-      .then((data) => {
-        setMatches(data);
-        if (openUserId) {
-          const target = data.find((m) => m.id === openUserId);
-          if (target) {
-            setSelected(target);
-            if (window.innerWidth < 768) setMobileView("chat");
-          }
-        }
-      })
+    refreshData(true, openUserId)
       .catch(console.error)
       .finally(() => setMatchesLoading(false));
-    getNotifications().then(setNotifications).catch(console.error);
   }, [location.key]); // eslint-disable-line
+
+  // Poll every 30 seconds while on this page
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => { refreshData(false).catch(console.error); }, 30_000);
+    return () => clearInterval(id);
+  }, [refreshData]);
 
   const handleDismissNotification = useCallback((notifId) => {
     markNotificationRead(notifId).catch(console.error);

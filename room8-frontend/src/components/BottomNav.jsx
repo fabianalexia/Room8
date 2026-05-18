@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getCurrentUser, getNotifications } from "../api";
 
 const GOLD    = "#F59E0B";
 const DARK    = "#050D1F";
@@ -46,6 +47,24 @@ const TABS = [
 export default function BottomNav() {
   const navigate     = useNavigate();
   const { pathname } = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const fetchUnread = () => {
+      getNotifications()
+        .then((notifs) => {
+          setUnreadCount(Array.isArray(notifs) ? notifs.filter((n) => !n.read).length : 0);
+        })
+        .catch(() => {});
+    };
+
+    fetchUnread();
+    const id = setInterval(fetchUnread, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <nav style={{
@@ -91,7 +110,26 @@ export default function BottomNav() {
               }} />
             )}
 
-            <Icon active={active} />
+            <div style={{ position: "relative", display: "inline-flex" }}>
+              <Icon active={active} />
+              {label === "Messages" && unreadCount > 0 && (
+                <span style={{
+                  position: "absolute", top: -4, right: -6,
+                  background: "#EF4444",
+                  color: "#fff",
+                  fontSize: "0.55rem",
+                  fontWeight: 800,
+                  minWidth: 16, height: 16,
+                  borderRadius: 8,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "0 3px",
+                  border: `2px solid ${DARK}`,
+                  lineHeight: 1,
+                }}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </div>
 
             <span style={{
               fontSize: "0.6rem",

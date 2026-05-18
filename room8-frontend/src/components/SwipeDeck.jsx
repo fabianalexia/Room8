@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import TinderCard from "react-tinder-card";
 import { getCurrentUser, getCandidates, likeUser, skipUser, reportUser, blockUser, resendVerification } from "../api";
+import { sendNotification } from "../notifications";
 
 const NAVY  = "#0F2D5E";
 const GOLD  = "#F59E0B";
@@ -638,6 +639,18 @@ export default function SwipeDeck() {
 
   useEffect(() => { loadCandidates(false); }, []); // eslint-disable-line
 
+  // Poll for new candidates every 60 seconds (silent — only appends if deck is exhausted)
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => {
+      if (currentIndex < 0) {
+        // Deck is empty — try to load fresh candidates
+        loadCandidates(false);
+      }
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [currentIndex]); // eslint-disable-line
+
   const showToast = (msg) => {
     setMatchToast(msg);
     clearTimeout(toastTimer.current);
@@ -655,6 +668,10 @@ export default function SwipeDeck() {
         if (res?.matched) {
           console.log("[swipe] MATCHED with", candidate.name);
           showToast(`You matched with ${candidate.name?.split(" ")[0]}! 🎉`);
+          sendNotification(
+            "You have a new match on Room8!",
+            `You and ${candidate.name?.split(" ")[0] || "someone"} liked each other.`
+          );
         }
       } else {
         await skipUser(user.id, candidate.id);

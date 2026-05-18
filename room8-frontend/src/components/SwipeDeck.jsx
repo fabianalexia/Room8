@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import TinderCard from "react-tinder-card";
 import { getCurrentUser, getCandidates, likeUser, skipUser, reportUser, blockUser, resendVerification } from "../api";
 import { sendNotification } from "../notifications";
+import VerifiedBadge from "./VerifiedBadge";
 
 const NAVY  = "#0F2D5E";
 const GOLD  = "#F59E0B";
@@ -323,10 +324,15 @@ function ProfileCard({ person, viewerPrefs, onReport, onBlock }) {
 
         {/* Class year + major */}
         {(person.class_year || person.major) && (
-          <p style={{ margin: "0 0 10px", color: "rgba(255,255,255,0.65)", fontSize: "0.87rem", fontWeight: 500 }}>
+          <p style={{ margin: "0 0 8px", color: "rgba(255,255,255,0.65)", fontSize: "0.87rem", fontWeight: 500 }}>
             {[person.class_year, person.major].filter(Boolean).join(" · ")}
           </p>
         )}
+
+        {/* Verified / Community badge */}
+        <div style={{ marginBottom: 8 }}>
+          <VerifiedBadge isStudent={person.is_verified_student} size="sm" />
+        </div>
 
         {/* Quick tags row */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
@@ -509,6 +515,9 @@ export function ProfileModal({ person, onClose }) {
                   {person.age}
                 </span>
               )}
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <VerifiedBadge isStudent={person.is_verified_student} size="sm" />
             </div>
             {(person.class_year || person.major) && (
               <p style={{ margin: "4px 0 0", color: "rgba(255,255,255,0.65)", fontSize: "0.86rem" }}>

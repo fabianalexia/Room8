@@ -41,6 +41,7 @@ export function setCurrentUser(u) {
     "school", "class_year", "major",
     "housing_type", "room_type",
     "dorm_prefs", "looking_for",
+    "is_verified_student",
   ];
   const toStore = {};
   FIELDS.forEach(f => { toStore[f] = u[f] ?? null; });

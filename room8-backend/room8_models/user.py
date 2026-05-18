@@ -52,6 +52,11 @@ class User(db.Model):
     # Verification token expiry (48 hours from send time)
     verification_token_expiry = db.Column(db.DateTime)
 
+    # Community member vs verified student
+    # True  → registered with a .edu email (or manually verified)
+    # False → registered with a personal email (community member)
+    is_verified_student = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
     def get_dorm_prefs(self):
         if not self.dorm_prefs:
             return {}
@@ -103,5 +108,6 @@ class User(db.Model):
             # onboarding
             "profile_complete": bool(self.profile_complete),
             # verification
-            "email_verified": bool(self.email_verified),
+            "email_verified":        bool(self.email_verified),
+            "is_verified_student":   bool(self.is_verified_student),
         }

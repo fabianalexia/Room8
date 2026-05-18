@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, setCurrentUser, getProfile, updateProfile, addPhoto, removePhoto, logout } from "../api";
+import VerifiedBadge from "../components/VerifiedBadge";
 
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
@@ -397,6 +398,9 @@ export default function ProfilePage() {
             <h2 style={{ margin: 0, color: WHITE, fontWeight: 800, fontSize: "1.4rem", letterSpacing: "-0.02em" }}>
               {displayName}
             </h2>
+            <div style={{ marginTop: 5 }}>
+              <VerifiedBadge isStudent={user.is_verified_student} size="sm" />
+            </div>
             {user.school && (
               <p style={{ margin: "4px 0 0", color: "rgba(245,158,11,0.8)", fontSize: "0.85rem", fontWeight: 600 }}>
                 {user.school}

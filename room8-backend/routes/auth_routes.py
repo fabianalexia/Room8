@@ -26,13 +26,6 @@ BACKEND_URL  = os.environ.get("BACKEND_URL",  "https://room8-4dq7.onrender.com")
 MIN_PASSWORD_LEN = 8
 VERIFICATION_TTL = timedelta(hours=48)
 
-# Emails allowed to bypass the .edu restriction (friends, family, beta testers).
-# Set the BETA_EMAILS environment variable in Render as a comma-separated list,
-# e.g.  jane@gmail.com,dad@yahoo.com,tester@company.com
-def _get_beta_emails():
-    raw = os.environ.get("BETA_EMAILS", "")
-    return {e.strip().lower() for e in raw.split(",") if e.strip()}
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,18 +70,18 @@ def register():
 
     if not email or not password:
         return jsonify({"error": "Email and password required"}), 400
-    if not email.endswith(".edu") and email not in _get_beta_emails():
-        return jsonify({"error": "Please use a .edu email address to register"}), 400
     if len(password) < MIN_PASSWORD_LEN:
         return jsonify({"error": f"Password must be at least {MIN_PASSWORD_LEN} characters"}), 400
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "An account with that email already exists"}), 400
 
+    is_student = email.endswith(".edu")
     new_user = User(
         email=email,
         password_hash=generate_password_hash(password),
         first_name=first_name,
         last_name=last_name,
+        is_verified_student=is_student,
     )
     db.session.add(new_user)
     db.session.commit()

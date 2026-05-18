@@ -32,7 +32,6 @@ export default function RegisterPage() {
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
-    if (!form.email.toLowerCase().endsWith(".edu")) { setErr("Please use a .edu email address."); return; }
     if (form.password !== form.confirm_password) { setErr("Passwords do not match."); return; }
     if (form.password.length < 8) { setErr("Password must be at least 8 characters."); return; }
     setLoading(true);
@@ -53,8 +52,9 @@ export default function RegisterPage() {
     }
   };
 
-  const showEduHint    = form.email.includes("@") && !isSchoolEmail(form.email);
-  const showEduSuccess = form.email.includes("@") && isSchoolEmail(form.email);
+  const hasAt          = form.email.includes("@");
+  const showEduSuccess = hasAt && isSchoolEmail(form.email);
+  const showCommunity  = hasAt && !isSchoolEmail(form.email);
   const pwMismatch     = form.confirm_password && form.password !== form.confirm_password;
 
   return (
@@ -141,32 +141,37 @@ export default function RegisterPage() {
 
           {/* Email */}
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>
-              Email address
-              <span style={{
-                marginLeft: 8, fontSize: "0.68rem", fontWeight: 700,
-                color: "rgba(245,158,11,0.8)",
-                padding: "2px 8px", borderRadius: 6,
-                background: "rgba(245,158,11,0.1)",
-                border: "1px solid rgba(245,158,11,0.2)",
-              }}>
-                .edu required
-              </span>
-            </label>
+            <label style={labelStyle}>Email address</label>
             <input type="email" name="email" value={form.email} onChange={update}
-              placeholder="you@university.edu" required style={inputStyle}
+              placeholder="you@university.edu or you@gmail.com" required style={inputStyle}
               onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.6)")}
               onBlur={(e) => (e.target.style.borderColor = BORDER)}
             />
-            {showEduHint && (
-              <p style={{ marginTop: 5, fontSize: "0.77rem", color: "#F87171", fontFamily: BF }}>
-                Please use a .edu email address.
-              </p>
-            )}
             {showEduSuccess && (
-              <p style={{ marginTop: 5, fontSize: "0.77rem", color: "#86efac", fontFamily: BF }}>
-                ✓ School email detected — you'll see students from your campus
-              </p>
+              <div style={{
+                marginTop: 6, padding: "7px 10px", borderRadius: 8,
+                background: "rgba(245,158,11,0.08)",
+                border: "1px solid rgba(245,158,11,0.25)",
+                display: "flex", alignItems: "flex-start", gap: 7,
+              }}>
+                <span style={{ fontSize: "0.8rem", lineHeight: 1.4, color: "#F5A623", fontWeight: 700 }}>✓ Verified Student</span>
+                <span style={{ fontSize: "0.76rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.4, fontFamily: BF }}>
+                  — your school email qualifies you as a Verified Student
+                </span>
+              </div>
+            )}
+            {showCommunity && (
+              <div style={{
+                marginTop: 6, padding: "7px 10px", borderRadius: 8,
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                display: "flex", alignItems: "flex-start", gap: 7,
+              }}>
+                <span style={{ fontSize: "0.8rem", lineHeight: 1.4, color: "rgba(255,255,255,0.5)", fontWeight: 700 }}>Community Member</span>
+                <span style={{ fontSize: "0.76rem", color: "rgba(255,255,255,0.4)", lineHeight: 1.4, fontFamily: BF }}>
+                  — you can browse and match with students
+                </span>
+              </div>
             )}
           </div>
 

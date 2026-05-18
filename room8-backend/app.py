@@ -168,7 +168,17 @@ def create_app():
             ("users", "reset_token_expiry",         "TIMESTAMP"),
             ("users", "token_valid_after",          "TIMESTAMP"),
             ("users", "verification_token_expiry",  "TIMESTAMP"),
+            ("users", "is_verified_student",         "BOOLEAN DEFAULT FALSE"),
         ])
+
+        # Backfill: mark all existing .edu users as verified students
+        try:
+            db.session.execute(
+                text("UPDATE users SET is_verified_student = TRUE WHERE email LIKE '%.edu'")
+            )
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     # Serve uploaded profile photos
     upload_folder = os.environ.get("UPLOAD_FOLDER", "uploads")

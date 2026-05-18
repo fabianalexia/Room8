@@ -325,6 +325,7 @@ def google_login():
 
 @auth_bp.route("/google/callback")
 def google_callback():
+    print(f"[google_callback] HIT - args: {dict(request.args)}")
     if request.args.get("error"):
         print(f"[google_callback] provider error: {request.args.get('error')}")
         return redirect(f"{OAUTH_CALLBACK_BASE}?error=access_denied")

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getCurrentUser, getMatches, getNotifications, markNotificationRead } from "./api";
+import { getCurrentUser, getMatches, getProfile, getNotifications, markNotificationRead } from "./api";
+import { ProfileModal } from "./components/SwipeDeck";
 import Chat from "./components/Chat";
 
 const NAVY   = "#0F2D5E";
@@ -179,7 +180,7 @@ function NotificationBell({ notifications, onDismiss }) {
 }
 
 // Receives matches + loading from parent so unmatch/block updates reflect immediately
-function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifications, onDismissNotification }) {
+function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifications, onDismissNotification, onViewProfile }) {
   const newMatches = matches.filter((m) => !m.last_message);
   const messaged   = matches.filter((m) =>  m.last_message);
 
@@ -236,7 +237,7 @@ function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifi
                   onClick={() => onSelect(m)}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: "pointer", minWidth: 56 }}
                 >
-                  <Avatar src={m.photo} name={m.name} size={56} ring />
+                  <Avatar src={m.photo} name={m.name} size={56} ring onClick={() => onViewProfile?.(m)} />
                   <span style={{
                     color: WHITE, fontSize: "0.68rem", fontWeight: 600,
                     maxWidth: 56, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -276,7 +277,7 @@ function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifi
                   onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = SURFACE; }}
                   onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                 >
-                  <Avatar src={m.photo} name={m.name} size={48} />
+                  <Avatar src={m.photo} name={m.name} size={48} onClick={(e) => { e.stopPropagation(); onViewProfile?.(m); }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                       <span style={{ color: active ? GOLD : WHITE, fontWeight: 700, fontSize: "0.9rem" }}>
@@ -358,6 +359,16 @@ export default function MessagesPage() {
   const [matches,        setMatches]        = useState([]);
   const [matchesLoading, setMatchesLoading] = useState(true);
   const [notifications,  setNotifications]  = useState([]);
+  const [profileView, setProfileView] = useState(null);
+
+  const handleViewProfile = useCallback(async (match) => {
+    try {
+      const full = await getProfile(match.id);
+      setProfileView({ ...match, ...full });
+    } catch {
+      setProfileView(match);
+    }
+  }, []);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -431,10 +442,12 @@ export default function MessagesPage() {
             matches={matches} loading={matchesLoading}
             onSelect={handleSelect} selectedId={selected?.id} isMobile
             notifications={notifications} onDismissNotification={handleDismissNotification}
+            onViewProfile={handleViewProfile}
           />
         ) : (
           <Chat {...chatProps} onBack={handleBack} />
         )}
+        {profileView && <ProfileModal person={profileView} onClose={() => setProfileView(null)} />}
       </div>
     );
   }
@@ -448,6 +461,7 @@ export default function MessagesPage() {
         matches={matches} loading={matchesLoading}
         onSelect={handleSelect} selectedId={selected?.id} isMobile={false}
         notifications={notifications} onDismissNotification={handleDismissNotification}
+        onViewProfile={handleViewProfile}
       />
       <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {selected
@@ -455,6 +469,7 @@ export default function MessagesPage() {
           : <EmptyChat />
         }
       </div>
+      {profileView && <ProfileModal person={profileView} onClose={() => setProfileView(null)} />}
     </div>
   );
 }

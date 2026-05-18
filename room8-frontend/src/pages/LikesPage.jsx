@@ -263,15 +263,17 @@ export default function LikesPage() {
   const [liking,      setLiking]      = useState({});
   const [matched,     setMatched]     = useState({});
   const [matchModal,  setMatchModal]  = useState(null); // { fan } | null
+  const [matchesList, setMatchesList] = useState([]);
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
     // Fetch likes and current matches in parallel so we can filter out
     // anyone who is already a mutual match (they'd show "Like Back" incorrectly).
     Promise.all([getLikes(user.id), getMatches(user.id)])
-      .then(([likes, matches]) => {
-        const matchedIds = new Set((matches || []).map((m) => m.id));
+      .then(([likes, matchData]) => {
+        const matchedIds = new Set((matchData || []).map((m) => m.id));
         setFans((Array.isArray(likes) ? likes : []).filter((f) => !matchedIds.has(f.id)));
+        setMatchesList(Array.isArray(matchData) ? matchData : []);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -402,6 +404,100 @@ export default function LikesPage() {
                 onLikeBack={() => handleLikeBack(fan)}
               />
             ))}
+          </div>
+        )}
+
+        {/* ── Your Matches section ── */}
+        {!loading && matchesList.length > 0 && (
+          <div style={{ marginTop: 32 }}>
+            {/* Section header */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 12,
+              background: "rgba(255,255,255,0.04)",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 16, padding: "16px 20px",
+              marginBottom: 16,
+              backdropFilter: "blur(12px)",
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: "50%",
+                background: "rgba(34,197,94,0.15)",
+                border: "1px solid rgba(34,197,94,0.3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "1.15rem", flexShrink: 0,
+              }}>💬</div>
+              <div>
+                <h2 style={{
+                  margin: 0, fontFamily: HF, fontWeight: 800,
+                  fontSize: "1.25rem", color: "#86efac",
+                  letterSpacing: "-0.025em",
+                }}>
+                  Your Matches
+                </h2>
+                <p style={{ color: MUTED, fontSize: "0.82rem", margin: 0, fontFamily: BF }}>
+                  {matchesList.length} mutual match{matchesList.length !== 1 ? "es" : ""} — say hello!
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {matchesList.map((m) => (
+                <div key={m.id} style={{
+                  display: "flex", alignItems: "center", gap: 14,
+                  background: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 14, padding: "14px 16px",
+                  transition: "border-color 0.2s",
+                }}>
+                  {/* Avatar */}
+                  <div style={{
+                    width: 56, height: 56, borderRadius: "50%", flexShrink: 0,
+                    background: m.photo ? `url(${m.photo}) center/cover` : `linear-gradient(135deg, ${NAVY}, #1e4a8a)`,
+                    border: `2.5px solid rgba(134,239,172,0.5)`,
+                    boxShadow: "0 0 12px rgba(34,197,94,0.2)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: WHITE, fontWeight: 800, fontSize: "1.3rem",
+                  }}>
+                    {!m.photo && (m.name?.[0]?.toUpperCase() || "?")}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, color: WHITE, fontWeight: 700, fontSize: "0.95rem", fontFamily: HF }}>
+                      {m.name?.split(" ")[0]}{m.age ? `, ${m.age}` : ""}
+                    </p>
+                    {(m.class_year || m.major) && (
+                      <p style={{ margin: "2px 0 0", color: MUTED, fontSize: "0.76rem", fontFamily: BF, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                        {[m.class_year, m.major].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                    {m.last_message && (
+                      <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.35)", fontSize: "0.74rem", fontFamily: BF, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                        {m.last_message_mine ? "You: " : ""}{m.last_message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Message button */}
+                  <button
+                    onClick={() => navigate("/messages", { state: { openUserId: m.id } })}
+                    style={{
+                      background: "rgba(34,197,94,0.15)",
+                      border: "1px solid rgba(34,197,94,0.35)",
+                      color: "#86efac",
+                      padding: "9px 16px", borderRadius: 10,
+                      fontWeight: 700, fontSize: "0.82rem",
+                      cursor: "pointer", fontFamily: HF, flexShrink: 0,
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(34,197,94,0.25)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "rgba(34,197,94,0.15)"}
+                  >
+                    💬 Message
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

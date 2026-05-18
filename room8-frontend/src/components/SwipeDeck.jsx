@@ -396,7 +396,7 @@ function humanizePref(val) {
   return val.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function ProfileModal({ person, onClose }) {
+export function ProfileModal({ person, onClose }) {
   const [activePhoto, setActivePhoto] = useState(0);
 
   useEffect(() => {
@@ -419,32 +419,17 @@ function ProfileModal({ person, onClose }) {
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 500,
-        background: "rgba(0,0,0,0.78)",
-        backdropFilter: "blur(10px)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
-        overflow: "hidden",   // prevents layout blowout on small screens
+        background: "#07111f",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
       }}
-      onClick={onClose}
+      className="r8-profile-modal"
     >
-      <div
-        style={{
-          width: "100%", maxWidth: 520,
-          maxHeight: "92dvh",                  // dvh respects mobile browser chrome
-          minHeight: 0,                         // flex overflow fix — allows child to scroll
-          overflowY: "auto",
-          WebkitOverflowScrolling: "touch",     // iOS momentum scroll
-          msOverflowStyle: "none",
-          scrollbarWidth: "none",
-          background: "#07111f",
-          borderRadius: "24px 24px 0 0",
-          border: "1px solid rgba(255,255,255,0.1)",
-          boxShadow: "0 -24px 60px rgba(0,0,0,0.7)",
-        }}
-        className="r8-profile-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div style={{ maxWidth: 640, margin: "0 auto", paddingBottom: 48 }}>
         {/* ── Photo section ── */}
-        <div style={{ position: "relative", height: 340, flexShrink: 0 }}>
+        <div style={{ position: "relative", height: "52vh", minHeight: 280, flexShrink: 0 }}>
           {allPhotos.length > 0 ? (
             <img
               src={allPhotos[activePhoto]}
@@ -467,19 +452,19 @@ function ProfileModal({ person, onClose }) {
             background: "linear-gradient(to top, rgba(7,17,31,1) 0%, rgba(7,17,31,0.3) 50%, transparent 100%)",
           }} />
 
-          {/* Close button */}
+          {/* Back button */}
           <button
             onClick={onClose}
             style={{
-              position: "absolute", top: 14, right: 14,
-              width: 34, height: 34, borderRadius: "50%",
+              position: "absolute", top: 16, left: 16,
+              display: "flex", alignItems: "center", gap: 6,
               background: "rgba(0,0,0,0.55)",
               border: "1px solid rgba(255,255,255,0.18)",
-              color: WHITE, cursor: "pointer", fontSize: "0.95rem",
-              display: "flex", alignItems: "center", justifyContent: "center",
+              color: WHITE, cursor: "pointer", fontSize: "0.88rem",
+              fontWeight: 600, padding: "8px 14px", borderRadius: 20,
               backdropFilter: "blur(8px)",
             }}
-          >✕</button>
+          >← Back</button>
 
           {/* Photo thumbnails */}
           {allPhotos.length > 1 && (
@@ -562,7 +547,7 @@ function ProfileModal({ person, onClose }) {
                   border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 8, padding: "7px 12px",
                 }}>
-                  <p style={{ margin: "0 0 2px", color: MUTED, fontSize: "0.66rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</p>
+                  <p style={{ margin: "0 0 2px", color: "rgba(255,255,255,0.45)", fontSize: "0.66rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</p>
                   <p style={{ margin: 0, color: WHITE, fontSize: "0.86rem", fontWeight: 600, textTransform: "capitalize" }}>{val}</p>
                 </div>
               ))}
@@ -594,7 +579,7 @@ function ProfileModal({ person, onClose }) {
                   }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
                       <span style={{ fontSize: "0.85rem" }}>{icon}</span>
-                      <span style={{ color: MUTED, fontSize: "0.67rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
+                      <span style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.67rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
                     </div>
                     <div style={{ color: WHITE, fontSize: "0.86rem", fontWeight: 600 }}>
                       {humanizePref(prefs[key])}
@@ -778,18 +763,6 @@ export default function SwipeDeck() {
                     onReport={() => setReportTarget(person)}
                     onBlock={() => handleBlock(person)}
                   />
-                  {/* Tap hint */}
-                  <div style={{
-                    position: "absolute", bottom: 80, right: 14,
-                    background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    borderRadius: 20, padding: "4px 10px",
-                    fontSize: "0.65rem", color: "rgba(255,255,255,0.55)",
-                    fontWeight: 600, letterSpacing: "0.05em",
-                    pointerEvents: "none",
-                  }}>
-                    tap to view profile
-                  </div>
                 </div>
               </TinderCard>
             ) : null

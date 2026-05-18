@@ -1,7 +1,7 @@
 // src/pages/ProfilePage.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, setCurrentUser, updateProfile, addPhoto, removePhoto, logout } from "../api";
+import { getCurrentUser, setCurrentUser, getProfile, updateProfile, addPhoto, removePhoto, logout } from "../api";
 
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
@@ -238,23 +238,35 @@ export default function ProfilePage() {
   const [prefSaving, setPrefSaving] = useState(false);
   const [prefSuccess, setPrefSuccess] = useState("");
 
+  const applyUserData = (u) => {
+    const nameParts = (u.name || "").split(" ");
+    setForm({
+      first_name: u.first_name || nameParts[0] || "",
+      last_name:  u.last_name  || nameParts.slice(1).join(" ") || "",
+      bio:        u.bio        || "",
+      age:        u.age        || "",
+      location:   u.location   || "",
+      budget:     u.budget     || "",
+      major:      u.major      || "",
+      class_year: u.class_year || "",
+    });
+    setPrimary(u.photo || null);
+    setPhotos(u.photos || []);
+    setPrefs(u.dorm_prefs || {});
+    setLookingFor(u.looking_for || "");
+  };
+
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
-    const nameParts = (user.name || "").split(" ");
-    setForm({
-      first_name: user.first_name || nameParts[0] || "",
-      last_name:  user.last_name  || nameParts.slice(1).join(" ") || "",
-      bio:        user.bio        || "",
-      age:        user.age        || "",
-      location:   user.location   || "",
-      budget:     user.budget     || "",
-      major:      user.major      || "",
-      class_year: user.class_year || "",
-    });
-    setPrimary(user.photo || null);
-    setPhotos(user.photos || []);
-    setPrefs(user.dorm_prefs || {});
-    setLookingFor(user.looking_for || "");
+    // Seed from localStorage immediately (instant, may be incomplete for older sessions)
+    applyUserData(user);
+    // Always fetch fresh from API — source of truth for dorm_prefs, looking_for, etc.
+    getProfile(user.id)
+      .then(full => {
+        applyUserData(full);
+        setCurrentUser({ ...user, ...full });
+      })
+      .catch(() => {}); // keep localStorage values if offline / error
   }, []); // eslint-disable-line
 
   const update = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -266,9 +278,9 @@ export default function ProfilePage() {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => { if (v !== "") fd.append(k, v); });
       const res = await updateProfile(user.id, fd);
-      setCurrentUser({ ...user, ...res.user });
-      setPrimary(res.user.photo);
-      setPhotos(res.user.photos || []);
+      const updated = { ...user, ...res.user };
+      setCurrentUser(updated);
+      applyUserData(res.user);
       setSuccess("Profile saved!");
       setEditing(false);
       setTimeout(() => setSuccess(""), 3000);
@@ -280,15 +292,19 @@ export default function ProfilePage() {
   };
 
   const handleSavePrefs = async () => {
-    setPrefSaving(true); setPrefSuccess("");
+    setPrefSaving(true); setPrefSuccess(""); setErr("");
     try {
       const fd = new FormData();
       fd.append("dorm_prefs", JSON.stringify(prefs));
       fd.append("looking_for", lookingFor);
       const res = await updateProfile(user.id, fd);
-      setCurrentUser({ ...user, ...res.user });
+      const updated = { ...user, ...res.user };
+      setCurrentUser(updated);
+      // Reflect the saved values back into state so UI stays in sync
+      setPrefs(res.user.dorm_prefs || {});
+      setLookingFor(res.user.looking_for || "");
       setPrefSuccess("Preferences saved!");
-      setTimeout(() => setPrefSuccess(""), 3000);
+      setTimeout(() => setPrefSuccess(""), 4000);
     } catch (e) {
       setErr(e.message || "Could not save preferences.");
     } finally {

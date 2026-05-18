@@ -32,8 +32,19 @@ export function getCurrentUser() {
 }
 
 export function setCurrentUser(u) {
-  const { id, first_name, last_name, email, profile_complete, photo } = u;
-  localStorage.setItem(LS_KEY, JSON.stringify({ id, first_name, last_name, email, profile_complete, photo }));
+  // Persist every field returned by user.public() so ProfilePage can restore
+  // full state on mount without an extra API round-trip.
+  const FIELDS = [
+    "id", "first_name", "last_name", "email", "profile_complete",
+    "photo", "photos",
+    "bio", "age", "location", "budget",
+    "school", "class_year", "major",
+    "housing_type", "room_type",
+    "dorm_prefs", "looking_for",
+  ];
+  const toStore = {};
+  FIELDS.forEach(f => { toStore[f] = u[f] ?? null; });
+  localStorage.setItem(LS_KEY, JSON.stringify(toStore));
 }
 
 export function logout() {

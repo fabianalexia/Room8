@@ -325,6 +325,9 @@ def google_login():
 
 @auth_bp.route("/google/callback")
 def google_callback():
+    if request.args.get("error"):
+        print(f"[google_callback] Google returned error: {request.args.get('error')}")
+        return redirect(f"{OAUTH_CALLBACK_BASE}?error=access_denied")
     try:
         session.pop("google_oauth_state", None)
         google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=GOOGLE_REDIRECT_URI)
@@ -363,6 +366,9 @@ def linkedin_login():
 
 @auth_bp.route("/linkedin/callback")
 def linkedin_callback():
+    if request.args.get("error"):
+        print(f"[linkedin_callback] LinkedIn returned error: {request.args.get('error')}")
+        return redirect(f"{OAUTH_CALLBACK_BASE}?error=access_denied")
     try:
         session.pop("linkedin_oauth_state", None)
         linkedin = OAuth2Session(LINKEDIN_CLIENT_ID, redirect_uri=LINKEDIN_REDIRECT_URI)

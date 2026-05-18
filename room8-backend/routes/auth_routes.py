@@ -334,8 +334,14 @@ def google_callback():
         # Render is behind HTTPS load-balancer; request.url may be http internally
         callback_url = request.url.replace("http://", "https://", 1)
         google._state = None
-        google.fetch_token(GOOGLE_TOKEN_URL, client_secret=GOOGLE_CLIENT_SECRET,
-                           authorization_response=callback_url, force_pkce=False)
+        try:
+            google.fetch_token(GOOGLE_TOKEN_URL, client_secret=GOOGLE_CLIENT_SECRET,
+                               authorization_response=callback_url, force_pkce=False)
+        except Exception as fetch_err:
+            import traceback
+            print(f"[google_callback] FETCH_TOKEN FAILED: {fetch_err}")
+            print(traceback.format_exc())
+            return redirect(f"{OAUTH_CALLBACK_BASE}?error=fetch_token_failed")
         info = google.get(GOOGLE_USERINFO_URL).json()
         email      = (info.get("email") or "").strip().lower()
         first_name = info.get("given_name") or info.get("name", "").split()[0]

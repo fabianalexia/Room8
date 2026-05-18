@@ -342,7 +342,9 @@ def google_callback():
         token = _oauth_login_or_create(email, first_name, last_name)
         return redirect(f"{OAUTH_CALLBACK_BASE}?token={token}")
     except Exception as e:
+        import traceback
         print(f"[google_callback] error: {e}")
+        print(traceback.format_exc())
         return redirect(f"{OAUTH_CALLBACK_BASE}?error=oauth_failed")
 
 
@@ -377,5 +379,7 @@ def linkedin_callback():
         token = _oauth_login_or_create(email, first_name, last_name)
         return redirect(f"{OAUTH_CALLBACK_BASE}?token={token}")
     except Exception as e:
+        import traceback
         print(f"[linkedin_callback] error: {e}")
+        print(traceback.format_exc())
         return redirect(f"{OAUTH_CALLBACK_BASE}?error=oauth_failed")

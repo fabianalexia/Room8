@@ -1,6 +1,8 @@
 # routes/auth_routes.py
 import os
+import sys
 import secrets
+sys.stdout.reconfigure(line_buffering=True)
 from datetime import datetime, timedelta
 
 from flask import Blueprint, request, jsonify, redirect, session

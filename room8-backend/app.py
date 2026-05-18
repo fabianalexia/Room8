@@ -1,4 +1,6 @@
 import os
+import sys
+sys.stdout.reconfigure(line_buffering=True)
 from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from sqlalchemy import text

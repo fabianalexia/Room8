@@ -1,7 +1,7 @@
 // src/pages/RegisterPage.jsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { register, setCurrentUser } from "../api";
+import { register, setCurrentUser, API_URL } from "../api";
 import logoImg from "../assets/images/logo.png";
 
 const NAVY  = "#0F2D5E";
@@ -221,7 +221,7 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        {false && /* OAuth buttons hidden until backend is verified */ (<>
+        <>
         {/* Divider */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 18px" }}>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
@@ -232,7 +232,7 @@ export default function RegisterPage() {
         {/* OAuth buttons */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <button
-            onClick={() => { window.location.href = "https://room8-4dq7.onrender.com/api/auth/google"; }}
+            onClick={() => { window.location.href = `${API_URL}/api/auth/google`; }}
             style={{
               width: "100%", padding: "12px 16px",
               background: "#FFFFFF", color: "#1f1f1f",
@@ -255,7 +255,7 @@ export default function RegisterPage() {
           </button>
 
           <button
-            onClick={() => { window.location.href = "https://room8-4dq7.onrender.com/api/auth/linkedin"; }}
+            onClick={() => { window.location.href = `${API_URL}/api/auth/linkedin`; }}
             style={{
               width: "100%", padding: "12px 16px",
               background: "#0A66C2", color: "#FFFFFF",
@@ -274,7 +274,7 @@ export default function RegisterPage() {
             Continue with LinkedIn
           </button>
         </div>
-        </>)}
+        </>
 
         <p style={{ textAlign: "center", marginTop: 22, fontSize: "0.88rem", color: MUTED, fontFamily: BF }}>
           Already have an account?{" "}

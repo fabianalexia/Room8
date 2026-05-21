@@ -30,7 +30,7 @@ MIN_PASSWORD_LEN = 8
 VERIFICATION_TTL = timedelta(hours=48)
 
 # ── OAuth constants ────────────────────────────────────────────────────────────
-OAUTH_CALLBACK_BASE = "https://swiperoom8.com/auth/callback"
+OAUTH_CALLBACK_BASE = os.environ.get("FRONTEND_URL", "https://swiperoom8.com") + "/auth/callback"
 
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")

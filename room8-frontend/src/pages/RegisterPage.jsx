@@ -1,7 +1,7 @@
 // src/pages/RegisterPage.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { register, setCurrentUser } from "../api";
+import { register, login, setCurrentUser, setToken } from "../api";
 import logoImg from "../assets/images/logo.png";
 
 const NAVY  = "#0F2D5E";
@@ -55,10 +55,26 @@ export default function RegisterPage() {
       navigate("/setup", { replace: true });
     } catch (e) {
       const msg = e?.message || "";
-      if (msg.toLowerCase().includes("already exists")) {
-        setErr("Looks like your account was already created! Try signing in instead.");
-      } else if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
-        setErr("Our server is waking up — please wait 30 seconds and try again.");
+      const isNetworkErr = msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network");
+      const isAlreadyExists = msg.toLowerCase().includes("already exists");
+
+      if (isNetworkErr || isAlreadyExists) {
+        // Account may have been created — try logging in automatically
+        try {
+          const loginRes = await login({ email: form.email, password: form.password });
+          if (loginRes?.access_token) setToken(loginRes.access_token);
+          if (loginRes?.user) {
+            setCurrentUser(loginRes.user);
+            navigate(loginRes.user.profile_complete === false ? "/setup" : "/app", { replace: true });
+            return;
+          }
+        } catch {
+          // Login also failed — server still waking up
+        }
+        setErr(isAlreadyExists
+          ? "Looks like your account was already created! Try signing in instead."
+          : "Our server is waking up — please wait 30 seconds and try again."
+        );
       } else {
         setErr(msg || "Could not create account. Please try again.");
       }

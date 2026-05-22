@@ -1,5 +1,5 @@
 // src/pages/RegisterPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { register, setCurrentUser } from "../api";
 import logoImg from "../assets/images/logo.png";
@@ -26,8 +26,16 @@ export default function RegisterPage() {
   });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const [slowMsg, setSlowMsg] = useState(false);
 
   const update = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  useEffect(() => {
+    let t;
+    if (loading) t = setTimeout(() => setSlowMsg(true), 5000);
+    else setSlowMsg(false);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -46,7 +54,12 @@ export default function RegisterPage() {
       setCurrentUser(res.user);
       navigate("/setup", { replace: true });
     } catch (e) {
-      setErr(e?.message || "Could not create account. Please try again.");
+      const msg = e?.message || "";
+      if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
+        setErr("Our server is waking up — please wait 30 seconds and try again.");
+      } else {
+        setErr(msg || "Could not create account. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -203,6 +216,7 @@ export default function RegisterPage() {
             )}
           </div>
 
+          <style>{`@keyframes r8spin{to{transform:rotate(360deg)}}`}</style>
           <button type="submit" disabled={loading} style={{
             width: "100%", padding: "14px",
             background: loading ? "rgba(245,158,11,0.5)" : GOLD,
@@ -213,12 +227,27 @@ export default function RegisterPage() {
             fontFamily: HF,
             boxShadow: loading ? "none" : "0 6px 28px rgba(245,158,11,0.4)",
             transition: "all 0.15s",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
           }}
             onMouseEnter={(e) => { if (!loading) e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
           >
+            {loading && (
+              <span style={{
+                width: 16, height: 16, borderRadius: "50%",
+                border: "2px solid rgba(5,13,31,0.3)",
+                borderTopColor: "rgba(5,13,31,0.7)",
+                animation: "r8spin 0.7s linear infinite",
+                display: "inline-block", flexShrink: 0,
+              }} />
+            )}
             {loading ? "Creating account…" : "Create Account →"}
           </button>
+          {slowMsg && (
+            <p style={{ textAlign: "center", marginTop: 12, fontSize: "0.78rem", color: MUTED, fontFamily: BF }}>
+              Taking a moment — our server may be starting up. Hang tight!
+            </p>
+          )}
         </form>
 
         {false && /* OAuth buttons hidden until backend is verified */ (<>

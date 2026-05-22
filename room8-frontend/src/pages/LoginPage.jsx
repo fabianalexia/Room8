@@ -57,12 +57,21 @@ export default function LoginPage() {
       navigate(dest, { replace: true });
     } catch (error) {
       console.error("[login] error:", error);
-      const msg = error?.message || "";
-      if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
-        setErr("Our server is waking up — please wait 30 seconds and try again.");
+      const msg = (error.message || "").toLowerCase();
+      const status = error.status || error.statusCode;
+      let errMsg;
+      if (msg.includes("verify")) {
+        errMsg = "Please verify your email before logging in.";
+      } else if (msg.includes("invalid") || msg.includes("incorrect") || status === 401) {
+        errMsg = "Wrong password. Please try again.";
+      } else if (msg.includes("not found") || msg.includes("no account") || status === 404) {
+        errMsg = "No account found with that email.";
+      } else if (msg.includes("fetch") || msg.includes("network") || msg.includes("waking")) {
+        errMsg = "Our server is waking up — please wait 30 seconds and try again.";
       } else {
-        setErr(msg || "Login failed. Please check your credentials.");
+        errMsg = "Login failed. Please try again.";
       }
+      setErr(errMsg);
     } finally {
       setLoading(false);
     }

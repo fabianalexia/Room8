@@ -202,6 +202,7 @@ function ProfileCard({ person, viewerPrefs, onReport, onBlock }) {
         <img
           src={person.photo} alt={person.name} draggable={false}
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+          onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
         />
       )}
 
@@ -442,6 +443,7 @@ export function ProfileModal({ person, onClose }) {
               src={allPhotos[activePhoto]}
               alt={person.name}
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
             />
           ) : (
             <div style={{
@@ -490,6 +492,7 @@ export function ProfileModal({ person, onClose }) {
                     opacity: i === activePhoto ? 1 : 0.65,
                     transition: "all 0.15s",
                   }}
+                  onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
                 />
               ))}
             </div>
@@ -667,7 +670,6 @@ export default function SwipeDeck() {
   };
 
   const handleSwipe = async (direction, candidate) => {
-    setCurrentIndex((prev) => prev - 1);
     setSwipeHint(null);
     try {
       if (direction === "right") {
@@ -685,6 +687,7 @@ export default function SwipeDeck() {
       } else {
         await skipUser(user.id, candidate.id);
       }
+      setCurrentIndex((prev) => prev - 1);
     } catch (err) { console.error("[swipe] error:", err); }
   };
 

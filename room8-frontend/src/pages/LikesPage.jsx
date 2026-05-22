@@ -562,7 +562,7 @@ function FanCard({ fan, liking, isMatched, onLikeBack }) {
           <img
             src={fan.photo} alt={fan.name}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-            onError={(e) => { e.target.style.display = "none"; }}
+            onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
           />
         ) : (
           <div style={{

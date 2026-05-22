@@ -135,7 +135,8 @@ def update_profile(user_id):
                     gallery.insert(0, full_url)
                     user.photos = json.dumps(gallery)
             except Exception as e:
-                return jsonify({"error": f"Photo upload failed: {str(e)}"}), 500
+                # Photo upload failed (e.g. Cloudinary not configured) — save text fields anyway
+                print(f"[profile] photo upload skipped: {e}")
 
         try:
             db.session.commit()

@@ -130,8 +130,8 @@ function Step1({ data, update }) {
             name="class_year" value={data.class_year} onChange={update}
             style={inputStyle}
           >
-            <option value="">Select…</option>
-            {CLASS_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+            <option value="" style={{ color: "#111", background: "#fff" }}>Select…</option>
+            {CLASS_YEARS.map((y) => <option key={y} value={y} style={{ color: "#111", background: "#fff" }}>{y}</option>)}
           </select>
         </Field>
       </div>
@@ -431,9 +431,21 @@ export default function SetupPage() {
       fields.forEach((f) => { if (data[f]) fd.append(f, data[f]); });
       if (data.photoFile) fd.append("photo", data.photoFile);
 
-      const res = await updateProfile(user.id, fd);
+      let updatedUser = user;
+      try {
+        const res = await updateProfile(user.id, fd);
+        if (res?.user) updatedUser = res.user;
+      } catch (e) {
+        // If only the photo failed, still mark complete and proceed
+        const photoOnly = e?.message?.toLowerCase().includes("photo") ||
+                          e?.message?.toLowerCase().includes("cloudinary") ||
+                          e?.message?.toLowerCase().includes("upload");
+        if (!photoOnly) { setErr(e?.message || "Something went wrong."); setLoading(false); return; }
+        setErr("Profile saved! Photo upload failed — you can add one from your profile later.");
+      }
+
       await markProfileComplete(user.id);
-      setCurrentUser({ ...user, ...res.user, profile_complete: true });
+      setCurrentUser({ ...user, ...updatedUser, profile_complete: true });
       navigate("/app", { replace: true });
     } catch (e) {
       setErr(e?.message || "Something went wrong. Please try again.");

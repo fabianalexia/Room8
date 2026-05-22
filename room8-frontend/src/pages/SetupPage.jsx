@@ -130,8 +130,8 @@ function Step1({ data, update }) {
             name="class_year" value={data.class_year} onChange={update}
             style={inputStyle}
           >
-            <option value="">Select…</option>
-            {CLASS_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+            <option value="" style={{ color: "#111", background: "#fff" }}>Select…</option>
+            {CLASS_YEARS.map((y) => <option key={y} value={y} style={{ color: "#111", background: "#fff" }}>{y}</option>)}
           </select>
         </Field>
       </div>

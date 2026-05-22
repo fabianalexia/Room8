@@ -55,7 +55,9 @@ export default function RegisterPage() {
       navigate("/setup", { replace: true });
     } catch (e) {
       const msg = e?.message || "";
-      if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
+      if (msg.toLowerCase().includes("already exists")) {
+        setErr("Looks like your account was already created! Try signing in instead.");
+      } else if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
         setErr("Our server is waking up — please wait 30 seconds and try again.");
       } else {
         setErr(msg || "Could not create account. Please try again.");
@@ -128,6 +130,9 @@ export default function RegisterPage() {
             fontFamily: BF,
           }}>
             {err}
+            {err.includes("already created") && (
+              <> <Link to="/login" style={{ color: GOLD, fontWeight: 700, textDecoration: "none" }}>Sign in →</Link></>
+            )}
           </div>
         )}
 

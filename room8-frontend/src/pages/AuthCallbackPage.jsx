@@ -33,7 +33,7 @@ export default function AuthCallbackPage() {
       .then((res) => {
         const user = res?.user ?? res;
         setCurrentUser(user);
-        navigate(user?.profile_complete === false ? "/setup" : "/app", { replace: true });
+        navigate(user?.profile_complete === true ? "/app" : "/setup", { replace: true });
       })
       .catch(() => {
         // Token stored but /me failed — let ProtectedRoute handle it

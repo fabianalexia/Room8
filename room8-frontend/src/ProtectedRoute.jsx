@@ -35,7 +35,7 @@ export default function ProtectedRoute({ children, requireComplete = false }) {
 
   if (status === "loading") return null;
   if (status === "unauth")  return <Navigate to="/login" replace />;
-  if (requireComplete && user?.profile_complete === false) {
+  if (requireComplete && !user?.profile_complete) {
     return <Navigate to="/setup" replace />;
   }
   return children;

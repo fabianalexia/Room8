@@ -21,3 +21,5 @@ google-auth-oauthlib==1.2.2
 google-auth-httplib2==0.2.0
 requests-oauthlib==2.0.0
 requests==2.32.3
+flask-socketio>=5.3.6
+eventlet>=0.36.1

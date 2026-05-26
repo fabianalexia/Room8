@@ -9,7 +9,7 @@ import cloudinary
 import cloudinary.uploader
 from datetime import timedelta
 from flask_talisman import Talisman
-from extensions import mail, jwt, limiter
+from extensions import mail, jwt, limiter, socketio
 from room8_models import db
 from routes.auth_routes import auth_bp
 from routes.candidates_routes import candidates_bp
@@ -98,6 +98,9 @@ def create_app():
     app.config["MAIL_PASSWORD"]       = os.environ.get("MAIL_PASSWORD")
     app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_DEFAULT_SENDER", "Room8 <noreply@findroom8.com>")
     mail.init_app(app)
+
+    # ── SocketIO ───────────────────────────────────────────────
+    socketio.init_app(app, logger=False, engineio_logger=False)
 
     # ── CORS ───────────────────────────────────────────────────
     # Must be initialised BEFORE Talisman so flask-cors's after_request
@@ -208,6 +211,9 @@ def create_app():
     app.register_blueprint(roommate_bp)
     app.register_blueprint(migration_bp)  # ONE-TIME — delete after use
 
+    # Register socket event handlers (must come after socketio.init_app)
+    import routes.socket_routes  # noqa: F401
+
     if os.environ.get("FLASK_ENV") == "development":
         from routes.debug_routes import debug_bp
         app.register_blueprint(debug_bp)
@@ -240,6 +246,6 @@ def _add_columns(db, columns):
 app = create_app()
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port  = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV", "production") == "development"
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    socketio.run(app, host="0.0.0.0", port=port, debug=debug, allow_unsafe_werkzeug=True)

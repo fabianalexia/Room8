@@ -27,7 +27,7 @@ const REPORT_REASONS = [
   { value: "other",         label: "Other" },
 ];
 
-export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUnmatch, onBlock: onBlockProp }) {
+export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUnmatch, onBlock: onBlockProp, incomingMessage }) {
   const [messages,        setMessages]        = useState([]);
   const [input,           setInput]           = useState("");
   const [sending,         setSending]         = useState(false);
@@ -53,6 +53,21 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [userId, peerId]);
+
+  // Append real-time messages pushed from the WebSocket
+  useEffect(() => {
+    if (!incomingMessage) return;
+    setMessages((prev) => {
+      // Guard against duplicate delivery (e.g. after reconnect)
+      const isDup = prev.some(
+        (m) =>
+          m.sender_id === incomingMessage.sender_id &&
+          m.created_at === incomingMessage.created_at
+      );
+      if (isDup) return prev;
+      return [...prev, incomingMessage];
+    });
+  }, [incomingMessage]);
 
   const fetchRoommateStatus = useCallback(() => {
     if (!peerId) return;

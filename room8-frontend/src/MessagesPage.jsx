@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getCurrentUser, getMatches, getProfile, getNotifications, markNotificationRead } from "./api";
+import { io } from "socket.io-client";
+import { getCurrentUser, getMatches, getProfile, getNotifications, markNotificationRead, getToken, API_URL } from "./api";
 import { ProfileModal } from "./components/SwipeDeck";
 import Chat from "./components/Chat";
 import { sendNotification } from "./notifications";
@@ -366,6 +367,12 @@ export default function MessagesPage() {
   const prevMatchIds      = useRef(new Set());
   const prevLastMessages  = useRef({});  // peerId -> last_message string
 
+  // WebSocket refs and real-time message state
+  const socketRef       = useRef(null);
+  const joinedRoomsRef  = useRef(new Set());   // peer IDs whose rooms we've joined
+  const selectedRef     = useRef(null);        // mirror of `selected` for socket callback
+  const [incomingMessage, setIncomingMessage] = useState(null);
+
   const handleViewProfile = useCallback(async (match) => {
     try {
       const full = await getProfile(match.id);
@@ -380,6 +387,88 @@ export default function MessagesPage() {
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
+
+  // Keep selectedRef in sync so socket callbacks always see the current conversation
+  useEffect(() => { selectedRef.current = selected; }, [selected]);
+
+  // Reset incoming message when switching conversations so stale events don't bleed in
+  useEffect(() => { setIncomingMessage(null); }, [selected?.id]); // eslint-disable-line
+
+  // ── WebSocket: connect on mount, disconnect on unmount ────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    const token = getToken();
+    if (!token) return;
+
+    const socket = io(API_URL, {
+      query:               { token },
+      transports:          ["websocket", "polling"],
+      reconnectionAttempts: 5,
+      reconnectionDelay:   2000,
+    });
+    socketRef.current = socket;
+
+    socket.on("connect_error", (err) => {
+      console.warn("[socket] connection error:", err.message);
+    });
+
+    socket.on("new_message", (msg) => {
+      // Determine which peer this message belongs to
+      const peerId = String(msg.sender_id) !== String(user.id)
+        ? msg.sender_id
+        : msg.recipient_id;
+
+      // Update the match-list preview for that peer
+      setMatches((prev) =>
+        prev.map((m) =>
+          m.id === peerId
+            ? {
+                ...m,
+                last_message:      msg.text,
+                last_message_mine: String(msg.sender_id) === String(user.id),
+                last_message_at:   msg.created_at,
+              }
+            : m
+        )
+      );
+
+      // Deliver to the open Chat view only if it's a message from the peer
+      // (the sender already has an optimistic update in Chat, so skip own messages)
+      if (
+        selectedRef.current?.id === peerId &&
+        String(msg.sender_id) !== String(user.id)
+      ) {
+        setIncomingMessage(msg);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current  = null;
+      joinedRoomsRef.current.clear();
+    };
+  }, []); // eslint-disable-line
+
+  // ── WebSocket: join conversation rooms whenever the matches list changes ──────
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || matches.length === 0) return;
+
+    const joinAll = () => {
+      matches.forEach((m) => {
+        if (!joinedRoomsRef.current.has(m.id)) {
+          socket.emit("join_conversation", { peer_id: m.id });
+          joinedRoomsRef.current.add(m.id);
+        }
+      });
+    };
+
+    if (socket.connected) {
+      joinAll();
+    } else {
+      socket.once("connect", joinAll);
+    }
+  }, [matches]);
 
   // Fetch matches + notifications; detect new matches and new messages for push notifications.
   const refreshData = useCallback((isInitial = false, openUserId = null) => {
@@ -442,13 +531,6 @@ export default function MessagesPage() {
       .finally(() => setMatchesLoading(false));
   }, [location.key]); // eslint-disable-line
 
-  // Poll every 30 seconds while on this page
-  useEffect(() => {
-    if (!user) return;
-    const id = setInterval(() => { refreshData(false).catch(console.error); }, 30_000);
-    return () => clearInterval(id);
-  }, [refreshData]);
-
   const handleDismissNotification = useCallback((notifId) => {
     markNotificationRead(notifId).catch(console.error);
     setNotifications((prev) => prev.map((n) => n.id === notifId ? { ...n, read: true } : n));
@@ -477,12 +559,13 @@ export default function MessagesPage() {
   }, [isMobile]);
 
   const chatProps = selected ? {
-    userId:    user?.id,
-    peerId:    selected.id,
-    peerName:  selected.name,
-    peerPhoto: selected.photo,
-    onUnmatch: () => removeMatch(selected.id),
-    onBlock:   () => removeMatch(selected.id),
+    userId:          user?.id,
+    peerId:          selected.id,
+    peerName:        selected.name,
+    peerPhoto:       selected.photo,
+    onUnmatch:       () => removeMatch(selected.id),
+    onBlock:         () => removeMatch(selected.id),
+    incomingMessage,
   } : null;
 
   if (isMobile) {

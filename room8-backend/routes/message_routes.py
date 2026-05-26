@@ -4,6 +4,7 @@ from room8_models import db
 from room8_models.message import Message
 from room8_models.swipe import Swipe
 from utils import sanitize
+from extensions import socketio
 
 message_bp = Blueprint("message", __name__, url_prefix="/api/chat")
 
@@ -34,6 +35,18 @@ def send_message(peer_id):
     msg = Message(sender_id=user_id, recipient_id=peer_id, text=text)
     db.session.add(msg)
     db.session.commit()
+
+    # Push to both participants in real time
+    room = f"conversation_{min(user_id, peer_id)}_{max(user_id, peer_id)}"
+    try:
+        socketio.emit("new_message", {
+            "sender_id":    user_id,
+            "recipient_id": peer_id,
+            "text":         text,
+            "created_at":   msg.created_at.isoformat(),
+        }, room=room)
+    except Exception as exc:
+        print(f"[socket] emit failed: {exc}")
 
     return jsonify({"ok": True}), 201
 

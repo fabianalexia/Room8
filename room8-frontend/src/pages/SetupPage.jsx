@@ -1,5 +1,5 @@
 // src/pages/SetupPage.jsx — unified 4-step profile setup
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, setCurrentUser, updateProfile, markProfileComplete } from "../api";
 import { SCHOOLS } from "../data/schools";
@@ -277,11 +277,10 @@ function Step4({ data, setData }) {
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setData((prev) => ({
-      ...prev,
-      photoFile: file,
-      photoPreview: URL.createObjectURL(file),
-    }));
+    setData((prev) => {
+      if (prev.photoPreview) URL.revokeObjectURL(prev.photoPreview);
+      return { ...prev, photoFile: file, photoPreview: URL.createObjectURL(file) };
+    });
   };
 
   return (
@@ -414,6 +413,13 @@ export default function SetupPage() {
   });
   const [loading, setLoading] = useState(false);
   const [err, setErr]         = useState("");
+
+  // Revoke object URL on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (data.photoPreview) URL.revokeObjectURL(data.photoPreview);
+    };
+  }, []); // eslint-disable-line
 
   const update = (e) => setData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 

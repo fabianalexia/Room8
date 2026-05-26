@@ -1,5 +1,5 @@
 // src/pages/ProfileSetupPage.jsx  —  Step 1 of 3
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, setCurrentUser, updateProfile } from "../api";
 
@@ -29,8 +29,17 @@ export default function ProfileSetupPage() {
     const file = e.target.files[0];
     if (!file) return;
     setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
   };
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, []); // eslint-disable-line
 
   const handleSubmit = async (e) => {
     e.preventDefault();

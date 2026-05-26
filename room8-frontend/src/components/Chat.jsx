@@ -31,6 +31,7 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
   const [messages,        setMessages]        = useState([]);
   const [input,           setInput]           = useState("");
   const [sending,         setSending]         = useState(false);
+  const [sendError,       setSendError]       = useState("");
   const [loading,         setLoading]         = useState(true);
   const [menuOpen,        setMenuOpen]        = useState(false);
   const [showReport,      setShowReport]      = useState(false);
@@ -111,16 +112,16 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
   const handleSend = async () => {
     const text = input.trim();
     if (!text || sending) return;
-    const optimistic = { sender_id: userId, text, created_at: new Date().toISOString() };
-    setMessages((prev) => [...prev, optimistic]);
     setInput("");
+    setSendError("");
     setSending(true);
     try {
       await apiSendMessage(peerId, userId, text);
+      setMessages((prev) => [...prev, { sender_id: userId, text, created_at: new Date().toISOString() }]);
     } catch (err) {
       console.error("Send error:", err);
-      setMessages((prev) => prev.filter((m) => m !== optimistic));
       setInput(text);
+      setSendError("Failed to send.");
     } finally {
       setSending(false);
     }
@@ -465,6 +466,19 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
         })}
         <div ref={bottomRef} />
       </div>
+
+      {/* Send error */}
+      {sendError && (
+        <div style={{
+          padding: "6px 20px",
+          color: "#F87171", fontSize: "0.8rem", fontFamily: BF,
+          background: "rgba(239,68,68,0.08)",
+          borderTop: "1px solid rgba(239,68,68,0.2)",
+          flexShrink: 0,
+        }}>
+          {sendError}
+        </div>
+      )}
 
       {/* Input */}
       <div style={{

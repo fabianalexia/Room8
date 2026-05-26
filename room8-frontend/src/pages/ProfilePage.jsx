@@ -430,7 +430,7 @@ export default function ProfilePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
             {photos.map((url) => (
               <div key={url} style={{ position: "relative", paddingBottom: "100%", borderRadius: 10, overflow: "hidden" }}>
-                <img src={url} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={url} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }} />
                 <button onClick={() => handleRemovePhoto(url)} style={{
                   position: "absolute", top: 6, right: 6,
                   background: "rgba(0,0,0,0.65)", border: "none",

@@ -14,7 +14,15 @@ from room8_models.notification import Notification
 
 roommate_bp = Blueprint("roommate", __name__, url_prefix="/api/roommate")
 
-HOUSING_OFFICE_EMAIL = os.environ.get("HOUSING_OFFICE_EMAIL", "housing@university.edu")
+PARTNER_EMAIL = os.environ.get("HOUSING_OFFICE_EMAIL", "partner@swiperoom8.com")
+
+SCHOOL_HOUSING_EMAILS = {
+    "Whitman College": "on_campus_housing@whitman.edu",
+    "Evergreen State College": "rad@evergreen.edu",
+    "Columbia Basin College": "mrogers@columbiabasin.edu",
+    "Yakima Valley College": "src@yvcc.edu",
+    "Big Bend Community College": "housing@bigbend.edu",
+}
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
@@ -249,6 +257,18 @@ def _send_housing_email(user_a, user_b, confirmed_at):
       </div>
     </div>
     """
+    # Determine recipient: use school-specific housing email if available,
+    # otherwise fall back to the partner email.
+    school = (user_a.school or user_b.school or "").strip()
+    school_email = SCHOOL_HOUSING_EMAILS.get(school)
+
+    if school_email:
+        recipients = [school_email]
+        cc = [PARTNER_EMAIL]
+    else:
+        recipients = [PARTNER_EMAIL]
+        cc = []
+
     try:
         msg = MailMessage(
             subject=(
@@ -256,7 +276,8 @@ def _send_housing_email(user_a, user_b, confirmed_at):
                 f"{user_a.first_name} {user_a.last_name} & "
                 f"{user_b.first_name} {user_b.last_name}"
             ),
-            recipients=[HOUSING_OFFICE_EMAIL],
+            recipients=recipients,
+            cc=cc,
             html=html,
         )
         mail.send(msg)

@@ -271,7 +271,7 @@ export default function RegisterPage() {
           )}
         </form>
 
-        {false && /* OAuth buttons hidden until backend is verified */ (<>
+        <>
         {/* Divider */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 18px" }}>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
@@ -324,7 +324,7 @@ export default function RegisterPage() {
             Continue with LinkedIn
           </button>
         </div>
-        </>)}
+        </>
 
         <p style={{ textAlign: "center", marginTop: 22, fontSize: "0.88rem", color: MUTED, fontFamily: BF }}>
           Already have an account?{" "}

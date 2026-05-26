@@ -30,7 +30,7 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirm) { setErr("Passwords do not match."); return; }
-    if (form.password.length < 6) { setErr("Password must be at least 6 characters."); return; }
+    if (form.password.length < 8) { setErr("Password must be at least 8 characters."); return; }
     if (!token) { setErr("Missing reset token. Please use the link from your email."); return; }
 
     setErr("");

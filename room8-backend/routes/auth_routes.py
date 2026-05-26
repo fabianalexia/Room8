@@ -23,7 +23,7 @@ from utils import sanitize
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://findroom8.netlify.app")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://swiperoom8.com")
 BACKEND_URL  = os.environ.get("BACKEND_URL",  "https://room8-4dq7.onrender.com")
 
 MIN_PASSWORD_LEN = 8

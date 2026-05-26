@@ -385,8 +385,14 @@ def linkedin_callback():
         linkedin = OAuth2Session(LINKEDIN_CLIENT_ID, redirect_uri=LINKEDIN_REDIRECT_URI)
         callback_url = request.url.replace("http://", "https://", 1)
         linkedin._state = None
-        linkedin.fetch_token(LINKEDIN_TOKEN_URL, client_secret=LINKEDIN_CLIENT_SECRET,
-                             authorization_response=callback_url, force_pkce=False)
+        linkedin.fetch_token(
+            LINKEDIN_TOKEN_URL,
+            client_secret=LINKEDIN_CLIENT_SECRET,
+            authorization_response=callback_url,
+            force_pkce=False,
+            include_client_id=True,
+            auth=None,
+        )
         info = linkedin.get(LINKEDIN_USERINFO_URL).json()
         email      = (info.get("email") or "").strip().lower()
         first_name = info.get("given_name") or info.get("name", "").split()[0]

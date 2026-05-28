@@ -26,6 +26,7 @@ export default function RegisterPage() {
   });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [slowMsg, setSlowMsg] = useState(false);
 
   const update = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -40,6 +41,7 @@ export default function RegisterPage() {
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
+    if (!agreedToTerms) { setErr("You must agree to the Terms of Service and Privacy Policy to create an account."); return; }
     if (form.password !== form.confirm_password) { setErr("Passwords do not match."); return; }
     if (form.password.length < 8) { setErr("Password must be at least 8 characters."); return; }
     setLoading(true);
@@ -237,6 +239,29 @@ export default function RegisterPage() {
             )}
           </div>
 
+          {/* Terms & Privacy checkbox */}
+          <label style={{
+            display: "flex", alignItems: "flex-start", gap: 10,
+            marginBottom: 20, cursor: "pointer",
+          }}>
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              style={{ marginTop: 3, accentColor: GOLD, width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
+            />
+            <span style={{ fontSize: "0.83rem", color: "rgba(255,255,255,0.6)", fontFamily: BF, lineHeight: 1.5 }}>
+              I agree to the{" "}
+              <Link to="/terms" target="_blank" style={{ color: GOLD, fontWeight: 600, textDecoration: "none" }}>
+                Terms of Service
+              </Link>
+              {" "}and{" "}
+              <Link to="/privacy" target="_blank" style={{ color: GOLD, fontWeight: 600, textDecoration: "none" }}>
+                Privacy Policy
+              </Link>
+            </span>
+          </label>
+
           <style>{`@keyframes r8spin{to{transform:rotate(360deg)}}`}</style>
           <button type="submit" disabled={loading} style={{
             width: "100%", padding: "14px",
@@ -333,9 +358,6 @@ export default function RegisterPage() {
           </Link>
         </p>
 
-        <p style={{ textAlign: "center", marginTop: 10, fontSize: "0.7rem", color: "rgba(255,255,255,0.18)", lineHeight: 1.5, fontFamily: BF }}>
-          By creating an account you agree to our Terms of Service and Privacy Policy.
-        </p>
       </div>
     </div>
   );

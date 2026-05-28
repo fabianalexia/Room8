@@ -467,7 +467,7 @@ export default function SetupPage() {
       await markProfileComplete(user.id);
       setCurrentUser({ ...user, profile_complete: true });
     } catch { /* best-effort */ }
-    navigate("/app", { replace: true });
+    window.location.href = "/app";
   };
 
   const stepComponent = [

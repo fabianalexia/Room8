@@ -24,6 +24,8 @@ import DiscoverPage            from "./pages/DiscoverPage";
 import SwipeDeck               from "./components/SwipeDeck";
 import MessagesPage            from "./MessagesPage";
 import AuthCallbackPage        from "./pages/AuthCallbackPage";
+import PrivacyPage             from "./pages/PrivacyPage";
+import TermsPage               from "./pages/TermsPage";
 
 // Pages that replace the global chrome with their own nav
 const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/setup", "/onboarding/school", "/onboarding/lifestyle", "/profile/setup"];
@@ -83,6 +85,8 @@ function Layout() {
           <ProtectedRoute><DiscoverPage /></ProtectedRoute>
         } />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/privacy"      element={<PrivacyPage />} />
+        <Route path="/terms"        element={<TermsPage />} />
         <Route path="/find" element={<Navigate to="/discover" replace />} />
         <Route path="/messages" element={
           <ProtectedRoute><MessagesPage /></ProtectedRoute>

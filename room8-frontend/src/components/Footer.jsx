@@ -34,6 +34,8 @@ export default function Footer() {
           <a href="/#how-it-works" style={linkStyle}>How It Works</a>
           <Link to="/schools" style={linkStyle}>For Schools</Link>
           <Link to="/register" style={linkStyle}>Sign Up</Link>
+          <Link to="/privacy" style={linkStyle}>Privacy Policy</Link>
+          <Link to="/terms" style={linkStyle}>Terms of Service</Link>
         </nav>
 
         <p style={{ color: MUTED, fontSize: "0.8rem", margin: 0, fontFamily: BF }}>

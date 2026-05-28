@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.swipe import Swipe
+from extensions import socketio
 
 swipe_bp = Blueprint("swipe", __name__, url_prefix="/api/swipe")
 
@@ -28,6 +29,11 @@ def like():
     matched = Swipe.query.filter_by(
         user_id=target_id, target_id=user_id, action="like"
     ).first() is not None
+
+    if matched:
+        # Notify both users via WebSocket so their LikesPage updates instantly
+        socketio.emit("new_match", {"with_user": target_id}, room=f"user_{user_id}")
+        socketio.emit("new_match", {"with_user": user_id}, room=f"user_{target_id}")
 
     return jsonify({"ok": True, "matched": matched})
 

@@ -637,7 +637,8 @@ export default function SwipeDeck() {
   const [reportTarget,  setReportTarget]  = useState(null);
   const [resendSent,    setResendSent]    = useState(false);
   const [profileModal,  setProfileModal]  = useState(null);
-  const toastTimer = useRef(null);
+  const toastTimer    = useRef(null);
+  const touchStartRef = useRef(null);
 
   const loadCandidates = (reset = false) => {
     if (!user) { setLoading(false); return; }
@@ -779,6 +780,22 @@ export default function SwipeDeck() {
                 <div
                   style={{ position: "relative", width: "min(360px, calc(100vw - 32px))", height: "min(520px, calc(100vh - 220px))" }}
                   onClick={() => setProfileModal(person)}
+                  onTouchStart={(e) => {
+                    const t = e.touches[0];
+                    touchStartRef.current = { x: t.clientX, y: t.clientY };
+                  }}
+                  onTouchEnd={(e) => {
+                    if (!touchStartRef.current) return;
+                    const t = e.changedTouches[0];
+                    const dx = Math.abs(t.clientX - touchStartRef.current.x);
+                    const dy = Math.abs(t.clientY - touchStartRef.current.y);
+                    touchStartRef.current = null;
+                    // Only treat as a tap if movement was negligible
+                    if (dx < 8 && dy < 8) {
+                      e.preventDefault();
+                      setProfileModal(person);
+                    }
+                  }}
                 >
                   {swipeHint === "right" && (
                     <div style={{ ...hintStyle, borderColor: GOLD, color: GOLD, right: 16, left: "auto" }}>LIKE</div>
@@ -799,7 +816,7 @@ export default function SwipeDeck() {
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: "flex", gap: "clamp(20px, 8vw, 44px)", marginTop: 28, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "clamp(20px, 8vw, 44px)", marginTop: 28, alignItems: "center", justifyContent: "center", width: "100%" }}>
           <ActionButton
             onClick={() => pressButton("left")}
             onMouseEnter={() => setSwipeHint("left")}
@@ -859,6 +876,7 @@ export default function SwipeDeck() {
           fontSize: "1.1rem", fontWeight: 800,
           color: GOLD, letterSpacing: "0.06em",
           fontFamily: "'Outfit', sans-serif",
+          flexShrink: 0,
         }}>
           ROOM8
         </span>
@@ -868,7 +886,7 @@ export default function SwipeDeck() {
             color: "rgba(245,158,11,0.85)",
             padding: "4px 12px", borderRadius: 6, fontSize: "0.72rem", fontWeight: 600,
             border: "1px solid rgba(245,158,11,0.25)",
-            maxWidth: "45%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            maxWidth: "calc(100% - 120px)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
             {shortSchool(user.school)}
           </span>

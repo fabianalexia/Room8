@@ -1,7 +1,8 @@
 // src/pages/LikesPage.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getLikes, getMatches, likeUser } from "../api";
+import io from "socket.io-client";
+import { getCurrentUser, getLikes, getMatches, likeUser, getToken, API_URL } from "../api";
 import { sendNotification } from "../notifications";
 import VerifiedBadge from "../components/VerifiedBadge";
 
@@ -266,6 +267,7 @@ export default function LikesPage() {
   const [matched,     setMatched]     = useState({});
   const [matchModal,  setMatchModal]  = useState(null); // { fan } | null
   const [matchesList, setMatchesList] = useState([]);
+  const socketRef = useRef(null);
 
   const fetchData = useCallback(() => {
     return Promise.all([getLikes(user.id), getMatches(user.id)])
@@ -288,10 +290,25 @@ export default function LikesPage() {
     fetchData().finally(() => setLoading(false));
   }, []); // eslint-disable-line
 
-  // Poll every 30 seconds to refresh liked-you list
+  // WebSocket: listen for new_match events so the list refreshes instantly
   useEffect(() => {
     if (!user) return;
-    const id = setInterval(() => { fetchData(); }, 30_000);
+    const token = getToken();
+    if (!token) return;
+    const sock = io(API_URL, {
+      query: { token },
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+    });
+    socketRef.current = sock;
+    sock.on("new_match", () => fetchData());
+    return () => { sock.disconnect(); socketRef.current = null; };
+  }, [fetchData]); // eslint-disable-line
+
+  // Poll every 10 seconds as fallback (covers cases where socket isn't connected)
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => { fetchData(); }, 10_000);
     return () => clearInterval(id);
   }, [fetchData]);
 

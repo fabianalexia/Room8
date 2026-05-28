@@ -1,7 +1,7 @@
 // src/pages/ProfilePage.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, setCurrentUser, getProfile, updateProfile, addPhoto, removePhoto, logout } from "../api";
+import { getCurrentUser, setCurrentUser, getProfile, updateProfile, addPhoto, removePhoto, logout, deleteAccount, removeToken } from "../api";
 import VerifiedBadge from "../components/VerifiedBadge";
 
 const NAVY   = "#0F2D5E";
@@ -353,6 +353,24 @@ export default function ProfilePage() {
 
   const handleLogout = () => { logout(); navigate("/"); };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting,          setDeleting]          = useState(false);
+  const [deleteErr,         setDeleteErr]         = useState("");
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteErr("");
+    try {
+      await deleteAccount();
+      removeToken();
+      localStorage.removeItem("user");
+      navigate("/", { replace: true });
+    } catch (e) {
+      setDeleteErr(e?.message || "Could not delete account. Please try again.");
+      setDeleting(false);
+    }
+  };
+
   if (!user) return null;
 
   const displayName = [form.first_name, form.last_name].filter(Boolean).join(" ") || user.name || user.email;
@@ -634,7 +652,114 @@ export default function ProfilePage() {
         >
           Log Out
         </button>
+
+        {/* Delete Account */}
+        <button onClick={() => { setDeleteErr(""); setShowDeleteConfirm(true); }} style={{
+          width: "100%", marginTop: 8,
+          background: "transparent",
+          border: "1px solid rgba(239,68,68,0.2)",
+          color: "rgba(239,68,68,0.5)", padding: "11px",
+          borderRadius: 8, fontWeight: 600,
+          fontSize: "0.85rem", cursor: "pointer",
+          transition: "all 0.15s",
+        }}
+          onMouseEnter={e => { e.currentTarget.style.color = "#F87171"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.5)"; }}
+          onMouseLeave={e => { e.currentTarget.style.color = "rgba(239,68,68,0.5)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.2)"; }}
+        >
+          Delete Account
+        </button>
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 400,
+            background: "rgba(0,0,0,0.75)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 20,
+            backdropFilter: "blur(6px)",
+          }}
+          onClick={() => { if (!deleting) setShowDeleteConfirm(false); }}
+        >
+          <div
+            style={{
+              background: "#0A1628",
+              border: "1px solid rgba(239,68,68,0.3)",
+              borderRadius: 16, padding: "32px 28px",
+              width: "100%", maxWidth: 400,
+              boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontSize: "2rem", textAlign: "center", marginBottom: 16 }}>⚠️</div>
+            <h3 style={{
+              color: "#FFFFFF", fontWeight: 800, fontSize: "1.1rem",
+              textAlign: "center", margin: "0 0 12px",
+              fontFamily: "'Outfit', sans-serif",
+            }}>
+              Delete your account?
+            </h3>
+            <p style={{
+              color: "rgba(255,255,255,0.55)", fontSize: "0.9rem",
+              lineHeight: 1.6, textAlign: "center", margin: "0 0 24px",
+              fontFamily: "'Inter', sans-serif",
+            }}>
+              This will permanently delete your profile, photos, matches, and messages.
+              <strong style={{ color: "#F87171", display: "block", marginTop: 6 }}>
+                This cannot be undone.
+              </strong>
+            </p>
+
+            {deleteErr && (
+              <div style={{
+                background: "rgba(239,68,68,0.12)",
+                border: "1px solid rgba(239,68,68,0.3)",
+                color: "#F87171", borderRadius: 8,
+                padding: "10px 14px", fontSize: "0.85rem",
+                marginBottom: 16, fontFamily: "'Inter', sans-serif",
+              }}>
+                {deleteErr}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                style={{
+                  flex: 1, padding: "12px",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "rgba(255,255,255,0.7)",
+                  borderRadius: 8, fontWeight: 600,
+                  fontSize: "0.92rem", cursor: "pointer",
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                style={{
+                  flex: 1, padding: "12px",
+                  background: deleting ? "rgba(239,68,68,0.4)" : "#DC2626",
+                  border: "none",
+                  color: "#FFFFFF",
+                  borderRadius: 8, fontWeight: 700,
+                  fontSize: "0.92rem",
+                  cursor: deleting ? "default" : "pointer",
+                  fontFamily: "'Inter', sans-serif",
+                  boxShadow: deleting ? "none" : "0 4px 16px rgba(220,38,38,0.4)",
+                }}
+              >
+                {deleting ? "Deleting…" : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

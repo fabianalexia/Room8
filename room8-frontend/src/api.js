@@ -58,6 +58,10 @@ export function logout() {
   }).catch(() => {});
 }
 
+export function deleteAccount() {
+  return doFetch(`${API_URL}/api/auth/account`, { method: "DELETE" });
+}
+
 function isValidJwt(token) {
   // A JWT has exactly 3 base64url segments separated by dots
   return typeof token === "string" && token.split(".").length === 3;

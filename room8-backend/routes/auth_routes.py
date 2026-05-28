@@ -289,6 +289,83 @@ def reset_password():
     return jsonify({"ok": True, "message": "Password updated. You can now log in."}), 200
 
 
+# ── delete account ────────────────────────────────────────────────────────────
+
+@auth_bp.route("/account", methods=["DELETE"])
+@jwt_required()
+def delete_account():
+    from room8_models.message              import Message
+    from room8_models.swipe                import Swipe
+    from room8_models.board                import Post, PostLike, PostReply
+    from room8_models.notification         import Notification
+    from room8_models.report               import Report
+    from room8_models.block                import Block
+    from room8_models.roommate_confirmation import RoommateConfirmation
+    from room8_models.survey               import Survey
+    import cloudinary
+    import cloudinary.uploader
+
+    user_id = int(get_jwt_identity())
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # 1. Messages (sent or received)
+    Message.query.filter(
+        (Message.sender_id == user_id) | (Message.recipient_id == user_id)
+    ).delete(synchronize_session=False)
+
+    # 2. Swipes (initiated by or targeting this user)
+    Swipe.query.filter(
+        (Swipe.user_id == user_id) | (Swipe.target_id == user_id)
+    ).delete(synchronize_session=False)
+
+    # 3. Board: replies, likes, posts (child rows first)
+    PostReply.query.filter(PostReply.user_id == user_id).delete(synchronize_session=False)
+    PostLike.query.filter(PostLike.user_id == user_id).delete(synchronize_session=False)
+    # Cascade-delete replies/likes on posts owned by this user
+    for post in Post.query.filter_by(user_id=user_id).all():
+        PostReply.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+        PostLike.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+    Post.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+
+    # 4. Notifications (received or triggered by this user)
+    Notification.query.filter(
+        (Notification.user_id == user_id) | (Notification.from_user_id == user_id)
+    ).delete(synchronize_session=False)
+
+    # 5. Reports (filed by or against this user)
+    Report.query.filter(
+        (Report.reporter_id == user_id) | (Report.reported_id == user_id)
+    ).delete(synchronize_session=False)
+
+    # 6. Blocks (initiated by or targeting this user)
+    Block.query.filter(
+        (Block.blocker_id == user_id) | (Block.blocked_id == user_id)
+    ).delete(synchronize_session=False)
+
+    # 7. Roommate confirmations
+    RoommateConfirmation.query.filter(
+        (RoommateConfirmation.user_a_id == user_id) | (RoommateConfirmation.user_b_id == user_id)
+    ).delete(synchronize_session=False)
+
+    # 8. Survey responses
+    Survey.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+
+    # 9. Cloudinary photos (best-effort — don't block deletion if it fails)
+    try:
+        cloudinary.uploader.destroy(f"room8/profile/{user_id}", invalidate=True)
+        cloudinary.api.delete_resources_by_prefix(f"room8/gallery/{user_id}/", invalidate=True)
+    except Exception as e:
+        print(f"[delete_account] Cloudinary cleanup failed for user {user_id}: {e}")
+
+    # 10. Delete the user record
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({"message": "Account deleted successfully"}), 200
+
+
 # ── OAuth helpers ─────────────────────────────────────────────────────────────
 
 def _oauth_login_or_create(email, first_name, last_name):

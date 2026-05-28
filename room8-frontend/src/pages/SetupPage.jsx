@@ -452,10 +452,11 @@ export default function SetupPage() {
 
       await markProfileComplete(user.id);
       setCurrentUser({ ...user, ...updatedUser, profile_complete: true });
-      navigate("/app", { replace: true });
+      // Hard redirect so ProtectedRoute picks up the committed DB state on a
+      // fresh page load rather than racing against a stale getMe() response.
+      window.location.href = "/app";
     } catch (e) {
       setErr(e?.message || "Something went wrong. Please try again.");
-    } finally {
       setLoading(false);
     }
   };

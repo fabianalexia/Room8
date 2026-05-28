@@ -146,6 +146,8 @@ function Step1({ data, update }) {
 function Step2({ data, update, setData }) {
   const [schoolInput, setSchoolInput] = useState(data.school || "");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [customSchool, setCustomSchool] = useState(false);
+  const [customInput, setCustomInput] = useState("");
 
   const suggestions = schoolInput.length > 1
     ? SCHOOLS.filter((s) => s.toLowerCase().includes(schoolInput.toLowerCase())).slice(0, 8)
@@ -157,6 +159,19 @@ function Step2({ data, update, setData }) {
     setShowSuggestions(false);
   };
 
+  const enterCustomMode = () => {
+    setCustomSchool(true);
+    setSchoolInput("");
+    setData((prev) => ({ ...prev, school: "" }));
+    setShowSuggestions(false);
+  };
+
+  const backToList = () => {
+    setCustomSchool(false);
+    setCustomInput("");
+    setData((prev) => ({ ...prev, school: "" }));
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
       <StepHeading
@@ -166,41 +181,79 @@ function Step2({ data, update, setData }) {
 
       {/* School search */}
       <Field label="Your college or university" required>
-        <div style={{ position: "relative" }}>
-          <Input
-            value={schoolInput}
-            onChange={(e) => {
-              setSchoolInput(e.target.value);
-              setData((prev) => ({ ...prev, school: "" }));
-              setShowSuggestions(true);
-            }}
-            onFocus={() => setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            placeholder="Search for your school…"
-          />
-          {showSuggestions && suggestions.length > 0 && (
-            <ul style={{
-              position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 50,
-              background: "#0E1F3D", border: `1px solid rgba(245,158,11,0.2)`,
-              borderRadius: 10, boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
-              listStyle: "none", margin: 0, padding: "4px 0",
-              maxHeight: 220, overflowY: "auto",
-            }}>
-              {suggestions.map((s) => (
-                <li key={s} onMouseDown={() => selectSchool(s)} style={{
-                  padding: "10px 16px", cursor: "pointer",
-                  fontSize: "0.9rem", color: WHITE, fontFamily: BF,
-                  transition: "background 0.1s",
-                }}
+        {customSchool ? (
+          <div>
+            <Input
+              value={customInput}
+              onChange={(e) => {
+                setCustomInput(e.target.value);
+                setData((prev) => ({ ...prev, school: e.target.value }));
+              }}
+              placeholder="Type your school name…"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={backToList}
+              style={{
+                background: "none", border: "none", padding: "6px 0 0",
+                color: "rgba(245,158,11,0.8)", fontSize: "0.82rem", fontFamily: BF,
+                cursor: "pointer", textDecoration: "underline",
+              }}
+            >
+              ← Back to list
+            </button>
+          </div>
+        ) : (
+          <div style={{ position: "relative" }}>
+            <Input
+              value={schoolInput}
+              onChange={(e) => {
+                setSchoolInput(e.target.value);
+                setData((prev) => ({ ...prev, school: "" }));
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              placeholder="Search for your school…"
+            />
+            {showSuggestions && (suggestions.length > 0 || schoolInput.length > 1) && (
+              <ul style={{
+                position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 50,
+                background: "#0E1F3D", border: `1px solid rgba(245,158,11,0.2)`,
+                borderRadius: 10, boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+                listStyle: "none", margin: 0, padding: "4px 0",
+                maxHeight: 220, overflowY: "auto",
+              }}>
+                {suggestions.map((s) => (
+                  <li key={s} onMouseDown={() => selectSchool(s)} style={{
+                    padding: "10px 16px", cursor: "pointer",
+                    fontSize: "0.9rem", color: WHITE, fontFamily: BF,
+                    transition: "background 0.1s",
+                  }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245,158,11,0.08)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    {s}
+                  </li>
+                ))}
+                <li
+                  onMouseDown={enterCustomMode}
+                  style={{
+                    padding: "10px 16px", cursor: "pointer",
+                    fontSize: "0.9rem", color: "rgba(245,158,11,0.8)", fontFamily: BF,
+                    borderTop: suggestions.length > 0 ? "1px solid rgba(245,158,11,0.1)" : "none",
+                    transition: "background 0.1s",
+                  }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245,158,11,0.08)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
-                  {s}
+                  My school isn't listed
                 </li>
-              ))}
-            </ul>
-          )}
-        </div>
+              </ul>
+            )}
+          </div>
+        )}
         {data.school && (
           <p style={{ margin: "6px 0 0", fontSize: "0.8rem", color: "#86efac", fontFamily: BF }}>
             ✓ {data.school}

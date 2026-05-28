@@ -32,6 +32,9 @@ export default function OnboardingSchoolPage() {
 
   const [school,      setSchool]      = useState("");
   const [schoolInput, setSchoolInput] = useState("");
+  const [customSchool, setCustomSchool] = useState(false);
+  const [customInput,  setCustomInput]  = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [housing,     setHousing]     = useState("");
   const [roomType,    setRoomType]    = useState("");
   const [budget,      setBudget]      = useState("");
@@ -42,7 +45,20 @@ export default function OnboardingSchoolPage() {
     ? SCHOOLS.filter((s) => s.toLowerCase().includes(schoolInput.toLowerCase())).slice(0, 8)
     : [];
 
-  const selectSchool = (s) => { setSchool(s); setSchoolInput(s); };
+  const selectSchool = (s) => { setSchool(s); setSchoolInput(s); setShowSuggestions(false); };
+
+  const enterCustomMode = () => {
+    setCustomSchool(true);
+    setSchoolInput("");
+    setSchool("");
+    setShowSuggestions(false);
+  };
+
+  const backToList = () => {
+    setCustomSchool(false);
+    setCustomInput("");
+    setSchool("");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -91,39 +107,79 @@ export default function OnboardingSchoolPage() {
           {/* School search */}
           <div>
             <SectionLabel text="Your College or University" required />
-            <div style={{ position: "relative" }}>
-              <input
-                type="text"
-                placeholder="Search for your school…"
-                value={schoolInput}
-                onChange={(e) => { setSchoolInput(e.target.value); setSchool(""); }}
-                style={inputStyle}
-                onFocus={(e) => (e.target.style.borderColor = BLUE)}
-                onBlur={(e) => (e.target.style.borderColor = BORDER)}
-                required
-              />
-              {schoolSuggestions.length > 0 && (
-                <ul style={{
-                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
-                  background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 8,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.08)", margin: "4px 0 0", padding: 0,
-                  listStyle: "none", maxHeight: 240, overflowY: "auto",
-                }}>
-                  {schoolSuggestions.map((s) => (
-                    <li key={s} onClick={() => selectSchool(s)} style={{
-                      padding: "11px 14px", cursor: "pointer", fontSize: "0.92rem",
-                      borderBottom: `1px solid ${BORDER}`, color: TEXT,
-                      transition: "background 0.1s",
-                    }}
+            {customSchool ? (
+              <div>
+                <input
+                  type="text"
+                  placeholder="Type your school name…"
+                  value={customInput}
+                  onChange={(e) => { setCustomInput(e.target.value); setSchool(e.target.value); }}
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = BLUE)}
+                  onBlur={(e) => (e.target.style.borderColor = BORDER)}
+                  autoFocus
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={backToList}
+                  style={{
+                    background: "none", border: "none", padding: "6px 0 0",
+                    color: BLUE, fontSize: "0.82rem", cursor: "pointer",
+                    textDecoration: "underline", fontFamily: "inherit",
+                  }}
+                >
+                  ← Back to list
+                </button>
+              </div>
+            ) : (
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  placeholder="Search for your school…"
+                  value={schoolInput}
+                  onChange={(e) => { setSchoolInput(e.target.value); setSchool(""); setShowSuggestions(true); }}
+                  style={inputStyle}
+                  onFocus={(e) => { e.target.style.borderColor = BLUE; setShowSuggestions(true); }}
+                  onBlur={(e) => { e.target.style.borderColor = BORDER; setTimeout(() => setShowSuggestions(false), 150); }}
+                  required={!customSchool}
+                />
+                {showSuggestions && (schoolSuggestions.length > 0 || schoolInput.length > 1) && (
+                  <ul style={{
+                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
+                    background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 8,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.08)", margin: "4px 0 0", padding: 0,
+                    listStyle: "none", maxHeight: 240, overflowY: "auto",
+                  }}>
+                    {schoolSuggestions.map((s) => (
+                      <li key={s} onMouseDown={() => selectSchool(s)} style={{
+                        padding: "11px 14px", cursor: "pointer", fontSize: "0.92rem",
+                        borderBottom: `1px solid ${BORDER}`, color: TEXT,
+                        transition: "background 0.1s",
+                      }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = SURFACE)}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                      >
+                        {s}
+                      </li>
+                    ))}
+                    <li
+                      onMouseDown={enterCustomMode}
+                      style={{
+                        padding: "11px 14px", cursor: "pointer", fontSize: "0.92rem",
+                        color: BLUE, fontWeight: 600,
+                        borderTop: schoolSuggestions.length > 0 ? `1px solid ${BORDER}` : "none",
+                        transition: "background 0.1s",
+                      }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = SURFACE)}
                       onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
                     >
-                      {s}
+                      My school isn't listed
                     </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+                  </ul>
+                )}
+              </div>
+            )}
             {school && (
               <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ color: "#15803d", fontSize: "0.85rem" }}>✓</span>

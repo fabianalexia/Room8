@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
-import { getCurrentUser, getMatches, getProfile, getNotifications, markNotificationRead, getToken, API_URL } from "./api";
+import { getCurrentUser, getMatches, getProfile, getNotifications, markNotificationRead, markMessagesRead, getToken, API_URL } from "./api";
 import { ProfileModal } from "./components/SwipeDeck";
 import Chat from "./components/Chat";
 import { sendNotification } from "./notifications";
@@ -263,8 +263,9 @@ function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifi
               Conversations
             </p>
             {messaged.map((m) => {
-              const active  = m.id === selectedId;
-              const preview = m.last_message_mine ? `You: ${m.last_message}` : m.last_message;
+              const active    = m.id === selectedId;
+              const hasUnread = !active && !!m.has_unread;
+              const preview   = m.last_message_mine ? `You: ${m.last_message}` : m.last_message;
               return (
                 <div
                   key={m.id}
@@ -273,24 +274,45 @@ function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifi
                     display: "flex", alignItems: "center", gap: 12,
                     padding: "12px 20px", cursor: "pointer",
                     background: active ? "rgba(245,158,11,0.1)" : "transparent",
-                    borderLeft: `3px solid ${active ? GOLD : "transparent"}`,
+                    borderLeft: `3px solid ${active ? GOLD : hasUnread ? "rgba(245,158,11,0.5)" : "transparent"}`,
                     transition: "background 0.15s",
                   }}
                   onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = SURFACE; }}
                   onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                 >
-                  <Avatar src={m.photo} name={m.name} size={48} onClick={(e) => { e.stopPropagation(); onViewProfile?.(m); }} />
+                  {/* Avatar with unread dot overlay */}
+                  <div style={{ position: "relative", flexShrink: 0 }}>
+                    <Avatar src={m.photo} name={m.name} size={48} onClick={(e) => { e.stopPropagation(); onViewProfile?.(m); }} />
+                    {hasUnread && (
+                      <span style={{
+                        position: "absolute", bottom: 1, right: 1,
+                        width: 11, height: 11, borderRadius: "50%",
+                        background: GOLD,
+                        border: "2px solid #050D1F",
+                      }} />
+                    )}
+                  </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ color: active ? GOLD : WHITE, fontWeight: 700, fontSize: "0.9rem" }}>
+                      <span style={{
+                        color: active ? GOLD : hasUnread ? WHITE : "rgba(255,255,255,0.85)",
+                        fontWeight: hasUnread ? 800 : 600,
+                        fontSize: "0.9rem",
+                      }}>
                         {m.name?.split(" ")[0]}
                       </span>
-                      <span style={{ color: MUTED, fontSize: "0.68rem", flexShrink: 0, marginLeft: 6 }}>
+                      <span style={{
+                        color: hasUnread ? "rgba(245,158,11,0.8)" : MUTED,
+                        fontSize: "0.68rem", flexShrink: 0, marginLeft: 6,
+                        fontWeight: hasUnread ? 700 : 400,
+                      }}>
                         {relTime(m.last_message_at)}
                       </span>
                     </div>
                     <div style={{
-                      color: MUTED, fontSize: "0.82rem", marginTop: 2,
+                      color: hasUnread ? "rgba(255,255,255,0.75)" : MUTED,
+                      fontWeight: hasUnread ? 600 : 400,
+                      fontSize: "0.82rem", marginTop: 2,
                       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     }}>
                       {preview}
@@ -418,15 +440,19 @@ export default function MessagesPage() {
         ? msg.sender_id
         : msg.recipient_id;
 
-      // Update the match-list preview for that peer
+      const isFromPeer = String(msg.sender_id) !== String(user.id);
+      const isOpenConversation = selectedRef.current?.id === peerId;
+
+      // Update the match-list preview; mark unread if from peer and chat isn't open
       setMatches((prev) =>
         prev.map((m) =>
           m.id === peerId
             ? {
                 ...m,
                 last_message:      msg.text,
-                last_message_mine: String(msg.sender_id) === String(user.id),
+                last_message_mine: !isFromPeer,
                 last_message_at:   msg.created_at,
+                has_unread: isFromPeer && !isOpenConversation ? true : m.has_unread,
               }
             : m
         )
@@ -434,10 +460,7 @@ export default function MessagesPage() {
 
       // Deliver to the open Chat view only if it's a message from the peer
       // (the sender already has an optimistic update in Chat, so skip own messages)
-      if (
-        selectedRef.current?.id === peerId &&
-        String(msg.sender_id) !== String(user.id)
-      ) {
+      if (isOpenConversation && isFromPeer) {
         setIncomingMessage(msg);
       }
     });
@@ -539,6 +562,11 @@ export default function MessagesPage() {
   const handleSelect = useCallback((match) => {
     setSelected(match);
     if (isMobile) setMobileView("chat");
+    // Mark all messages from this peer as read
+    if (match.has_unread) {
+      markMessagesRead(match.id).catch(console.error);
+      setMatches((prev) => prev.map((m) => m.id === match.id ? { ...m, has_unread: false } : m));
+    }
   }, [isMobile]);
 
   const handleBack = useCallback(() => {

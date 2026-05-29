@@ -148,6 +148,12 @@ def get_matches(user_id: int):
         data["last_message"]      = last_msg.text if last_msg else None
         data["last_message_at"]   = last_msg.created_at.isoformat() if last_msg else None
         data["last_message_mine"] = (last_msg.sender_id == user_id) if last_msg else None
+        # Unread: any message from partner to user that hasn't been read yet
+        data["has_unread"] = Message.query.filter(
+            Message.sender_id == partner.id,
+            Message.recipient_id == user_id,
+            Message.read == False,  # noqa: E712
+        ).count() > 0
         result.append(data)
 
     return jsonify(result)

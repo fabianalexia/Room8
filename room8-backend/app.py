@@ -176,6 +176,7 @@ def create_app():
             ("users", "token_valid_after",          "TIMESTAMP"),
             ("users", "verification_token_expiry",  "TIMESTAMP"),
             ("users", "is_verified_student",         "BOOLEAN DEFAULT FALSE"),
+            ("messages", "read",                     "BOOLEAN DEFAULT FALSE"),
         ])
 
         # Backfill: mark all existing .edu users as verified students

@@ -66,6 +66,20 @@ def send_message(peer_id):
     return jsonify({"ok": True}), 201
 
 
+@message_bp.route("/<int:peer_id>/read", methods=["PATCH"])
+@jwt_required()
+def mark_read(peer_id):
+    """Mark all messages from peer_id → current user as read."""
+    user_id = int(get_jwt_identity())
+    Message.query.filter(
+        Message.sender_id == peer_id,
+        Message.recipient_id == user_id,
+        Message.read == False,  # noqa: E712
+    ).update({"read": True})
+    db.session.commit()
+    return jsonify({"ok": True}), 200
+
+
 @message_bp.route("/<int:peer_id>", methods=["GET"])
 @jwt_required()
 def get_conversation(peer_id):

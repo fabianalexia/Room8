@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { getChat, sendMessage as apiSendMessage, reportUser, blockUser, unmatchUser, getRoommateStatus, confirmRoommate } from "../api";
 
+function formatMsgTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msgDayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((todayStart - msgDayStart) / 86400000);
+  const timeStr = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (diffDays === 0) return timeStr;
+  if (diffDays === 1) return `Yesterday`;
+  if (diffDays < 7) return d.toLocaleDateString([], { weekday: "short" });
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
 const DARK   = "#050D1F";
@@ -463,20 +477,51 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
 
         {messages.map((m, i) => {
           const isMe = String(m.sender_id) === String(userId);
+          const prev = messages[i - 1];
+          // Show a time divider when the gap exceeds 5 minutes or it's the first message
+          const showDivider = !prev ||
+            (m.created_at && prev.created_at &&
+              new Date(m.created_at) - new Date(prev.created_at) > 5 * 60 * 1000);
+          // Show per-bubble timestamp only on the last message in a run
+          const next = messages[i + 1];
+          const isLastInRun = !next || String(next.sender_id) !== String(m.sender_id) ||
+            (m.created_at && next.created_at &&
+              new Date(next.created_at) - new Date(m.created_at) > 5 * 60 * 1000);
+
           return (
-            <div key={i} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start" }}>
-              <div style={{
-                maxWidth: "72%", padding: "10px 15px",
-                borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                background: isMe ? `linear-gradient(135deg, ${NAVY}, #1a3f7a)` : "rgba(255,255,255,0.07)",
-                color: WHITE, fontSize: "0.93rem", lineHeight: 1.5,
-                boxShadow: isMe ? "0 2px 12px rgba(15,45,94,0.4)" : "0 1px 4px rgba(0,0,0,0.2)",
-                border: isMe ? "none" : `1px solid ${BORDER}`,
-                fontFamily: BF,
-              }}>
-                {m.text}
+            <React.Fragment key={i}>
+              {showDivider && m.created_at && (
+                <div style={{ textAlign: "center", margin: "8px 0 4px" }}>
+                  <span style={{
+                    fontSize: "0.65rem", color: "rgba(255,255,255,0.3)",
+                    fontFamily: BF, letterSpacing: "0.04em",
+                  }}>
+                    {formatMsgTime(m.created_at)}
+                  </span>
+                </div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start" }}>
+                <div style={{
+                  maxWidth: "72%", padding: "10px 15px",
+                  borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                  background: isMe ? `linear-gradient(135deg, ${NAVY}, #1a3f7a)` : "rgba(255,255,255,0.07)",
+                  color: WHITE, fontSize: "0.93rem", lineHeight: 1.5,
+                  boxShadow: isMe ? "0 2px 12px rgba(15,45,94,0.4)" : "0 1px 4px rgba(0,0,0,0.2)",
+                  border: isMe ? "none" : `1px solid ${BORDER}`,
+                  fontFamily: BF,
+                }}>
+                  {m.text}
+                </div>
+                {isLastInRun && m.created_at && (
+                  <span style={{
+                    fontSize: "0.62rem", color: "rgba(255,255,255,0.25)",
+                    fontFamily: BF, marginTop: 3, padding: "0 4px",
+                  }}>
+                    {new Date(m.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                )}
               </div>
-            </div>
+            </React.Fragment>
           );
         })}
         <div ref={bottomRef} />

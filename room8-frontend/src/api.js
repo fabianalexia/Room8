@@ -198,6 +198,10 @@ export function getChat(userId, peerId) {
   return doFetch(`${API_URL}/api/chat/${peerId}`);
 }
 
+export function markMessagesRead(peerId) {
+  return doFetch(`${API_URL}/api/chat/${peerId}/read`, { method: "PATCH" });
+}
+
 export function sendMessage(peerId, userId, text) {
   return doFetch(`${API_URL}/api/chat/${peerId}`, {
     method: "POST",

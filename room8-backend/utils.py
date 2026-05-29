@@ -1,5 +1,7 @@
-# utils.py — shared sanitization helpers
+# utils.py — shared sanitization and notification helpers
 
+import json
+import os
 from html.parser import HTMLParser
 
 # Tags whose entire content (not just the tag itself) must be dropped
@@ -55,3 +57,50 @@ def sanitize(value: str | None, max_len: int | None = None) -> str | None:
     if cleaned is not None and max_len is not None and len(cleaned) > max_len:
         raise ValueError(f"Value exceeds maximum length of {max_len} characters.")
     return cleaned
+
+
+def send_push_notification(user_id: int, title: str, body: str, url: str = "/") -> None:
+    """Send a Web Push notification to user_id if they have a stored subscription.
+
+    Silently no-ops when VAPID keys are not configured or the user has no
+    subscription.  Expired/gone subscriptions (410) are automatically cleaned up.
+
+    VAPID env vars required:
+      VAPID_PRIVATE_KEY  — PEM string (multi-line OK; \\n accepted)
+      VAPID_CLAIMS_EMAIL — e.g. partner@swiperoom8.com
+    """
+    vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY", "").strip().replace("\\n", "\n")
+    if not vapid_private_key:
+        return  # VAPID not configured — skip silently
+
+    try:
+        from pywebpush import webpush, WebPushException
+        from room8_models.push_subscription import PushSubscription
+        from room8_models import db
+    except ImportError:
+        return  # pywebpush not installed — skip silently
+
+    sub = PushSubscription.query.filter_by(user_id=user_id).first()
+    if not sub:
+        return
+
+    claims_email = os.environ.get("VAPID_CLAIMS_EMAIL", "partner@swiperoom8.com")
+
+    try:
+        webpush(
+            subscription_info=json.loads(sub.subscription_json),
+            data=json.dumps({"title": title, "body": body, "url": url}),
+            vapid_private_key=vapid_private_key,
+            vapid_claims={"sub": f"mailto:{claims_email}"},
+        )
+    except Exception as exc:
+        exc_str = str(exc)
+        # 410 Gone = subscription is no longer valid; remove it
+        if "410" in exc_str or "404" in exc_str:
+            try:
+                db.session.delete(sub)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        else:
+            print(f"[push] Error sending push to user {user_id}: {exc}")

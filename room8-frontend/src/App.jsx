@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { requestNotificationPermission } from "./notifications";
+import { requestNotificationPermission, registerServiceWorker, requestPermission, subscribeToPush } from "./notifications";
+import { getCurrentUser } from "./api";
 
 import Header        from "./components/Header";
 import Footer        from "./components/Footer";
@@ -107,6 +108,19 @@ function Layout() {
 }
 
 export default function App() {
-  useEffect(() => { requestNotificationPermission(); }, []);
+  useEffect(() => {
+    // Legacy local-notification permission (used for in-tab toasts)
+    requestNotificationPermission();
+
+    // Web Push: register SW → ask permission → subscribe (only if logged in)
+    const user = getCurrentUser();
+    if (user) {
+      registerServiceWorker().then(async () => {
+        const granted = await requestPermission();
+        if (granted) await subscribeToPush();
+      });
+    }
+  }, []);
+
   return <Layout />;
 }

@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.message import Message
 from room8_models.swipe import Swipe
-from utils import sanitize
+from utils import sanitize, send_push_notification
 from extensions import socketio
 
 message_bp = Blueprint("message", __name__, url_prefix="/api/chat")
@@ -36,7 +36,7 @@ def send_message(peer_id):
     db.session.add(msg)
     db.session.commit()
 
-    # Push to both participants in real time
+    # Push to both participants in real time via WebSocket
     room = f"conversation_{min(user_id, peer_id)}_{max(user_id, peer_id)}"
     try:
         socketio.emit("new_message", {
@@ -47,6 +47,21 @@ def send_message(peer_id):
         }, room=room)
     except Exception as exc:
         print(f"[socket] emit failed: {exc}")
+
+    # Web Push notification to recipient (fires even when tab is closed)
+    try:
+        from room8_models.user import User
+        sender = db.session.get(User, user_id)
+        sender_name = sender.first_name or "Someone" if sender else "Someone"
+        preview = text if len(text) <= 60 else text[:57] + "…"
+        send_push_notification(
+            peer_id,
+            f"New message from {sender_name}",
+            preview,
+            url="/messages",
+        )
+    except Exception as exc:
+        print(f"[push] message notification failed: {exc}")
 
     return jsonify({"ok": True}), 201
 

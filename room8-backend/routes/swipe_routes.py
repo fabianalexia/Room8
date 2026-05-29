@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from room8_models import db
 from room8_models.swipe import Swipe
 from extensions import socketio
+from utils import send_push_notification
 
 swipe_bp = Blueprint("swipe", __name__, url_prefix="/api/swipe")
 
@@ -34,6 +35,28 @@ def like():
         # Notify both users via WebSocket so their LikesPage updates instantly
         socketio.emit("new_match", {"with_user": target_id}, room=f"user_{user_id}")
         socketio.emit("new_match", {"with_user": user_id}, room=f"user_{target_id}")
+
+        # Web Push notifications (fires even when the tab is closed)
+        try:
+            from room8_models.user import User
+            liker  = db.session.get(User, user_id)
+            target = db.session.get(User, target_id)
+            liker_name  = liker.first_name  or "Someone" if liker  else "Someone"
+            target_name = target.first_name or "Someone" if target else "Someone"
+            send_push_notification(
+                user_id,
+                "It's a Match! 🎉",
+                f"You and {target_name} both liked each other.",
+                url="/likes",
+            )
+            send_push_notification(
+                target_id,
+                "It's a Match! 🎉",
+                f"You and {liker_name} both liked each other.",
+                url="/likes",
+            )
+        except Exception as exc:
+            print(f"[push] match notification failed: {exc}")
 
     return jsonify({"ok": True, "matched": matched})
 

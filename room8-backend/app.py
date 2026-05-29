@@ -23,6 +23,7 @@ from routes.report_routes import report_bp
 from routes.safety_routes import safety_bp
 from routes.match_routes import match_bp
 from routes.roommate_routes import roommate_bp
+from routes.push_routes import push_bp
 from routes.migration_routes import migration_bp  # ONE-TIME — delete after use
 
 # Load .env if present (development)
@@ -146,6 +147,7 @@ def create_app():
     from room8_models.block import Block                      # noqa: F401
     from room8_models.roommate_confirmation import RoommateConfirmation  # noqa: F401
     from room8_models.notification import Notification                   # noqa: F401
+    from room8_models.push_subscription import PushSubscription          # noqa: F401
 
     with app.app_context():
         db.create_all()
@@ -209,6 +211,7 @@ def create_app():
     app.register_blueprint(safety_bp)
     app.register_blueprint(match_bp)
     app.register_blueprint(roommate_bp)
+    app.register_blueprint(push_bp)
     app.register_blueprint(migration_bp)  # ONE-TIME — delete after use
 
     # Register socket event handlers (must come after socketio.init_app)

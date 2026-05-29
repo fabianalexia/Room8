@@ -759,7 +759,7 @@ export default function SwipeDeck() {
     return (
       <>
         {/* Card stack */}
-        <div style={{ position: "relative", width: "min(360px, calc(100vw - 32px))", height: "min(520px, calc(100vh - 220px))" }}>
+        <div style={{ position: "relative", width: "min(360px, calc(100vw - 32px))", height: "min(460px, calc(100vh - 300px))" }}>
           {currentIndex > 0 && (
             <div style={{
               position: "absolute", inset: 0, borderRadius: 22,
@@ -778,7 +778,7 @@ export default function SwipeDeck() {
                 preventSwipe={["up", "down"]}
               >
                 <div
-                  style={{ position: "relative", width: "min(360px, calc(100vw - 32px))", height: "min(520px, calc(100vh - 220px))" }}
+                  style={{ position: "relative", width: "min(360px, calc(100vw - 32px))", height: "min(460px, calc(100vh - 300px))" }}
                   onClick={() => setProfileModal(person)}
                   onTouchStart={(e) => {
                     const t = e.touches[0];
@@ -816,7 +816,7 @@ export default function SwipeDeck() {
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: "flex", gap: "clamp(20px, 8vw, 44px)", marginTop: 28, alignItems: "center", justifyContent: "center", width: "100%" }}>
+        <div style={{ display: "flex", gap: "clamp(20px, 8vw, 44px)", marginTop: "clamp(16px, 4vh, 28px)", paddingBottom: "env(safe-area-inset-bottom, 0px)", alignItems: "center", justifyContent: "center", width: "100%", flexShrink: 0 }}>
           <ActionButton
             onClick={() => pressButton("left")}
             onMouseEnter={() => setSwipeHint("left")}
@@ -849,8 +849,9 @@ export default function SwipeDeck() {
       alignItems: "center", justifyContent: "center",
       width: "100%", height: "100%",
       paddingTop: 80,
+      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
       background: `linear-gradient(180deg, ${DARKER} 0%, #071020 100%)`,
-      position: "relative", overflow: "hidden",
+      position: "relative", overflow: "clip",
       boxSizing: "border-box",
     }}>
       {/* Subtle radial glow */}

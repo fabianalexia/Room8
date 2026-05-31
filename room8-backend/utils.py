@@ -66,41 +66,43 @@ def send_push_notification(user_id: int, title: str, body: str, url: str = "/") 
     subscription.  Expired/gone subscriptions (410) are automatically cleaned up.
 
     VAPID env vars required:
-      VAPID_PRIVATE_KEY  — PEM string (multi-line OK; \\n accepted)
-      VAPID_CLAIMS_EMAIL — e.g. partner@swiperoom8.com
+      VAPID_PRIVATE_KEY — full PEM block (literal newlines or \\n-escaped both accepted)
     """
+    from pywebpush import webpush, WebPushException
+
+    # Accept both literal newlines and the \n-escaped form Render stores in env vars
     vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY", "").strip().replace("\\n", "\n")
     if not vapid_private_key:
         return  # VAPID not configured — skip silently
 
     try:
-        from pywebpush import webpush, WebPushException
         from room8_models.push_subscription import PushSubscription
         from room8_models import db
     except ImportError:
-        return  # pywebpush not installed — skip silently
+        return
 
     sub = PushSubscription.query.filter_by(user_id=user_id).first()
     if not sub:
         return
-
-    claims_email = os.environ.get("VAPID_CLAIMS_EMAIL", "partner@swiperoom8.com")
 
     try:
         webpush(
             subscription_info=json.loads(sub.subscription_json),
             data=json.dumps({"title": title, "body": body, "url": url}),
             vapid_private_key=vapid_private_key,
-            vapid_claims={"sub": f"mailto:{claims_email}"},
+            vapid_claims={"sub": "mailto:partner@swiperoom8.com"},
         )
-    except Exception as exc:
+    except WebPushException as exc:
         exc_str = str(exc)
-        # 410 Gone = subscription is no longer valid; remove it
+        print(f"[push] WebPushException for user {user_id}: {exc_str}")
+        # 410 Gone / 404 = subscription is no longer valid; remove it
         if "410" in exc_str or "404" in exc_str:
             try:
                 db.session.delete(sub)
                 db.session.commit()
             except Exception:
                 db.session.rollback()
-        else:
-            print(f"[push] Error sending push to user {user_id}: {exc}")
+    except Exception as exc:
+        import traceback
+        print(f"[push] Unexpected error for user {user_id}: {exc}")
+        traceback.print_exc()

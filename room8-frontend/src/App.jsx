@@ -36,10 +36,10 @@ function AppShell() {
     <div style={{
       height: "calc(100vh - 64px)",
       overflow: "hidden",
-      backgroundColor: "#030914",
+      backgroundColor: "#03040b",
       display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: "stretch",
+      position: "relative",
     }}>
       <SwipeDeck />
     </div>

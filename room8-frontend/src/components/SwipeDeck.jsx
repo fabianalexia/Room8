@@ -1,70 +1,114 @@
 import React, { useState, useEffect, useRef } from "react";
-import TinderCard from "react-tinder-card";
-import { getCurrentUser, getCandidates, likeUser, skipUser, reportUser, blockUser, resendVerification } from "../api";
+import {
+  getCurrentUser, getCandidates, likeUser, skipUser,
+  reportUser, blockUser, resendVerification,
+} from "../api";
 import { sendNotification } from "../notifications";
 import VerifiedBadge from "./VerifiedBadge";
 
-const NAVY  = "#0F2D5E";
-const GOLD  = "#F59E0B";
-const GOLD_D = "#D97706";
-const DARK  = "#050D1F";
-const DARKER = "#030914";
-const WHITE = "#FFFFFF";
-const MUTED = "rgba(255,255,255,0.5)";
-const BORDER = "rgba(255,255,255,0.1)";
+// ─── Palette ─────────────────────────────────────────────────────
+const GOLD   = "#f5a623";
+const GOLD2  = "#f5c842";
+const DARK   = "#03040b";
+const NAVY   = "#0F2D5E";
+const WHITE  = "#ffffff";
+const MUTED  = "rgba(255,255,255,0.45)";
+const BORDER = "rgba(255,255,255,0.08)";
+const JAKARTA = "'Plus Jakarta Sans', 'Inter', sans-serif";
+const BEBAS   = "'Bebas Neue', cursive";
 
-// ── Compatibility helpers ──────────────────────────────────────
-const COMPAT_LABELS = {
-  sleep_schedule: { icon: "😴", label: "Sleep" },
-  cleanliness:    { icon: "🧹", label: "Cleanliness" },
-  study_habits:   { icon: "📚", label: "Study" },
-  guests:         { icon: "👥", label: "Guests" },
-  noise:          { icon: "🔊", label: "Noise" },
-  social:         { icon: "😊", label: "Social" },
-  partying:       { icon: "🎉", label: "Party" },
-  smoking:        { icon: "🚬", label: "Smoking" },
-};
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const TOTAL_PREFS = Object.keys(COMPAT_LABELS).length;
+// ─── Demo profiles (fallback when no API candidates) ─────────────
+const DEMO_PROFILES = [
+  {
+    id: "d1", name: "Maya Chen", firstName: "Maya", initials: "MC",
+    sub: "UCLA · Junior · Computer Science", pct: 94, photo: null, isMatch: true,
+    tags: [
+      { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
+      { label: "CS Major",   bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
+      { label: "Night Owl",  bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
+      { label: "Clean",      bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
+    ],
+  },
+  {
+    id: "d2", name: "Jordan Lee", firstName: "Jordan", initials: "JL",
+    sub: "USC · Sophomore · Business", pct: 81, photo: null, isMatch: false,
+    tags: [
+      { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
+      { label: "Business",   bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
+      { label: "Early Bird", bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
+      { label: "Relaxed",    bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
+    ],
+  },
+  {
+    id: "d3", name: "Priya Nair", firstName: "Priya", initials: "PN",
+    sub: "NYU · Senior · Psychology", pct: 88, photo: null, isMatch: true,
+    tags: [
+      { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
+      { label: "Psychology", bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
+      { label: "Flexible",   bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
+      { label: "Spotless",   bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
+    ],
+  },
+  {
+    id: "d4", name: "Marcus Webb", firstName: "Marcus", initials: "MW",
+    sub: "Stanford · Junior · Engineering", pct: 76, photo: null, isMatch: false,
+    tags: [
+      { label: "✓ Verified",  bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
+      { label: "Engineering", bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
+      { label: "Night Owl",   bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
+      { label: "Casual",      bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
+    ],
+  },
+  {
+    id: "d5", name: "Sofia Reyes", firstName: "Sofia", initials: "SR",
+    sub: "MIT · Freshman · Biology", pct: 91, photo: null, isMatch: true,
+    tags: [
+      { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
+      { label: "Biology",    bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
+      { label: "Early Bird", bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
+      { label: "Clean",      bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
+    ],
+  },
+];
 
-function getCompatPercent(myPrefs, theirPrefs) {
-  if (!myPrefs || !theirPrefs) return null;
-  const myKeys = Object.keys(myPrefs).filter((k) => COMPAT_LABELS[k] && myPrefs[k]);
-  if (myKeys.length === 0) return null;
-  const matching = myKeys.filter((k) => theirPrefs[k] && myPrefs[k] === theirPrefs[k]).length;
-  return Math.round((matching / TOTAL_PREFS) * 100);
+// ─── Helpers ─────────────────────────────────────────────────────
+const COMPAT_KEYS = ["sleep_schedule","cleanliness","study_habits","guests","noise","social","partying","smoking"];
+const SLEEP_MAP   = { early_bird: "Early Bird", night_owl: "Night Owl", flexible: "Flexible" };
+const CLEAN_MAP   = { very_clean: "Spotless", clean: "Clean", relaxed: "Relaxed", messy: "Casual" };
+
+function getCompatPercent(myP, theirP) {
+  if (!myP || !theirP) return null;
+  const match = COMPAT_KEYS.filter((k) => myP[k] && myP[k] === theirP[k]).length;
+  return Math.round((match / COMPAT_KEYS.length) * 100);
 }
-
-function getCompatTags(myPrefs, theirPrefs) {
-  if (!myPrefs || !theirPrefs) return [];
-  return Object.keys(COMPAT_LABELS)
-    .filter((k) => myPrefs[k] && myPrefs[k] === theirPrefs[k])
-    .slice(0, 3)
-    .map((k) => ({ ...COMPAT_LABELS[k], key: k }));
-}
-
-const SLEEP_LABELS = {
-  early_bird: "Early Bird",
-  night_owl:  "Night Owl",
-  flexible:   "Flexible",
-};
-const CLEAN_LABELS = {
-  very_clean: "Spotless",
-  clean:      "Clean",
-  relaxed:    "Relaxed",
-  messy:      "Casual",
-};
-
 function shortSchool(name) {
   if (!name) return null;
-  const aliases = {
-    "New York University (NYU)": "NYU",
-    "Massachusetts Institute of Technology": "MIT",
+  const a = { "New York University (NYU)": "NYU", "Massachusetts Institute of Technology": "MIT" };
+  return a[name] || (name.length > 20 ? name.slice(0, 18) + "…" : name);
+}
+function candidateToCard(c, viewerPrefs) {
+  const prefs = c.dorm_prefs || {};
+  const pct   = getCompatPercent(viewerPrefs, prefs);
+  const tags  = [];
+  if (c.is_verified_student) tags.push({ label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" });
+  if (c.major)               tags.push({ label: c.major.slice(0,14), bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" });
+  if (prefs.sleep_schedule && SLEEP_MAP[prefs.sleep_schedule]) tags.push({ label: SLEEP_MAP[prefs.sleep_schedule], bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" });
+  if (prefs.cleanliness && CLEAN_MAP[prefs.cleanliness])       tags.push({ label: CLEAN_MAP[prefs.cleanliness],   bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" });
+  const parts = (c.name || "").split(" ");
+  return {
+    ...c,
+    firstName: parts[0] || c.name,
+    initials:  parts.map((p) => p[0]).join("").slice(0, 2).toUpperCase(),
+    sub:       [c.class_year, c.major, shortSchool(c.school)].filter(Boolean).join(" · "),
+    pct,
+    tags:      tags.slice(0, 4),
+    isMatch:   false,
   };
-  return aliases[name] || (name.length > 26 ? name.slice(0, 24) + "…" : name);
 }
 
-// ── Report modal ───────────────────────────────────────────────
+// ─── Report reasons ───────────────────────────────────────────────
 const REPORT_REASONS = [
   { value: "inappropriate", label: "Inappropriate content" },
   { value: "fake",          label: "Fake profile" },
@@ -74,10 +118,10 @@ const REPORT_REASONS = [
 ];
 
 function ReportModal({ person, userId, onClose, onDone }) {
-  const [reason,     setReason]     = useState("inappropriate");
-  const [notes,      setNotes]      = useState("");
+  const [reason, setReason]         = useState("inappropriate");
+  const [notes, setNotes]           = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [done,       setDone]       = useState(false);
+  const [done, setDone]             = useState(false);
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -85,86 +129,34 @@ function ReportModal({ person, userId, onClose, onDone }) {
       await reportUser(userId, person.id, reason, notes);
       setDone(true);
       setTimeout(onDone, 1200);
-    } catch (e) {
-      console.error(e);
-      onClose();
-    } finally {
-      setSubmitting(false);
-    }
+    } catch { onClose(); } finally { setSubmitting(false); }
   };
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 200,
-      background: "rgba(0,0,0,0.7)",
-      backdropFilter: "blur(8px)",
-    }} onClick={onClose}>
-      <div style={{
-        position: "fixed", top: "50%", left: "50%",
-        transform: "translate(-50%, -50%)",
-        background: "#0A1628",
-        borderRadius: 20,
-        padding: "28px 24px 32px", width: "calc(100% - 40px)", maxWidth: 480,
-        maxHeight: "90vh", overflowY: "auto",
-        border: `1px solid ${BORDER}`,
-        boxSizing: "border-box",
-      }} onClick={(e) => e.stopPropagation()}>
+    <div style={{ position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)" }} onClick={onClose}>
+      <div style={{ position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",background:"#0A1628",borderRadius:20,padding:"28px 24px 32px",width:"calc(100% - 40px)",maxWidth:480,maxHeight:"90vh",overflowY:"auto",border:`1px solid ${BORDER}`,boxSizing:"border-box" }} onClick={(e)=>e.stopPropagation()}>
         {done ? (
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>✅</div>
-            <p style={{ color: WHITE, fontWeight: 700 }}>Report submitted</p>
-            <p style={{ color: MUTED, fontSize: "0.88rem" }}>We'll review this profile shortly.</p>
+          <div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{fontSize:"2.5rem",marginBottom:12}}>✅</div>
+            <p style={{color:WHITE,fontWeight:700,fontFamily:JAKARTA}}>Report submitted</p>
+            <p style={{color:MUTED,fontSize:"0.88rem",fontFamily:JAKARTA}}>We'll review this profile shortly.</p>
           </div>
         ) : (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ color: WHITE, fontWeight: 800, margin: 0 }}>
-                Report {person.name?.split(" ")[0]}
-              </h3>
-              <button onClick={onClose} style={{
-                background: "rgba(255,255,255,0.08)", border: "none", color: WHITE,
-                width: 32, height: 32, borderRadius: "50%", cursor: "pointer", fontSize: "1rem",
-              }}>✕</button>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <h3 style={{color:WHITE,fontWeight:800,margin:0,fontFamily:JAKARTA}}>Report {person.name?.split(" ")[0]}</h3>
+              <button onClick={onClose} style={{background:"rgba(255,255,255,.08)",border:"none",color:WHITE,width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:"1rem"}}>✕</button>
             </div>
-
-            <p style={{ color: MUTED, fontSize: "0.85rem", marginBottom: 16 }}>Why are you reporting this profile?</p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+            <p style={{color:MUTED,fontSize:"0.85rem",marginBottom:16,fontFamily:JAKARTA}}>Why are you reporting this profile?</p>
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
               {REPORT_REASONS.map((r) => (
-                <button key={r.value} onClick={() => setReason(r.value)} style={{
-                  padding: "12px 16px", borderRadius: 8, textAlign: "left",
-                  background: reason === r.value ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.05)",
-                  border: `1.5px solid ${reason === r.value ? GOLD : BORDER}`,
-                  color: reason === r.value ? GOLD : MUTED,
-                  fontWeight: reason === r.value ? 700 : 400,
-                  cursor: "pointer", fontSize: "0.9rem",
-                }}>
+                <button key={r.value} onClick={()=>setReason(r.value)} style={{padding:"12px 16px",borderRadius:8,textAlign:"left",background:reason===r.value?"rgba(245,158,11,.15)":"rgba(255,255,255,.05)",border:`1.5px solid ${reason===r.value?GOLD:BORDER}`,color:reason===r.value?GOLD:MUTED,fontWeight:reason===r.value?700:400,cursor:"pointer",fontSize:"0.9rem",fontFamily:JAKARTA}}>
                   {r.label}
                 </button>
               ))}
             </div>
-
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Additional details (optional)…"
-              rows={2}
-              style={{
-                width: "100%", background: "rgba(255,255,255,0.05)",
-                border: `1.5px solid ${BORDER}`, borderRadius: 8,
-                color: WHITE, padding: "10px 14px", fontSize: "0.88rem",
-                fontFamily: "inherit", resize: "none", outline: "none",
-                boxSizing: "border-box", marginBottom: 18,
-              }}
-            />
-
-            <button onClick={handleSubmit} disabled={submitting} style={{
-              width: "100%", padding: "13px",
-              background: submitting ? "rgba(245,158,11,0.5)" : GOLD,
-              color: DARK, border: "none", borderRadius: 8,
-              fontWeight: 700, fontSize: "0.95rem",
-              cursor: submitting ? "default" : "pointer",
-            }}>
+            <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} placeholder="Additional details (optional)…" rows={2} style={{width:"100%",background:"rgba(255,255,255,.05)",border:`1.5px solid ${BORDER}`,borderRadius:8,color:WHITE,padding:"10px 14px",fontSize:"0.88rem",fontFamily:JAKARTA,resize:"none",outline:"none",boxSizing:"border-box",marginBottom:18}} />
+            <button onClick={handleSubmit} disabled={submitting} style={{width:"100%",padding:"13px",background:submitting?"rgba(245,158,11,.5)":GOLD,color:DARK,border:"none",borderRadius:8,fontWeight:700,fontSize:"0.95rem",cursor:submitting?"default":"pointer",fontFamily:JAKARTA}}>
               {submitting ? "Submitting…" : "Submit Report"}
             </button>
           </>
@@ -174,448 +166,69 @@ function ReportModal({ person, userId, onClose, onDone }) {
   );
 }
 
-// ── Profile card ───────────────────────────────────────────────
-function ProfileCard({ person, viewerPrefs, onReport, onBlock }) {
-  const theirPrefs  = person.dorm_prefs || {};
-  const compatTags  = getCompatTags(viewerPrefs, theirPrefs);
-  const compatPct   = getCompatPercent(viewerPrefs, theirPrefs);
-  const [menuOpen, setMenuOpen] = React.useState(false);
-  const menuRef = React.useRef(null);
-
-  React.useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e) => { if (!menuRef.current?.contains(e.target)) setMenuOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [menuOpen]);
-
-  return (
-    <div style={{
-      position: "absolute", width: "100%", height: "100%",
-      borderRadius: 22, overflow: "hidden",
-      boxShadow: "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)",
-      background: person.photo ? "transparent" : "#0A1628",
-      userSelect: "none",
-    }}>
-      {/* Photo — full bleed */}
-      {person.photo && (
-        <img
-          src={person.photo} alt={person.name} draggable={false}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-          onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
-        />
-      )}
-
-      {/* Placeholder when no photo */}
-      {!person.photo && (
-        <div style={{
-          position: "absolute", inset: 0, display: "flex",
-          alignItems: "center", justifyContent: "center",
-          background: "linear-gradient(135deg, #0A1628 0%, #0F2D5E 100%)",
-        }}>
-          <span style={{ fontSize: "5rem", opacity: 0.2 }}>👤</span>
-        </div>
-      )}
-
-      {/* Gradient overlay — stronger at bottom */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: person.photo
-          ? "linear-gradient(to top, rgba(3,9,20,0.96) 0%, rgba(3,9,20,0.6) 40%, rgba(3,9,20,0.1) 65%, rgba(3,9,20,0) 100%)"
-          : "transparent",
-      }} />
-
-      {/* Compatibility badge — top left */}
-      {compatPct !== null && (
-        <div style={{
-          position: "absolute", top: 14, left: 14, zIndex: 10,
-          background: "rgba(3,9,20,0.75)",
-          backdropFilter: "blur(8px)",
-          border: `1px solid rgba(245,158,11,0.5)`,
-          borderRadius: 10,
-          padding: "5px 12px",
-          display: "flex", alignItems: "center", gap: 5,
-        }}>
-          <span style={{ fontSize: "0.7rem" }}>⭐</span>
-          <span style={{
-            color: GOLD, fontWeight: 800, fontSize: "0.92rem",
-            textShadow: `0 0 10px rgba(245,158,11,0.6)`,
-          }}>
-            {compatPct}%
-          </span>
-          <span style={{ color: "rgba(245,158,11,0.7)", fontSize: "0.65rem", fontWeight: 600 }}>match</span>
-        </div>
-      )}
-
-      {/* ⋯ menu — top right */}
-      <div ref={menuRef} style={{ position: "absolute", top: 14, right: 14, zIndex: 10 }}>
-        <button
-          onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
-          style={{
-            background: menuOpen ? "rgba(255,255,255,0.18)" : "rgba(3,9,20,0.6)",
-            border: `1px solid ${BORDER}`,
-            color: WHITE, width: 34, height: 34, borderRadius: "50%",
-            cursor: "pointer", fontSize: "1rem",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            backdropFilter: "blur(6px)",
-            transition: "background 0.15s",
-          }}
-        >
-          ⋯
-        </button>
-        {menuOpen && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: "absolute", top: "calc(100% + 6px)", right: 0,
-              background: "#0E1F3D",
-              border: `1px solid rgba(255,255,255,0.12)`,
-              borderRadius: 10, overflow: "hidden",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
-              minWidth: 148,
-            }}
-          >
-            {[
-              { label: "Report 🚩", action: () => { setMenuOpen(false); onReport(); } },
-              { label: "Block 🚫",  action: () => { setMenuOpen(false); onBlock(); } },
-            ].map((item) => (
-              <button
-                key={item.label}
-                onClick={(e) => { e.stopPropagation(); item.action(); }}
-                style={{
-                  display: "block", width: "100%", padding: "11px 16px",
-                  background: "none", border: "none",
-                  color: "#F87171", fontSize: "0.85rem",
-                  cursor: "pointer", textAlign: "left",
-                  fontFamily: "'Inter', sans-serif", fontWeight: 500,
-                  transition: "background 0.1s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Info overlay — bottom */}
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        padding: "24px 20px 22px",
-      }}>
-        {/* Name + age */}
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
-          <h2 style={{
-            margin: 0, color: WHITE,
-            fontSize: "clamp(1.6rem, 6vw, 2rem)",
-            fontWeight: 800,
-            letterSpacing: "-0.025em",
-            textShadow: "0 2px 12px rgba(0,0,0,0.5)",
-          }}>
-            {person.name}
-          </h2>
-          {person.age && (
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "1.3rem", fontWeight: 400 }}>
-              {person.age}
-            </span>
-          )}
-        </div>
-
-        {/* Class year + major */}
-        {(person.class_year || person.major) && (
-          <p style={{ margin: "0 0 8px", color: "rgba(255,255,255,0.65)", fontSize: "0.87rem", fontWeight: 500 }}>
-            {[person.class_year, person.major].filter(Boolean).join(" · ")}
-          </p>
-        )}
-
-        {/* Verified / Community badge */}
-        <div style={{ marginBottom: 8 }}>
-          <VerifiedBadge isStudent={person.is_verified_student} size="sm" />
-        </div>
-
-        {/* Quick tags row */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-          {person.dorm_prefs?.sleep_schedule && SLEEP_LABELS[person.dorm_prefs.sleep_schedule] && (
-            <span style={tagStyle}>{SLEEP_LABELS[person.dorm_prefs.sleep_schedule]}</span>
-          )}
-          {person.dorm_prefs?.cleanliness && CLEAN_LABELS[person.dorm_prefs.cleanliness] && (
-            <span style={tagStyle}>{CLEAN_LABELS[person.dorm_prefs.cleanliness]}</span>
-          )}
-          {person.school && (
-            <span style={{ ...tagStyle, borderColor: "rgba(245,158,11,0.4)", color: "rgba(245,158,11,0.9)" }}>
-              {shortSchool(person.school)}
-            </span>
-          )}
-          {person.room_type && person.room_type !== "any" && (
-            <span style={tagStyle}>
-              {person.room_type.charAt(0).toUpperCase() + person.room_type.slice(1)}
-            </span>
-          )}
-        </div>
-
-        {/* Compat tags */}
-        {compatTags.length > 0 && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-            {compatTags.map((t) => (
-              <span key={t.key} style={{
-                background: "rgba(34,197,94,0.15)",
-                border: "1px solid rgba(34,197,94,0.35)",
-                color: "#86efac",
-                padding: "3px 9px", borderRadius: 6, fontSize: "0.7rem", fontWeight: 600,
-              }}>
-                {t.icon} {t.label}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Bio */}
-        {person.bio && (
-          <p style={{
-            color: "rgba(255,255,255,0.6)",
-            fontSize: "0.83rem",
-            lineHeight: 1.5, margin: 0,
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-          }}>
-            {person.bio}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Profile Modal ──────────────────────────────────────────────
-const MODAL_PREF_LABELS = {
-  sleep_schedule: { label: "Sleep",       icon: "😴" },
-  cleanliness:    { label: "Cleanliness", icon: "🧹" },
-  study_habits:   { label: "Study",       icon: "📚" },
-  guests:         { label: "Guests",      icon: "👥" },
-  noise:          { label: "Noise",       icon: "🔊" },
-  social:         { label: "Social",      icon: "😊" },
-  partying:       { label: "Party",       icon: "🎉" },
-  smoking:        { label: "Smoking",     icon: "🚬" },
-};
-
-function humanizePref(val) {
-  if (!val) return null;
-  return val.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
+// ─── Profile Modal (full-screen detail view) ──────────────────────
 export function ProfileModal({ person, onClose }) {
   const [activePhoto, setActivePhoto] = useState(0);
-
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, []);
-
   useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const h = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, [onClose]);
 
   const allPhotos = [person.photo, ...(person.photos || [])].filter(Boolean);
-  const prefs = person.dorm_prefs || {};
-  const prefEntries = Object.entries(MODAL_PREF_LABELS).filter(([key]) => prefs[key]);
+  const prefs     = person.dorm_prefs || {};
 
   return (
-    <div
-      style={{
-        position: "fixed", inset: 0, zIndex: 500,
-        background: "#07111f",
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-        scrollbarWidth: "none",
-        msOverflowStyle: "none",
-      }}
-      className="r8-profile-modal"
-    >
-      <div style={{ maxWidth: 640, margin: "0 auto", paddingBottom: 48 }}>
-        {/* ── Photo section ── */}
-        <div style={{ position: "relative", height: "52vh", minHeight: 280, flexShrink: 0 }}>
+    <div style={{position:"fixed",inset:0,zIndex:500,background:"#07111f",overflowY:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none"}} className="r8-profile-modal">
+      <div style={{maxWidth:640,margin:"0 auto",paddingBottom:48}}>
+        <div style={{position:"relative",height:"52vh",minHeight:280}}>
           {allPhotos.length > 0 ? (
-            <img
-              src={allPhotos[activePhoto]}
-              alt={person.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
-            />
+            <img src={allPhotos[activePhoto]} alt={person.name} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(e)=>{e.target.onerror=null;e.target.src="/default-avatar.png";}} />
           ) : (
-            <div style={{
-              width: "100%", height: "100%",
-              background: "linear-gradient(135deg, #0A1628, #0F2D5E)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <span style={{ fontSize: "5rem", opacity: 0.2 }}>👤</span>
+            <div style={{width:"100%",height:"100%",background:"linear-gradient(135deg,#0A1628,#0F2D5E)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{fontSize:"5rem",opacity:0.2}}>👤</span>
             </div>
           )}
-
-          {/* Gradient overlay */}
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(to top, rgba(7,17,31,1) 0%, rgba(7,17,31,0.3) 50%, transparent 100%)",
-          }} />
-
-          {/* Back button */}
-          <button
-            onClick={onClose}
-            style={{
-              position: "absolute", top: 16, left: 16,
-              display: "flex", alignItems: "center", gap: 6,
-              background: "rgba(0,0,0,0.55)",
-              border: "1px solid rgba(255,255,255,0.18)",
-              color: WHITE, cursor: "pointer", fontSize: "0.88rem",
-              fontWeight: 600, padding: "8px 14px", borderRadius: 20,
-              backdropFilter: "blur(8px)",
-            }}
-          >← Back</button>
-
-          {/* Photo thumbnails */}
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(to top,rgba(7,17,31,1) 0%,rgba(7,17,31,.3) 50%,transparent 100%)"}} />
+          <button onClick={onClose} style={{position:"absolute",top:16,left:16,display:"flex",alignItems:"center",gap:6,background:"rgba(0,0,0,.55)",border:"1px solid rgba(255,255,255,.18)",color:WHITE,cursor:"pointer",fontSize:"0.88rem",fontWeight:600,padding:"8px 14px",borderRadius:20,backdropFilter:"blur(8px)",fontFamily:JAKARTA}}>← Back</button>
           {allPhotos.length > 1 && (
-            <div style={{
-              position: "absolute", bottom: 10, left: 12, right: 12,
-              display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none",
-            }}>
-              {allPhotos.map((p, i) => (
-                <img
-                  key={i} src={p} alt=""
-                  onClick={() => setActivePhoto(i)}
-                  style={{
-                    width: 44, height: 44, borderRadius: 8, objectFit: "cover",
-                    border: `2px solid ${i === activePhoto ? GOLD : "rgba(255,255,255,0.25)"}`,
-                    cursor: "pointer", flexShrink: 0,
-                    opacity: i === activePhoto ? 1 : 0.65,
-                    transition: "all 0.15s",
-                  }}
-                  onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
-                />
+            <div style={{position:"absolute",bottom:10,left:12,right:12,display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none"}}>
+              {allPhotos.map((p,i)=>(
+                <img key={i} src={p} alt="" onClick={()=>setActivePhoto(i)} style={{width:44,height:44,borderRadius:8,objectFit:"cover",border:`2px solid ${i===activePhoto?GOLD:"rgba(255,255,255,.25)"}`,cursor:"pointer",flexShrink:0,opacity:i===activePhoto?1:.65,transition:"all .15s"}} onError={(e)=>{e.target.onerror=null;e.target.src="/default-avatar.png";}} />
               ))}
             </div>
           )}
-
-          {/* Name overlay */}
-          <div style={{
-            position: "absolute",
-            bottom: allPhotos.length > 1 ? 64 : 18,
-            left: 18, right: 18,
-          }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <h2 style={{
-                margin: 0, color: WHITE,
-                fontSize: "clamp(1.6rem, 6vw, 2rem)",
-                fontWeight: 800, letterSpacing: "-0.025em",
-                textShadow: "0 2px 12px rgba(0,0,0,0.6)",
-              }}>
-                {person.name}
-              </h2>
-              {person.age && (
-                <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "1.3rem" }}>
-                  {person.age}
-                </span>
-              )}
+          <div style={{position:"absolute",bottom:allPhotos.length>1?64:18,left:18,right:18}}>
+            <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+              <h2 style={{margin:0,color:WHITE,fontSize:"clamp(1.6rem,6vw,2rem)",fontWeight:800,letterSpacing:"-0.025em",textShadow:"0 2px 12px rgba(0,0,0,.6)",fontFamily:JAKARTA}}>{person.name}</h2>
+              {person.age && <span style={{color:"rgba(255,255,255,.7)",fontSize:"1.3rem",fontFamily:JAKARTA}}>{person.age}</span>}
             </div>
-            <div style={{ marginTop: 6 }}>
-              <VerifiedBadge isStudent={person.is_verified_student} size="sm" />
-            </div>
-            {(person.class_year || person.major) && (
-              <p style={{ margin: "4px 0 0", color: "rgba(255,255,255,0.65)", fontSize: "0.86rem" }}>
-                {[person.class_year, person.major].filter(Boolean).join(" · ")}
-              </p>
-            )}
+            <div style={{marginTop:6}}><VerifiedBadge isStudent={person.is_verified_student} size="sm" /></div>
+            {(person.class_year||person.major) && <p style={{margin:"4px 0 0",color:"rgba(255,255,255,.65)",fontSize:"0.86rem",fontFamily:JAKARTA}}>{[person.class_year,person.major].filter(Boolean).join(" · ")}</p>}
           </div>
         </div>
-
-        {/* ── Info section ── */}
-        <div style={{ padding: "18px 18px 36px" }}>
-          {/* School badge */}
+        <div style={{padding:"18px 18px 36px"}}>
           {person.school && (
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              background: "rgba(245,158,11,0.1)",
-              border: "1px solid rgba(245,158,11,0.25)",
-              borderRadius: 8, padding: "5px 12px", marginBottom: 16,
-            }}>
-              <span style={{ fontSize: "0.78rem" }}>🏫</span>
-              <span style={{ color: "rgba(245,158,11,0.9)", fontSize: "0.82rem", fontWeight: 600 }}>
-                {person.school}
-              </span>
+            <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(245,158,11,.1)",border:"1px solid rgba(245,158,11,.25)",borderRadius:8,padding:"5px 12px",marginBottom:16}}>
+              <span style={{fontSize:"0.78rem"}}>🏫</span>
+              <span style={{color:"rgba(245,158,11,.9)",fontSize:"0.82rem",fontWeight:600,fontFamily:JAKARTA}}>{person.school}</span>
             </div>
           )}
-
-          {/* Housing quick-facts */}
-          {(person.room_type || person.housing_type || person.budget) && (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
-              {[
-                person.room_type && person.room_type !== "any" && { label: "Room", val: person.room_type },
-                person.housing_type && { label: "Housing", val: person.housing_type.replace(/_/g, " ") },
-                person.budget && { label: "Budget", val: person.budget },
-              ].filter(Boolean).map(({ label, val }) => (
-                <div key={label} style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 8, padding: "7px 12px",
-                }}>
-                  <p style={{ margin: "0 0 2px", color: "rgba(255,255,255,0.45)", fontSize: "0.66rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</p>
-                  <p style={{ margin: 0, color: WHITE, fontSize: "0.86rem", fontWeight: 600, textTransform: "capitalize" }}>{val}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Bio */}
           {person.bio && (
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ margin: "0 0 8px", color: "rgba(255,255,255,0.4)", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>About</p>
-              <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", fontSize: "0.92rem", lineHeight: 1.68 }}>
-                {person.bio}
-              </p>
+            <div style={{marginBottom:20}}>
+              <p style={{margin:"0 0 8px",color:"rgba(255,255,255,.4)",fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",fontFamily:JAKARTA}}>About</p>
+              <p style={{margin:0,color:"rgba(255,255,255,.82)",fontSize:"0.92rem",lineHeight:1.68,fontFamily:JAKARTA}}>{person.bio}</p>
             </div>
           )}
-
-          {/* Lifestyle preferences */}
-          {prefEntries.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ margin: "0 0 10px", color: "rgba(255,255,255,0.4)", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-                Lifestyle Preferences
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {prefEntries.map(([key, { label, icon }]) => (
-                  <div key={key} style={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 10, padding: "10px 12px",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
-                      <span style={{ fontSize: "0.85rem" }}>{icon}</span>
-                      <span style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.67rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</span>
-                    </div>
-                    <div style={{ color: WHITE, fontSize: "0.86rem", fontWeight: 600 }}>
-                      {humanizePref(prefs[key])}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Looking for */}
           {person.looking_for && (
-            <div style={{
-              background: "rgba(245,158,11,0.06)",
-              border: "1px solid rgba(245,158,11,0.18)",
-              borderRadius: 12, padding: "14px 16px",
-            }}>
-              <p style={{ margin: "0 0 6px", color: "rgba(245,158,11,0.65)", fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em" }}>
-                Looking For
-              </p>
-              <p style={{ margin: 0, color: "rgba(255,255,255,0.75)", fontSize: "0.9rem", lineHeight: 1.62, fontStyle: "italic" }}>
-                "{person.looking_for}"
-              </p>
+            <div style={{background:"rgba(245,158,11,.06)",border:"1px solid rgba(245,158,11,.18)",borderRadius:12,padding:"14px 16px"}}>
+              <p style={{margin:"0 0 6px",color:"rgba(245,158,11,.65)",fontSize:"0.68rem",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",fontFamily:JAKARTA}}>Looking For</p>
+              <p style={{margin:0,color:"rgba(255,255,255,.75)",fontSize:"0.9rem",lineHeight:1.62,fontStyle:"italic",fontFamily:JAKARTA}}>"{person.looking_for}"</p>
             </div>
           )}
         </div>
@@ -624,424 +237,575 @@ export function ProfileModal({ person, onClose }) {
   );
 }
 
-// ── Main SwipeDeck ─────────────────────────────────────────────
+// ─── Match Overlay ────────────────────────────────────────────────
+function MatchOverlay({ user, card, onChat, onKeepSwiping }) {
+  const userInitials = (user?.name || "").split(" ").map((p)=>p[0]).join("").slice(0,2).toUpperCase() || "?";
+  return (
+    <div style={{
+      position:"absolute",inset:0,zIndex:100,
+      background:"rgba(3,4,11,.92)",
+      backdropFilter:"blur(2px)",
+      display:"flex",flexDirection:"column",
+      alignItems:"center",justifyContent:"center",
+      padding:"0 28px",
+      animation:"fadeInOverlay .25s ease",
+    }}>
+      {/* Avatars + heart */}
+      <div style={{display:"flex",alignItems:"center",marginBottom:28}}>
+        <div style={{width:72,height:72,borderRadius:"50%",border:"3px solid "+GOLD,background:user?.photo?`url(${user.photo}) center/cover`:"linear-gradient(135deg,#1a3a6e,#0d1e3e)",display:"flex",alignItems:"center",justifyContent:"center",color:WHITE,fontWeight:700,fontSize:"1.3rem",fontFamily:JAKARTA,marginRight:-16,zIndex:1,boxShadow:"0 0 24px rgba(245,166,35,.4)"}}>
+          {!user?.photo && userInitials}
+        </div>
+        <div style={{width:32,height:32,borderRadius:"50%",background:`linear-gradient(135deg,${GOLD},${GOLD2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",zIndex:2,boxShadow:`0 0 20px rgba(245,166,35,.6)`,flexShrink:0}}>❤</div>
+        <div style={{width:72,height:72,borderRadius:"50%",border:"3px solid "+GOLD,background:card?.photo?`url(${card.photo}) center/cover`:"linear-gradient(135deg,#1a3a6e,#0d1e3e)",display:"flex",alignItems:"center",justifyContent:"center",color:WHITE,fontWeight:700,fontSize:"1.3rem",fontFamily:JAKARTA,marginLeft:-16,zIndex:1,boxShadow:"0 0 24px rgba(245,166,35,.4)"}}>
+          {!card?.photo && (card?.initials || "?")}
+        </div>
+      </div>
+
+      {/* Heading */}
+      <h1 style={{fontFamily:BEBAS,fontSize:"3.2rem",letterSpacing:"0.08em",color:WHITE,margin:"0 0 6px",lineHeight:1,textAlign:"center"}}>
+        It's a <span style={{color:GOLD}}>Match!</span>
+      </h1>
+      <p style={{color:"rgba(255,255,255,.6)",fontSize:"0.9rem",fontFamily:JAKARTA,margin:"0 0 36px",textAlign:"center",lineHeight:1.5}}>
+        You and {card?.firstName} both liked each other
+      </p>
+
+      {/* Buttons */}
+      <button onClick={onChat} style={{
+        width:"100%",maxWidth:280,padding:"14px",marginBottom:12,
+        background:`linear-gradient(135deg,${GOLD},${GOLD2})`,
+        border:"none",borderRadius:40,
+        color:DARK,fontWeight:700,fontSize:"1rem",fontFamily:JAKARTA,
+        cursor:"pointer",
+        boxShadow:`0 8px 28px rgba(245,166,35,.45)`,
+        letterSpacing:"0.02em",
+      }}>Start Chatting →</button>
+      <button onClick={onKeepSwiping} style={{
+        width:"100%",maxWidth:280,padding:"13px",
+        background:"transparent",
+        border:"1.5px solid rgba(255,255,255,.2)",
+        borderRadius:40,color:"rgba(255,255,255,.6)",
+        fontWeight:600,fontSize:"0.95rem",fontFamily:JAKARTA,
+        cursor:"pointer",
+      }}>Keep Swiping</button>
+    </div>
+  );
+}
+
+// ─── Canvas helpers ───────────────────────────────────────────────
+const NEBULAS = [
+  { xp:.15, yp:.25, color:[30,55,130],   op:.13, rx:180, ry:90  },
+  { xp:.82, yp:.62, color:[130,40,80],   op:.09, rx:140, ry:80  },
+  { xp:.50, yp:.08, color:[60,30,140],   op:.10, rx:200, ry:70  },
+  { xp:.05, yp:.72, color:[20,80,60],    op:.08, rx:120, ry:90  },
+  { xp:.90, yp:.18, color:[200,120,30],  op:.07, rx:110, ry:70  },
+  { xp:.55, yp:.78, color:[40,90,160],   op:.07, rx:160, ry:80  },
+];
+const CONST_SHAPES = [
+  [[.08,.12],[.12,.18],[.10,.25],[.15,.20],[.18,.14]],
+  [[.72,.08],[.78,.06],[.76,.14],[.82,.10]],
+  [[.28,.55],[.34,.52],[.38,.58],[.32,.62]],
+  [[.60,.32],[.66,.28],[.70,.35],[.64,.40],[.68,.44]],
+  [[.04,.42],[.09,.47],[.06,.53],[.13,.50]],
+  [[.85,.72],[.89,.68],[.92,.74],[.88,.80],[.84,.76]],
+];
+
+function initStars(w, h) {
+  const arr = [];
+  const add = (n, rMin, rDr, baseMin, baseDr, amber) => {
+    for (let i = 0; i < n; i++) arr.push({ x: Math.random()*w, y: Math.random()*h, r: rMin+Math.random()*rDr, phase: Math.random()*Math.PI*2, speed: .002+Math.random()*.006, base: baseMin+Math.random()*baseDr, amber });
+  };
+  add(220, .15, .50, .40, .50, false);
+  add(60,  .50, .50, .50, .40, false);
+  add(18, 1.00, .60, .60, .35, false);
+  add(14,  .40, .80, .40, .50, true);
+  return arr;
+}
+
+function mkShot(w, h, golden) {
+  const ang = -Math.PI/6 + (Math.random()-.5)*(Math.PI/4);
+  const spd = 6 + Math.random()*6;
+  return { x:Math.random()*w*.8+w*.1, y:Math.random()*h*.3, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd, life:1, decay:.022+Math.random()*.01, len:55+Math.random()*70, golden };
+}
+
+// ─── Star Canvas ──────────────────────────────────────────────────
+function StarCanvas({ triggerRef }) {
+  const cvRef  = useRef(null);
+  const dataRef = useRef({ stars:[], shots:[], frame:0, w:0, h:0 });
+
+  useEffect(() => {
+    const cv = cvRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext("2d");
+    let rafId;
+
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = cv.offsetWidth, h = cv.offsetHeight;
+      cv.width = w * dpr; cv.height = h * dpr;
+      Object.assign(dataRef.current, { w, h, stars: initStars(w, h) });
+    };
+    const ro = new ResizeObserver(resize);
+    ro.observe(cv);
+    resize();
+
+    triggerRef.current = {
+      triggerMatch: () => {
+        const { w, h } = dataRef.current;
+        for (let i = 0; i < 7; i++) setTimeout(() => dataRef.current.shots.push(mkShot(w, h, i < 3)), i * 110);
+      },
+      triggerSuperLike: () => {
+        const { w, h } = dataRef.current;
+        for (let i = 0; i < 2; i++) setTimeout(() => dataRef.current.shots.push(mkShot(w, h, false)), i * 110);
+      },
+    };
+
+    const draw = () => {
+      const { w, h, stars, shots } = dataRef.current;
+      const dpr = window.devicePixelRatio || 1;
+      const f = ++dataRef.current.frame;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      ctx.fillStyle = "#03040b";
+      ctx.fillRect(0, 0, w, h);
+
+      // Nebulas
+      for (const nb of NEBULAS) {
+        const [nx, ny] = [nb.xp*w, nb.yp*h];
+        ctx.save();
+        ctx.translate(nx, ny);
+        ctx.scale(1, nb.ry/nb.rx);
+        const g = ctx.createRadialGradient(0,0,0,0,0,nb.rx);
+        const [r,gr,b] = nb.color;
+        g.addColorStop(0, `rgba(${r},${gr},${b},${nb.op})`);
+        g.addColorStop(1, `rgba(${r},${gr},${b},0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(0,0,nb.rx,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+
+      // Stars
+      for (const s of stars) {
+        const a = s.base * (.5 + .5*Math.sin(f*s.speed+s.phase));
+        ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle = s.amber ? `rgba(255,200,90,${a})` : `rgba(210,225,255,${a})`;
+        ctx.fill();
+      }
+
+      // Constellations
+      for (const shape of CONST_SHAPES) {
+        const pts = shape.map(([xp,yp]) => [xp*w, yp*h]);
+        ctx.strokeStyle = "rgba(190,215,255,0.055)";
+        ctx.lineWidth = .55;
+        ctx.beginPath();
+        pts.forEach(([x,y],i) => i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y));
+        ctx.stroke();
+        for (const [x,y] of pts) {
+          ctx.beginPath(); ctx.arc(x,y,1.6,0,Math.PI*2);
+          ctx.fillStyle = "rgba(210,230,255,0.5)"; ctx.fill();
+        }
+      }
+
+      // Shooting stars
+      dataRef.current.shots = shots.filter(s => s.life > 0);
+      for (const s of dataRef.current.shots) {
+        const spd = Math.hypot(s.vx, s.vy);
+        const [tx, ty] = [s.x - s.vx/spd*s.len, s.y - s.vy/spd*s.len];
+        const g = ctx.createLinearGradient(s.x,s.y,tx,ty);
+        const c = s.golden ? "255,200,90" : "210,225,255";
+        g.addColorStop(0, `rgba(${c},${s.life})`);
+        g.addColorStop(1, `rgba(${c},0)`);
+        ctx.strokeStyle = g; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(tx,ty); ctx.stroke();
+        ctx.beginPath(); ctx.arc(s.x,s.y,2,0,Math.PI*2);
+        ctx.fillStyle = `rgba(${c},${s.life})`; ctx.fill();
+        s.x += s.vx; s.y += s.vy; s.life -= s.decay;
+      }
+
+      // Ambient shooting star
+      if (f % 300 === 0 && Math.random() < .7)
+        dataRef.current.shots.push(mkShot(dataRef.current.w, dataRef.current.h, false));
+
+      rafId = requestAnimationFrame(draw);
+    };
+    rafId = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(rafId); ro.disconnect(); };
+  }, []);
+
+  return <canvas ref={cvRef} style={{ position:"absolute",inset:0,width:"100%",height:"100%",zIndex:0,display:"block" }} />;
+}
+
+// ─── Action Buttons ───────────────────────────────────────────────
+function PassButton({ onClick }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
+      width:62,height:62,borderRadius:"50%",flexShrink:0,
+      background: hov ? "rgba(239,68,68,.15)" : "rgba(255,255,255,.06)",
+      border: `1.5px solid ${hov?"#ef4444":"rgba(255,255,255,.18)"}`,
+      color: hov ? "#ef4444" : "rgba(255,255,255,.6)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      fontSize:"1.5rem",cursor:"pointer",
+      boxShadow: hov ? "0 0 24px rgba(239,68,68,.3)" : "0 4px 20px rgba(0,0,0,.3)",
+      transition:"all .2s",
+    }}>✕</button>
+  );
+}
+function SuperButton({ onClick, popped }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
+      width:54,height:54,borderRadius:"50%",flexShrink:0,
+      background: "rgba(59,130,246,.12)",
+      border: `1.5px solid ${hov?"#60a5fa":"rgba(59,130,246,.4)"}`,
+      color: hov ? "#93c5fd" : "#60a5fa",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      fontSize:"1.25rem",cursor:"pointer",
+      boxShadow: hov ? "0 0 20px rgba(59,130,246,.3)" : "0 4px 16px rgba(0,0,0,.25)",
+      transition:"all .2s",
+      transform: popped ? "scale(1.2)" : "scale(1)",
+    }}>⭐</button>
+  );
+}
+function LikeButton({ onClick }) {
+  const [hov, setHov]   = useState(false);
+  const [pop, setPop]   = useState(false);
+  const handleClick = () => {
+    setPop(true);
+    setTimeout(() => setPop(false), 500);
+    onClick();
+  };
+  return (
+    <button onClick={handleClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
+      width:78,height:78,borderRadius:"50%",flexShrink:0,
+      background: `linear-gradient(135deg,${GOLD},${GOLD2})`,
+      border:"none",
+      color:DARK,
+      display:"flex",alignItems:"center",justifyContent:"center",
+      fontSize:"2rem",cursor:"pointer",
+      boxShadow:`0 8px 32px rgba(245,166,35,${hov?.6:.45})`,
+      transition:"box-shadow .2s, transform .15s",
+      transform: pop ? "scale(1.18)" : hov ? "scale(1.05)" : "scale(1)",
+      animation: pop ? "springPop .45s cubic-bezier(.34,1.56,.64,1)" : "none",
+    }}>♥</button>
+  );
+}
+
+// ─── Main SwipeDeck ───────────────────────────────────────────────
 export default function SwipeDeck() {
-  const user = getCurrentUser();
+  const user        = getCurrentUser();
   const viewerPrefs = user?.dorm_prefs || {};
 
-  const [candidates,   setCandidates]   = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(-1);
-  const [loading,      setLoading]      = useState(true);
-  const [matchToast,   setMatchToast]   = useState("");
-  const [swipeHint,    setSwipeHint]    = useState(null);
-  const [reportTarget,  setReportTarget]  = useState(null);
-  const [resendSent,    setResendSent]    = useState(false);
-  const [profileModal,  setProfileModal]  = useState(null);
-  const toastTimer    = useRef(null);
-  const touchStartRef = useRef(null);
+  const [candidates,  setCandidates]  = useState([]);
+  const [idx,         setIdx]         = useState(0);
+  const [loading,     setLoading]     = useState(true);
+  const [showMatch,   setShowMatch]   = useState(false);
+  const [matchCard,   setMatchCard]   = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [profileModal, setProfileModal] = useState(null);
+  const [resendSent,   setResendSent]   = useState(false);
+  const [superPop,     setSuperPop]     = useState(false);
+  const [menuOpen,     setMenuOpen]     = useState(false);
+  const [swiping,      setSwiping]      = useState(false);
 
-  const loadCandidates = (reset = false) => {
+  const cardRef     = useRef(null);
+  const likeRef     = useRef(null);
+  const nopeRef     = useRef(null);
+  const menuRef     = useRef(null);
+  const dragRef     = useRef({ active:false, startX:0, startY:0 });
+  const triggerRef  = useRef(null);
+
+  // ── Load candidates ──────────────────────────────────────────
+  const load = (reset=false) => {
     if (!user) { setLoading(false); return; }
-    if (reset) { setCandidates([]); setCurrentIndex(-1); }
     setLoading(true);
     getCandidates(user.id, reset)
-      .then((data) => { setCandidates(data); setCurrentIndex(data.length - 1); })
+      .then((d) => { setCandidates(d); setIdx(0); })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
+  useEffect(() => { load(false); }, []); // eslint-disable-line
 
-  useEffect(() => { loadCandidates(false); }, []); // eslint-disable-line
+  // Use demo profiles when no real candidates
+  const deck    = candidates.length > 0 ? candidates.map((c) => candidateToCard(c, viewerPrefs)) : DEMO_PROFILES;
+  const usesDemo = candidates.length === 0;
+  const current = idx < deck.length ? deck[idx] : null;
 
-  // Poll for new candidates every 60 seconds (silent — only appends if deck is exhausted)
-  useEffect(() => {
-    if (!user) return;
-    const id = setInterval(() => {
-      if (currentIndex < 0) {
-        // Deck is empty — try to load fresh candidates
-        loadCandidates(false);
-      }
-    }, 60_000);
-    return () => clearInterval(id);
-  }, [currentIndex]); // eslint-disable-line
-
-  const showToast = (msg) => {
-    setMatchToast(msg);
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setMatchToast(""), 3500);
+  // ── Direct-DOM transform helpers ─────────────────────────────
+  const applyXY = (x, y, tr) => {
+    if (!cardRef.current) return;
+    const rot = Math.max(-18, Math.min(18, x/20));
+    cardRef.current.style.transition = tr || "none";
+    cardRef.current.style.transform  = `translate(${x}px,${y}px) rotate(${rot}deg)`;
+    if (likeRef.current) likeRef.current.style.opacity  = x > 0 ? Math.min(1, x/60)  : 0;
+    if (nopeRef.current) nopeRef.current.style.opacity  = x < 0 ? Math.min(1,-x/60)  : 0;
   };
+  const resetCard = () => applyXY(0, 0, "none");
 
-  const handleSwipe = async (direction, candidate) => {
-    setSwipeHint(null);
+  // ── Swipe logic ───────────────────────────────────────────────
+  const doSwipe = async (dir, candidate) => {
+    if (swiping || !candidate) return;
+    setSwiping(true);
+    const flyX = dir === "right" ? 700 : -700;
+    applyXY(flyX, -80, "transform .35s ease-in");
+    await sleep(350);
+    setIdx((p) => p + 1);
+    resetCard();
+    setSwiping(false);
+
+    if (usesDemo) {
+      // Demo mode: simulate match based on isMatch flag
+      if (dir === "right" && candidate.isMatch) {
+        await sleep(220);
+        setMatchCard(candidate);
+        setShowMatch(true);
+        triggerRef.current?.triggerMatch();
+      }
+      return;
+    }
+
+    // Real API
     try {
-      if (direction === "right") {
-        console.log("[swipe] liking", candidate.id, candidate.name);
+      if (dir === "right") {
         const res = await likeUser(user.id, candidate.id);
-        console.log("[swipe] like response:", res);
         if (res?.matched) {
-          console.log("[swipe] MATCHED with", candidate.name);
-          showToast(`You matched with ${candidate.name?.split(" ")[0]}! 🎉`);
-          sendNotification(
-            "You have a new match on Room8!",
-            `You and ${candidate.name?.split(" ")[0] || "someone"} liked each other.`
-          );
+          await sleep(220);
+          setMatchCard(candidate);
+          setShowMatch(true);
+          triggerRef.current?.triggerMatch();
+          sendNotification("You have a new match on Room8!", `You and ${candidate.firstName} liked each other.`);
         }
       } else {
         await skipUser(user.id, candidate.id);
       }
-      setCurrentIndex((prev) => prev - 1);
-    } catch (err) { console.error("[swipe] error:", err); }
+    } catch (err) { console.error(err); }
   };
 
-  const pressButton = (direction) => {
-    if (currentIndex < 0 || currentIndex >= candidates.length) return;
-    handleSwipe(direction, candidates[currentIndex]);
+  const doSuperLike = async () => {
+    if (!current) return;
+    setSuperPop(true);
+    setTimeout(() => setSuperPop(false), 500);
+    triggerRef.current?.triggerSuperLike();
+    await doSwipe("right", current);
   };
 
-  const handleReportDone = () => {
-    setReportTarget(null);
-    pressButton("left");
+  // ── Pointer drag ──────────────────────────────────────────────
+  const onPtrDown = (e) => {
+    if (swiping || !current || e.target.closest("[data-menu]")) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { active:true, startX:e.clientX, startY:e.clientY };
+    applyXY(0, 0, "none");
   };
-
-  const handleBlock = async (person) => {
-    if (!person) return;
-    setCurrentIndex((prev) => prev - 1);
-    setCandidates((prev) => prev.filter((c) => c.id !== person.id));
-    try {
-      await blockUser(user.id, person.id);
-    } catch (e) { console.error(e); }
+  const onPtrMove = (e) => {
+    if (!dragRef.current.active) return;
+    const x = e.clientX - dragRef.current.startX;
+    const y = e.clientY - dragRef.current.startY;
+    applyXY(x, y, "none");
+    dragRef.current.lastX = x;
+    dragRef.current.lastY = y;
   };
-
-  const renderContent = () => {
-    if (!user) {
-      return (
-        <div style={emptyStyle}>
-          <p style={{ color: MUTED, fontSize: "1.05rem" }}>Please log in to browse candidates.</p>
-        </div>
-      );
+  const onPtrUp = (e) => {
+    if (!dragRef.current.active) return;
+    dragRef.current.active = false;
+    const x = dragRef.current.lastX || 0;
+    if (Math.abs(x) > 105) {
+      doSwipe(x > 0 ? "right" : "left", current);
+    } else {
+      applyXY(0, 0, "transform .5s cubic-bezier(.34,1.56,.64,1)");
     }
-    if (loading) {
-      return (
-        <div style={emptyStyle}>
-          <div style={spinnerStyle} />
-          <p style={{ color: MUTED, marginTop: 16, fontSize: "0.9rem" }}>Finding roommates…</p>
-        </div>
-      );
-    }
-    if (!candidates.length || currentIndex < 0) {
-      return (
-        <div style={emptyStyle}>
-          <div style={{
-            width: 72, height: 72, borderRadius: "50%",
-            background: "rgba(245,158,11,0.12)",
-            border: `1px solid rgba(245,158,11,0.35)`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "2rem", marginBottom: 16,
-          }}>✓</div>
-          <p style={{ color: WHITE, fontSize: "1.05rem", fontWeight: 700, margin: "0 0 8px" }}>
-            You've seen everyone!
-          </p>
-          <p style={{ color: MUTED, fontSize: "0.88rem", marginBottom: 24, textAlign: "center" }}>
-            Check back later for new profiles from your campus.
-          </p>
-          <button onClick={() => loadCandidates(true)} style={{
-            background: GOLD, color: DARK, border: "none",
-            padding: "12px 28px", borderRadius: 8,
-            fontWeight: 700, fontSize: "0.95rem",
-            cursor: "pointer",
-            boxShadow: "0 4px 20px rgba(245,158,11,0.35)",
-          }}>
-            Refresh
-          </button>
-        </div>
-      );
-    }
+  };
+
+  // ── Button swipe ──────────────────────────────────────────────
+  const btnSwipe = (dir) => doSwipe(dir, current);
+
+  // ── Menu close on outside click ───────────────────────────────
+  useEffect(() => {
+    if (!menuOpen) return;
+    const h = (e) => { if (!menuRef.current?.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [menuOpen]);
+
+  // ── Render helpers ────────────────────────────────────────────
+  const CARD_W = "min(310px, calc(100vw - 32px))";
+  const CARD_H = 465;
+
+  const renderDeck = () => {
+    if (!current) return (
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:500,textAlign:"center",padding:32}}>
+        <div style={{width:72,height:72,borderRadius:"50%",background:`rgba(245,158,11,.12)`,border:`1px solid rgba(245,158,11,.35)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem",marginBottom:16}}>✓</div>
+        <p style={{color:WHITE,fontSize:"1.05rem",fontWeight:700,margin:"0 0 8px",fontFamily:JAKARTA}}>You've seen everyone!</p>
+        <p style={{color:MUTED,fontSize:"0.88rem",marginBottom:24,fontFamily:JAKARTA}}>Check back later for new profiles.</p>
+        <button onClick={()=>load(true)} style={{background:GOLD,color:DARK,border:"none",padding:"12px 28px",borderRadius:8,fontWeight:700,fontSize:"0.95rem",cursor:"pointer",fontFamily:JAKARTA,boxShadow:"0 4px 20px rgba(245,158,11,.35)"}}>Refresh</button>
+      </div>
+    );
+
+    const ghost = (t, s, r, op) => (
+      <div style={{ position:"absolute",inset:0,borderRadius:28,background:"linear-gradient(160deg,#0d1e3e,#08142a 45%,#050c1a)",border:"1px solid rgba(255,255,255,.06)",transform:`translateY(${t}px) scale(${s}) rotate(${r}deg)`,opacity:op,pointerEvents:"none" }} />
+    );
+
+    const avatarBg = current.photo ? `url(${current.photo}) center/cover no-repeat` : "linear-gradient(135deg,#1a3560,#0d1e3e)";
 
     return (
-      <>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0}}>
         {/* Card stack */}
-        <div style={{ position: "relative", width: "min(360px, calc(100vw - 32px))", height: "min(460px, calc(100vh - 300px))" }}>
-          {currentIndex > 0 && (
-            <div style={{
-              position: "absolute", inset: 0, borderRadius: 22,
-              background: "linear-gradient(135deg, #0A1628, #0F2D5E)",
-              border: `1px solid rgba(255,255,255,0.06)`,
-              transform: "scale(0.96) translateY(10px)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-            }} />
-          )}
-          {candidates.map((person, index) =>
-            index === currentIndex ? (
-              <TinderCard
-                key={person.id}
-                onSwipe={(dir) => handleSwipe(dir, person)}
-                onCardLeftScreen={() => {}}
-                preventSwipe={["up", "down"]}
-              >
-                <div
-                  style={{ position: "relative", width: "min(360px, calc(100vw - 32px))", height: "min(460px, calc(100vh - 300px))" }}
-                  onClick={() => setProfileModal(person)}
-                  onTouchStart={(e) => {
-                    const t = e.touches[0];
-                    touchStartRef.current = { x: t.clientX, y: t.clientY };
-                  }}
-                  onTouchEnd={(e) => {
-                    if (!touchStartRef.current) return;
-                    const t = e.changedTouches[0];
-                    const dx = Math.abs(t.clientX - touchStartRef.current.x);
-                    const dy = Math.abs(t.clientY - touchStartRef.current.y);
-                    touchStartRef.current = null;
-                    // Only treat as a tap if movement was negligible
-                    if (dx < 8 && dy < 8) {
-                      e.preventDefault();
-                      setProfileModal(person);
-                    }
-                  }}
-                >
-                  {swipeHint === "right" && (
-                    <div style={{ ...hintStyle, borderColor: GOLD, color: GOLD, right: 16, left: "auto" }}>LIKE</div>
-                  )}
-                  {swipeHint === "left" && (
-                    <div style={{ ...hintStyle, borderColor: "#EF4444", color: "#EF4444", left: 16, right: "auto" }}>PASS</div>
-                  )}
-                  <ProfileCard
-                    person={person}
-                    viewerPrefs={viewerPrefs}
-                    onReport={() => setReportTarget(person)}
-                    onBlock={() => handleBlock(person)}
-                  />
+        <div style={{position:"relative",width:CARD_W,height:CARD_H,flexShrink:0}}>
+          {ghost(18,.94, 2,.3)}
+          {ghost( 9,.97,-1,.5)}
+
+          {/* Main card */}
+          <div
+            ref={cardRef}
+            onPointerDown={onPtrDown}
+            onPointerMove={onPtrMove}
+            onPointerUp={onPtrUp}
+            style={{
+              position:"absolute",inset:0,
+              borderRadius:28,
+              background:"linear-gradient(160deg,#0d1e3e 0%,#08142a 45%,#050c1a 100%)",
+              border:"1px solid rgba(255,255,255,.08)",
+              boxShadow:"0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.03)",
+              cursor:"grab",userSelect:"none",touchAction:"none",
+              willChange:"transform",overflow:"hidden",
+            }}
+          >
+            {/* LIKE hint */}
+            <div ref={likeRef} style={{position:"absolute",top:28,right:20,zIndex:20,border:"3px solid "+GOLD,color:GOLD,borderRadius:8,padding:"4px 14px",fontFamily:BEBAS,fontSize:"1.8rem",letterSpacing:2,opacity:0,pointerEvents:"none",textShadow:`0 0 20px rgba(245,166,35,.8)`}}>LIKE</div>
+            {/* NOPE hint */}
+            <div ref={nopeRef} style={{position:"absolute",top:28,left:20,zIndex:20,border:"3px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"4px 14px",fontFamily:BEBAS,fontSize:"1.8rem",letterSpacing:2,opacity:0,pointerEvents:"none",textShadow:"0 0 20px rgba(239,68,68,.8)"}}>NOPE</div>
+
+            {/* Top row */}
+            <div style={{position:"absolute",top:0,left:0,right:0,padding:"16px 16px 0",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:10}}>
+              {current.pct !== null && current.pct !== undefined ? (
+                <div style={{background:"rgba(245,166,35,.18)",border:"1px solid rgba(245,166,35,.45)",borderRadius:20,padding:"4px 12px",display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{color:GOLD2,fontWeight:800,fontSize:"0.88rem",fontFamily:JAKARTA}}>{current.pct}%</span>
+                  <span style={{color:"rgba(245,166,35,.7)",fontSize:"0.68rem",fontWeight:600,fontFamily:JAKARTA}}>match</span>
                 </div>
-              </TinderCard>
-            ) : null
+              ) : <div />}
+              {/* 3-dot menu */}
+              <div ref={menuRef} data-menu="true" style={{position:"relative"}}>
+                <button onClick={(e)=>{e.stopPropagation();setMenuOpen(v=>!v);}} style={{background:"rgba(3,4,11,.6)",border:"1px solid rgba(255,255,255,.12)",color:WHITE,width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:"1rem",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(6px)"}}>⋯</button>
+                {menuOpen && (
+                  <div onClick={(e)=>e.stopPropagation()} style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:"#0e1f3d",border:"1px solid rgba(255,255,255,.12)",borderRadius:10,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,.6)",minWidth:148,zIndex:30}}>
+                    {[{label:"Report 🚩",fn:()=>{setMenuOpen(false);setReportTarget(candidates[idx]||current);}},{label:"Block 🚫",fn:async()=>{setMenuOpen(false);setIdx(p=>p+1);if(!usesDemo)try{await blockUser(user.id,candidates[idx].id);}catch(e){console.error(e);}}}].map(item=>(
+                      <button key={item.label} onClick={(e)=>{e.stopPropagation();item.fn();}} style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",color:"#f87171",fontSize:"0.85rem",cursor:"pointer",textAlign:"left",fontFamily:JAKARTA}}>{item.label}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Photo zone */}
+            <div style={{height:220,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",paddingTop:52}}>
+              <div className="r8-pulse-ring-outer" style={{position:"absolute",width:144,height:144,borderRadius:"50%",border:"1.5px solid rgba(245,166,35,.25)",pointerEvents:"none"}} />
+              <div className="r8-pulse-ring-inner" style={{position:"absolute",width:120,height:120,borderRadius:"50%",border:"1.5px solid rgba(245,166,35,.4)",pointerEvents:"none"}} />
+              <div style={{width:100,height:100,borderRadius:"50%",background:avatarBg,border:"2.5px solid rgba(245,166,35,.6)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 30px rgba(245,166,35,.2)",flexShrink:0,fontSize:"2rem",color:"rgba(255,255,255,.75)",fontFamily:JAKARTA,fontWeight:700,overflow:"hidden"}}>
+                {!current.photo && (current.initials || "?")}
+              </div>
+              <div style={{position:"absolute",bottom:0,left:0,right:0,height:48,background:"linear-gradient(to bottom,transparent,rgba(5,12,26,.6))",pointerEvents:"none"}} />
+            </div>
+
+            {/* Info zone */}
+            <div style={{padding:"12px 20px 20px",textAlign:"center"}}>
+              <h2 style={{margin:"0 0 5px",fontFamily:JAKARTA,fontSize:26,fontWeight:700,color:WHITE,lineHeight:1.15}}>{current.name}</h2>
+              <p style={{margin:"0 0 14px",fontFamily:JAKARTA,fontSize:12,color:MUTED,lineHeight:1.5}}>{current.sub || "\u00a0"}</p>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
+                {current.tags.map((t,i)=>(
+                  <span key={i} style={{background:t.bg,border:`1px solid ${t.border}`,color:t.color,padding:"4px 11px",borderRadius:20,fontSize:"0.7rem",fontWeight:600,fontFamily:JAKARTA}}>{t.label}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Match overlay — inside card stack */}
+          {showMatch && matchCard && (
+            <MatchOverlay
+              user={user}
+              card={matchCard}
+              onChat={()=>{ setShowMatch(false); }}
+              onKeepSwiping={()=>setShowMatch(false)}
+            />
           )}
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: "flex", gap: "clamp(20px, 8vw, 44px)", marginTop: "clamp(16px, 4vh, 28px)", paddingBottom: "env(safe-area-inset-bottom, 0px)", alignItems: "center", justifyContent: "center", width: "100%", flexShrink: 0 }}>
-          <ActionButton
-            onClick={() => pressButton("left")}
-            onMouseEnter={() => setSwipeHint("left")}
-            onMouseLeave={() => setSwipeHint(null)}
-            bg="transparent"
-            border="1.5px solid rgba(255,255,255,0.2)"
-            hoverBorder="1.5px solid #EF4444"
-            shadow="0 4px 20px rgba(0,0,0,0.3)"
-            label="✕" labelColor="rgba(255,255,255,0.7)" size={58}
-          />
-          <ActionButton
-            onClick={() => pressButton("right")}
-            onMouseEnter={() => setSwipeHint("right")}
-            onMouseLeave={() => setSwipeHint(null)}
-            bg={GOLD}
-            border="none"
-            hoverBorder="none"
-            shadow={`0 6px 28px rgba(245,158,11,0.5)`}
-            label="♥" labelColor={DARK} size={72}
-          />
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:18,marginTop:26,paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
+          <PassButton  onClick={()=>btnSwipe("left")} />
+          <SuperButton onClick={doSuperLike} popped={superPop} />
+          <LikeButton  onClick={()=>btnSwipe("right")} />
         </div>
-
-      </>
+      </div>
     );
   };
 
   return (
     <div style={{
-      flex: 1, display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center",
-      width: "100%", height: "100%",
-      paddingTop: 80,
-      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
-      background: `linear-gradient(180deg, ${DARKER} 0%, #071020 100%)`,
-      position: "relative", overflow: "clip",
-      boxSizing: "border-box",
+      flex:1,display:"flex",flexDirection:"column",
+      alignItems:"center",justifyContent:"center",
+      width:"100%",height:"100%",
+      paddingTop:80,paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 16px)",
+      position:"relative",overflow:"clip",
+      boxSizing:"border-box",background:DARK,
     }}>
-      {/* Subtle radial glow */}
-      <div style={{
-        position: "absolute", top: "30%", left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: 500, height: 500, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(15,45,94,0.4) 0%, transparent 70%)",
-        pointerEvents: "none",
-      }} />
+      {/* Canvas */}
+      <StarCanvas triggerRef={triggerRef} />
 
       {/* Top bar */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0,
-        padding: "14px 20px",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        zIndex: 50,
-        background: "rgba(3,9,20,0.85)",
-        backdropFilter: "blur(16px)",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-      }}>
-        <span style={{
-          fontSize: "1.1rem", fontWeight: 800,
-          color: GOLD, letterSpacing: "0.06em",
-          fontFamily: "'Outfit', sans-serif",
-          flexShrink: 0,
-        }}>
-          ROOM8
-        </span>
+      <div style={{position:"absolute",top:0,left:0,right:0,padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:50,background:"rgba(3,4,11,.85)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,.07)"}}>
+        <span style={{fontSize:"1.4rem",fontFamily:BEBAS,color:GOLD,letterSpacing:"0.1em",flexShrink:0}}>ROOM8</span>
         {user?.school && (
-          <span style={{
-            background: "rgba(245,158,11,0.12)",
-            color: "rgba(245,158,11,0.85)",
-            padding: "4px 12px", borderRadius: 6, fontSize: "0.72rem", fontWeight: 600,
-            border: "1px solid rgba(245,158,11,0.25)",
-            maxWidth: "calc(100% - 120px)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>
+          <span style={{background:"rgba(245,158,11,.12)",color:"rgba(245,158,11,.85)",padding:"4px 12px",borderRadius:6,fontSize:"0.72rem",fontWeight:600,border:"1px solid rgba(245,158,11,.25)",maxWidth:"calc(100% - 120px)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:JAKARTA}}>
             {shortSchool(user.school)}
           </span>
         )}
         {user && (
-          <div style={{
-            width: 34, height: 34, borderRadius: "50%",
-            background: user.photo ? `url(${user.photo}) center/cover` : NAVY,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: WHITE, fontWeight: 700, fontSize: "0.85rem", flexShrink: 0,
-            border: `2px solid rgba(245,158,11,0.4)`,
-          }}>
-            {!user.photo && (user.name?.[0]?.toUpperCase() || "?")}
+          <div style={{width:34,height:34,borderRadius:"50%",background:user.photo?`url(${user.photo}) center/cover`:NAVY,display:"flex",alignItems:"center",justifyContent:"center",color:WHITE,fontWeight:700,fontSize:"0.85rem",flexShrink:0,border:"2px solid rgba(245,158,11,.4)",fontFamily:JAKARTA}}>
+            {!user.photo && (user.name?.[0]?.toUpperCase()||"?")}
           </div>
         )}
       </div>
 
-      {/* Email verification banner */}
+      {/* Email banner */}
       {user && user.email_verified === false && (
-        <div style={{
-          position: "absolute", top: 64, left: 0, right: 0, zIndex: 90,
-          background: "rgba(245,158,11,0.12)",
-          borderBottom: "1px solid rgba(245,158,11,0.25)",
-          padding: "10px 20px",
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-        }}>
-          <span style={{ color: "rgba(245,158,11,0.9)", fontSize: "0.8rem", fontWeight: 600 }}>
-            ⚠ Please verify your email — check your inbox
-          </span>
-          <button
-            onClick={async () => {
-              try {
-                await resendVerification(user.id);
-                setResendSent(true);
-                setTimeout(() => setResendSent(false), 4000);
-              } catch (e) { console.error(e); }
-            }}
-            style={{
-              background: "none", border: "1px solid rgba(245,158,11,0.4)",
-              color: GOLD, padding: "4px 12px", borderRadius: 6,
-              fontSize: "0.75rem", fontWeight: 700, cursor: "pointer",
-              whiteSpace: "nowrap", flexShrink: 0,
-            }}
-          >
+        <div style={{position:"absolute",top:64,left:0,right:0,zIndex:90,background:"rgba(245,158,11,.12)",borderBottom:"1px solid rgba(245,158,11,.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+          <span style={{color:"rgba(245,158,11,.9)",fontSize:"0.8rem",fontWeight:600,fontFamily:JAKARTA}}>⚠ Please verify your email — check your inbox</span>
+          <button onClick={async()=>{try{await resendVerification(user.id);setResendSent(true);setTimeout(()=>setResendSent(false),4000);}catch(e){console.error(e);}}} style={{background:"none",border:"1px solid rgba(245,158,11,.4)",color:GOLD,padding:"4px 12px",borderRadius:6,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,fontFamily:JAKARTA}}>
             {resendSent ? "Sent ✓" : "Resend"}
           </button>
         </div>
       )}
 
-      {/* Match toast */}
-      {matchToast && (
-        <div style={{
-          position: "absolute", top: user?.email_verified === false ? 118 : 74, left: "50%", transform: "translateX(-50%)",
-          background: GOLD, color: DARK,
-          padding: "10px 22px", borderRadius: 8,
-          fontWeight: 700, fontSize: "0.9rem", zIndex: 100,
-          boxShadow: "0 4px 24px rgba(245,158,11,0.5)",
-          animation: "slideDown 0.3s ease", whiteSpace: "nowrap",
-        }}>
-          {matchToast}
-        </div>
-      )}
-
-      {renderContent()}
+      {/* Content */}
+      <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"center",width:"100%"}}>
+        {loading ? (
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
+            <div style={{width:36,height:36,border:"2.5px solid rgba(255,255,255,.1)",borderTop:`2.5px solid ${GOLD}`,borderRadius:"50%",animation:"r8spin .8s linear infinite"}} />
+            <p style={{color:MUTED,fontSize:"0.9rem",fontFamily:JAKARTA}}>Finding roommates…</p>
+          </div>
+        ) : !user ? (
+          <p style={{color:MUTED,fontFamily:JAKARTA}}>Please log in to browse candidates.</p>
+        ) : renderDeck()}
+      </div>
 
       {/* Report modal */}
       {reportTarget && (
-        <ReportModal
-          person={reportTarget}
-          userId={user.id}
-          onClose={() => setReportTarget(null)}
-          onDone={handleReportDone}
-        />
+        <ReportModal person={reportTarget} userId={user.id} onClose={()=>setReportTarget(null)}
+          onDone={()=>{setReportTarget(null);setIdx(p=>p+1);}} />
       )}
 
       {/* Profile modal */}
-      {profileModal && (
-        <ProfileModal
-          person={profileModal}
-          onClose={() => setProfileModal(null)}
-        />
-      )}
+      {profileModal && <ProfileModal person={profileModal} onClose={()=>setProfileModal(null)} />}
 
       <style>{`
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        /* Hide profile-modal scrollbar in WebKit browsers */
-        .r8-profile-modal::-webkit-scrollbar { display: none; }
+        @keyframes r8spin { to { transform: rotate(360deg); } }
+        @keyframes fadeInOverlay { from { opacity:0; } to { opacity:1; } }
+        @keyframes springPop { 0%{transform:scale(1)} 40%{transform:scale(1.22)} 70%{transform:scale(.95)} 100%{transform:scale(1)} }
+        .r8-pulse-ring-outer { animation: r8pulseOut 2.4s ease-in-out infinite; }
+        .r8-pulse-ring-inner { animation: r8pulseIn  2.4s ease-in-out infinite .5s; }
+        @keyframes r8pulseOut { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.09);opacity:.2} }
+        @keyframes r8pulseIn  { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.07);opacity:.25} }
+        .r8-profile-modal::-webkit-scrollbar { display:none; }
+        @keyframes slideDown { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
       `}</style>
     </div>
   );
 }
-
-function ActionButton({ onClick, onMouseEnter, onMouseLeave, bg, border, hoverBorder, shadow, label, labelColor, size }) {
-  const [pressed, setPressed] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => { setHovered(true); onMouseEnter?.(); }}
-      onMouseLeave={() => { setHovered(false); onMouseLeave?.(); }}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      style={{
-        width: size, height: size,
-        background: bg,
-        border: hovered ? hoverBorder : border,
-        borderRadius: "50%",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: shadow,
-        cursor: "pointer",
-        fontSize: size > 65 ? "1.9rem" : "1.4rem",
-        color: labelColor,
-        transition: "transform 0.15s, box-shadow 0.15s",
-        transform: pressed ? "scale(0.88)" : "scale(1)",
-        flexShrink: 0,
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
-const emptyStyle = {
-  display: "flex", flexDirection: "column",
-  alignItems: "center", justifyContent: "center",
-  height: 480, textAlign: "center", padding: 32,
-  marginTop: 64,
-};
-
-const spinnerStyle = {
-  width: 36, height: 36,
-  border: "2.5px solid rgba(255,255,255,0.1)",
-  borderTop: `2.5px solid ${GOLD}`,
-  borderRadius: "50%",
-  animation: "spin 0.8s linear infinite",
-};
-
-const tagStyle = {
-  background: "rgba(255,255,255,0.1)",
-  color: "rgba(255,255,255,0.85)",
-  padding: "4px 10px", borderRadius: 6,
-  fontSize: "0.72rem", fontWeight: 600,
-  backdropFilter: "blur(4px)",
-  border: "1px solid rgba(255,255,255,0.12)",
-};
-
-const hintStyle = {
-  position: "absolute", top: 20, zIndex: 10,
-  border: "3px solid", borderRadius: 8,
-  padding: "5px 12px", fontWeight: 800, fontSize: "1.1rem",
-  letterSpacing: 2, transform: "rotate(-12deg)",
-  pointerEvents: "none",
-};

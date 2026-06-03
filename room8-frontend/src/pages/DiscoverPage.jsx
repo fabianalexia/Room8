@@ -532,7 +532,7 @@ const TABS = [
 export default function DiscoverPage() {
   const navigate = useNavigate();
   const user     = getCurrentUser();
-  const [tab, setTab] = useState("board");
+  const [tab, setTab] = useState("compat");
 
   useEffect(() => {
     if (!user) navigate("/login");

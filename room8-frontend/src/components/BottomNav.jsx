@@ -12,9 +12,11 @@ const FlameIcon = ({ active }) => (
   </svg>
 );
 
-const GridIcon = ({ active }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? GOLD : INACTIVE}>
-    <path d="M4 5v5h5V5H4zm0 9v5h5v-5H4zm9-9v5h5V5h-5zm0 9v5h5v-5h-5z"/>
+const CompatIcon = ({ active }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? GOLD : INACTIVE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M12 8v4l3 3"/>
+    <path d="M8 12h.01M12 7h.01M16 12h.01M12 17h.01"/>
   </svg>
 );
 
@@ -38,7 +40,7 @@ const PersonIcon = ({ active }) => (
 
 const TABS = [
   { label: "Swipe",    Icon: FlameIcon,  path: "/app"      },
-  { label: "Discover", Icon: GridIcon,   path: "/discover" },
+  { label: "Compatibility", Icon: CompatIcon, path: "/discover" },
   { label: "Likes",    Icon: HeartIcon,  path: "/likes"    },
   { label: "Messages", Icon: ChatIcon,   path: "/messages" },
   { label: "Profile",  Icon: PersonIcon, path: "/profile"  },

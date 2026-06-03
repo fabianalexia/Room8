@@ -643,7 +643,7 @@ export default function SwipeDeck() {
       <div style={{ position:"absolute",inset:0,borderRadius:28,background:"linear-gradient(160deg,#0d1e3e,#08142a 45%,#050c1a)",border:"1px solid rgba(255,255,255,.06)",transform:`translateY(${t}px) scale(${s}) rotate(${r}deg)`,opacity:op,pointerEvents:"none" }} />
     );
 
-    const avatarBg = current.photo ? `url(${current.photo}) center/cover no-repeat` : "linear-gradient(135deg,#1a3560,#0d1e3e)";
+    const photo = current.profilePhoto || current.photo || null;
 
     return (
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0}}>
@@ -694,21 +694,30 @@ export default function SwipeDeck() {
               </div>
             </div>
 
-            {/* Photo zone */}
-            <div style={{height:220,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",paddingTop:52}}>
-              <div className="r8-pulse-ring-outer" style={{position:"absolute",width:144,height:144,borderRadius:"50%",border:"1.5px solid rgba(245,166,35,.25)",pointerEvents:"none"}} />
-              <div className="r8-pulse-ring-inner" style={{position:"absolute",width:120,height:120,borderRadius:"50%",border:"1.5px solid rgba(245,166,35,.4)",pointerEvents:"none"}} />
-              <div style={{width:100,height:100,borderRadius:"50%",background:avatarBg,border:"2.5px solid rgba(245,166,35,.6)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 30px rgba(245,166,35,.2)",flexShrink:0,fontSize:"2rem",color:"rgba(255,255,255,.75)",fontFamily:JAKARTA,fontWeight:700,overflow:"hidden"}}>
-                {!current.photo && (current.initials || "?")}
-              </div>
-              <div style={{position:"absolute",bottom:0,left:0,right:0,height:48,background:"linear-gradient(to bottom,transparent,rgba(5,12,26,.6))",pointerEvents:"none"}} />
+            {/* Photo zone — full bleed, or initials fallback */}
+            <div style={{position:"absolute",top:0,left:0,right:0,height:260,overflow:"hidden",borderRadius:"28px 28px 0 0"}}>
+              {photo ? (
+                <img
+                  src={photo} alt={current.name} draggable={false}
+                  onError={(e)=>{ e.target.onerror=null; e.target.style.display="none"; }}
+                  style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",pointerEvents:"none"}}
+                />
+              ) : (
+                <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,#1a3560,#0d1e3e)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <div style={{width:90,height:90,borderRadius:"50%",background:"rgba(255,255,255,.08)",border:"2px solid rgba(245,166,35,.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem",color:"rgba(255,255,255,.65)",fontFamily:JAKARTA,fontWeight:700}}>
+                    {current.initials || "?"}
+                  </div>
+                </div>
+              )}
+              {/* Gradient scrim */}
+              <div style={{position:"absolute",bottom:0,left:0,right:0,height:140,background:"linear-gradient(to top,#08142a 0%,transparent 100%)",pointerEvents:"none"}} />
             </div>
 
-            {/* Info zone */}
-            <div style={{padding:"12px 20px 20px",textAlign:"center"}}>
-              <h2 style={{margin:"0 0 5px",fontFamily:JAKARTA,fontSize:26,fontWeight:700,color:WHITE,lineHeight:1.15}}>{current.name}</h2>
-              <p style={{margin:"0 0 14px",fontFamily:JAKARTA,fontSize:12,color:MUTED,lineHeight:1.5}}>{current.sub || "\u00a0"}</p>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
+            {/* Info zone — overlaps scrim */}
+            <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"0 20px 20px"}}>
+              <h2 style={{margin:"0 0 3px",fontFamily:JAKARTA,fontSize:26,fontWeight:700,color:WHITE,lineHeight:1.15,textShadow:"0 2px 8px rgba(0,0,0,.5)"}}>{current.name}</h2>
+              <p style={{margin:"0 0 12px",fontFamily:JAKARTA,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.5}}>{current.sub || "\u00a0"}</p>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {current.tags.map((t,i)=>(
                   <span key={i} style={{background:t.bg,border:`1px solid ${t.border}`,color:t.color,padding:"4px 11px",borderRadius:20,fontSize:"0.7rem",fontWeight:600,fontFamily:JAKARTA}}>{t.label}</span>
                 ))}

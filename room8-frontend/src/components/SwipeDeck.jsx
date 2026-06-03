@@ -627,7 +627,7 @@ export default function SwipeDeck() {
 
   // ── Render helpers ────────────────────────────────────────────
   const CARD_W = "min(310px, calc(100vw - 32px))";
-  const CARD_H = 465;
+  const CARD_H = "min(calc(100vh - 220px), 78vh)";
 
   const renderDeck = () => {
     if (!current) return (
@@ -695,12 +695,12 @@ export default function SwipeDeck() {
             </div>
 
             {/* Photo zone — full bleed, or initials fallback */}
-            <div style={{position:"absolute",top:0,left:0,right:0,height:260,overflow:"hidden",borderRadius:"28px 28px 0 0"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,overflow:"hidden",borderRadius:28}}>
               {photo ? (
                 <img
                   src={photo} alt={current.name} draggable={false}
                   onError={(e)=>{ e.target.onerror=null; e.target.style.display="none"; }}
-                  style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",pointerEvents:"none"}}
+                  style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"contain",background:"#0F2D5E",pointerEvents:"none"}}
                 />
               ) : (
                 <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,#1a3560,#0d1e3e)",display:"flex",alignItems:"center",justifyContent:"center"}}>

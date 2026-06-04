@@ -626,7 +626,7 @@ export default function SwipeDeck() {
   }, [menuOpen]);
 
   // ── Render helpers ────────────────────────────────────────────
-  const CARD_W = "min(310px, calc(100vw - 32px))";
+  const CARD_W = "min(420px, calc(100vw - 40px))";
   const CARD_H = "min(calc(100vh - 220px), 78vh)";
 
   const renderDeck = () => {
@@ -648,7 +648,7 @@ export default function SwipeDeck() {
     return (
       <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0}}>
         {/* Card stack */}
-        <div style={{position:"relative",width:CARD_W,height:CARD_H,flexShrink:0}}>
+        <div style={{position:"relative",width:CARD_W,height:CARD_H,flexShrink:0,maxWidth:"100%",overflow:"hidden",borderRadius:28}}>
           {ghost(18,.94, 2,.3)}
           {ghost( 9,.97,-1,.5)}
 
@@ -784,7 +784,7 @@ export default function SwipeDeck() {
       )}
 
       {/* Content */}
-      <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"center",width:"100%"}}>
+      <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"center",width:"100%",maxWidth:"100vw",overflow:"hidden"}}>
         {loading ? (
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
             <div style={{width:36,height:36,border:"2.5px solid rgba(255,255,255,.1)",borderTop:`2.5px solid ${GOLD}`,borderRadius:"50%",animation:"r8spin .8s linear infinite"}} />

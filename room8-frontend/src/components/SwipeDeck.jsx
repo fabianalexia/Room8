@@ -646,9 +646,9 @@ export default function SwipeDeck() {
     const photo = current.profilePhoto || current.photo || null;
 
     return (
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0}}>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:CARD_W,maxWidth:"100%",height:"100%",gap:0}}>
         {/* Card stack */}
-        <div style={{position:"relative",width:CARD_W,height:CARD_H,flexShrink:0,maxWidth:"100%",overflow:"hidden",borderRadius:28}}>
+        <div style={{position:"relative",width:"100%",flex:1,minHeight:0,maxWidth:"100%",overflow:"hidden",borderRadius:28}}>
           {ghost(18,.94, 2,.3)}
           {ghost( 9,.97,-1,.5)}
 
@@ -737,7 +737,7 @@ export default function SwipeDeck() {
         </div>
 
         {/* Action buttons */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:18,marginTop:26,marginBottom:70,paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
+        <div style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",gap:18,paddingTop:16,paddingBottom:16}}>
           <PassButton  onClick={()=>btnSwipe("left")} />
           <SuperButton onClick={doSuperLike} popped={superPop} />
           <LikeButton  onClick={()=>btnSwipe("right")} />
@@ -749,10 +749,10 @@ export default function SwipeDeck() {
   return (
     <div style={{
       flex:1,display:"flex",flexDirection:"column",
-      alignItems:"center",justifyContent:"center",
+      alignItems:"center",justifyContent:"flex-start",
       width:"100%",height:"100%",
-      paddingTop:80,paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 80px)",
-      position:"relative",overflow:"clip",
+      paddingTop:64,paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 80px)",
+      position:"relative",overflow:"hidden",
       boxSizing:"border-box",background:DARK,
     }}>
       {/* Canvas */}
@@ -784,7 +784,7 @@ export default function SwipeDeck() {
       )}
 
       {/* Content */}
-      <div style={{position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"center",width:"100%",maxWidth:"100vw",overflow:"hidden"}}>
+      <div style={{flex:1,minHeight:0,position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"center",width:"100%",maxWidth:"100vw",overflow:"hidden"}}>
         {loading ? (
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
             <div style={{width:36,height:36,border:"2.5px solid rgba(255,255,255,.1)",borderTop:`2.5px solid ${GOLD}`,borderRadius:"50%",animation:"r8spin .8s linear infinite"}} />

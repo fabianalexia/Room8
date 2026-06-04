@@ -737,7 +737,7 @@ export default function SwipeDeck() {
         </div>
 
         {/* Action buttons */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:18,marginTop:26,paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:18,marginTop:26,marginBottom:70,paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
           <PassButton  onClick={()=>btnSwipe("left")} />
           <SuperButton onClick={doSuperLike} popped={superPop} />
           <LikeButton  onClick={()=>btnSwipe("right")} />
@@ -751,7 +751,7 @@ export default function SwipeDeck() {
       flex:1,display:"flex",flexDirection:"column",
       alignItems:"center",justifyContent:"center",
       width:"100%",height:"100%",
-      paddingTop:80,paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 16px)",
+      paddingTop:80,paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 80px)",
       position:"relative",overflow:"clip",
       boxSizing:"border-box",background:DARK,
     }}>

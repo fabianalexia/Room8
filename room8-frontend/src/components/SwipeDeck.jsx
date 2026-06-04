@@ -669,12 +669,12 @@ export default function SwipeDeck() {
             }}
           >
             {/* LIKE hint */}
-            <div ref={likeRef} style={{position:"absolute",top:28,right:20,zIndex:20,border:"3px solid "+GOLD,color:GOLD,borderRadius:8,padding:"4px 14px",fontFamily:BEBAS,fontSize:"1.8rem",letterSpacing:2,opacity:0,pointerEvents:"none",textShadow:`0 0 20px rgba(245,166,35,.8)`}}>LIKE</div>
+            <div ref={likeRef} style={{position:"absolute",top:28,right:20,zIndex:31,border:"3px solid "+GOLD,color:GOLD,borderRadius:8,padding:"4px 14px",fontFamily:BEBAS,fontSize:"1.8rem",letterSpacing:2,opacity:0,pointerEvents:"none",textShadow:`0 0 20px rgba(245,166,35,.8)`}}>LIKE</div>
             {/* NOPE hint */}
-            <div ref={nopeRef} style={{position:"absolute",top:28,left:20,zIndex:20,border:"3px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"4px 14px",fontFamily:BEBAS,fontSize:"1.8rem",letterSpacing:2,opacity:0,pointerEvents:"none",textShadow:"0 0 20px rgba(239,68,68,.8)"}}>NOPE</div>
+            <div ref={nopeRef} style={{position:"absolute",top:28,left:20,zIndex:31,border:"3px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"4px 14px",fontFamily:BEBAS,fontSize:"1.8rem",letterSpacing:2,opacity:0,pointerEvents:"none",textShadow:"0 0 20px rgba(239,68,68,.8)"}}>NOPE</div>
 
             {/* Top row */}
-            <div style={{position:"absolute",top:0,left:0,right:0,padding:"16px 16px 0",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:10}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,padding:"16px 16px 0",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:30}}>
               {current.pct !== null && current.pct !== undefined ? (
                 <div style={{background:"rgba(245,166,35,.18)",border:"1px solid rgba(245,166,35,.45)",borderRadius:20,padding:"4px 12px",display:"flex",alignItems:"center",gap:4}}>
                   <span style={{color:GOLD2,fontWeight:800,fontSize:"0.88rem",fontFamily:JAKARTA}}>{current.pct}%</span>

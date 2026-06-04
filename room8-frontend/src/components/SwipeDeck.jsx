@@ -439,7 +439,7 @@ function PassButton({ onClick }) {
   const [hov, setHov] = useState(false);
   return (
     <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
-      width:62,height:62,borderRadius:"50%",flexShrink:0,
+      width:64,height:64,borderRadius:"50%",flexShrink:0,
       background: hov ? "rgba(239,68,68,.15)" : "rgba(255,255,255,.06)",
       border: `1.5px solid ${hov?"#ef4444":"rgba(255,255,255,.18)"}`,
       color: hov ? "#ef4444" : "rgba(255,255,255,.6)",
@@ -454,7 +454,7 @@ function SuperButton({ onClick, popped }) {
   const [hov, setHov] = useState(false);
   return (
     <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
-      width:54,height:54,borderRadius:"50%",flexShrink:0,
+      width:64,height:64,borderRadius:"50%",flexShrink:0,
       background: "rgba(59,130,246,.12)",
       border: `1.5px solid ${hov?"#60a5fa":"rgba(59,130,246,.4)"}`,
       color: hov ? "#93c5fd" : "#60a5fa",
@@ -476,7 +476,7 @@ function LikeButton({ onClick }) {
   };
   return (
     <button onClick={handleClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
-      width:78,height:78,borderRadius:"50%",flexShrink:0,
+      width:76,height:76,borderRadius:"50%",flexShrink:0,
       background: `linear-gradient(135deg,${GOLD},${GOLD2})`,
       border:"none",
       color:DARK,
@@ -627,7 +627,8 @@ export default function SwipeDeck() {
 
   // ── Render helpers ────────────────────────────────────────────
   const CARD_W = "min(420px, calc(100vw - 40px))";
-  const CARD_H = "min(calc(100vh - 220px), 78vh)";
+  // Budget: AppShell = 100vh-64 | outer pad top 64 + bottom 80 | buttons ~96px → leaves 100dvh-304px for card
+  const CARD_H = "min(600px, calc(100dvh - 310px))";
 
   const renderDeck = () => {
     if (!current) return (
@@ -646,9 +647,9 @@ export default function SwipeDeck() {
     const photo = current.profilePhoto || current.photo || null;
 
     return (
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:CARD_W,maxWidth:"100%",height:"100%",gap:0}}>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:CARD_W,maxWidth:"100%",gap:0}}>
         {/* Card stack */}
-        <div style={{position:"relative",width:"100%",flex:1,minHeight:0,maxWidth:"100%",overflow:"hidden",borderRadius:28}}>
+        <div style={{position:"relative",width:"100%",height:CARD_H,flexShrink:0,maxWidth:"100%",overflow:"hidden",borderRadius:28}}>
           {ghost(18,.94, 2,.3)}
           {ghost( 9,.97,-1,.5)}
 
@@ -703,7 +704,7 @@ export default function SwipeDeck() {
                   style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"contain",background:"#0F2D5E",pointerEvents:"none"}}
                 />
               ) : (
-                <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,#1a3560,#0d1e3e)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,#1a3560,#0d1e3e)",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:"18%"}}>
                   <div style={{width:90,height:90,borderRadius:"50%",background:"rgba(255,255,255,.08)",border:"2px solid rgba(245,166,35,.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem",color:"rgba(255,255,255,.65)",fontFamily:JAKARTA,fontWeight:700}}>
                     {current.initials || "?"}
                   </div>
@@ -737,7 +738,7 @@ export default function SwipeDeck() {
         </div>
 
         {/* Action buttons */}
-        <div style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",gap:18,paddingTop:16,paddingBottom:16}}>
+        <div style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",gap:24,paddingTop:10,paddingBottom:10}}>
           <PassButton  onClick={()=>btnSwipe("left")} />
           <SuperButton onClick={doSuperLike} popped={superPop} />
           <LikeButton  onClick={()=>btnSwipe("right")} />

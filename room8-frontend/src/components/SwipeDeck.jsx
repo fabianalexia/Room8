@@ -598,8 +598,13 @@ export default function SwipeDeck() {
     if (!dragRef.current.active) return;
     dragRef.current.active = false;
     const x = dragRef.current.lastX || 0;
+    const y = dragRef.current.lastY || 0;
     if (Math.abs(x) > 105) {
       doSwipe(x > 0 ? "right" : "left", current);
+    } else if (Math.abs(x) < 8 && Math.abs(y) < 8) {
+      // Tap — open full profile modal
+      applyXY(0, 0, "none");
+      setProfileModal(current);
     } else {
       applyXY(0, 0, "transform .5s cubic-bezier(.34,1.56,.64,1)");
     }

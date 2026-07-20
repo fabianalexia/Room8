@@ -352,6 +352,10 @@ def delete_account():
     # 8. Survey responses
     Survey.query.filter_by(user_id=user_id).delete(synchronize_session=False)
 
+    # 8b. Push subscriptions (FK → users.id, must be removed before deleting user)
+    from room8_models.push_subscription import PushSubscription
+    PushSubscription.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+
     # 9. Cloudinary photos (best-effort — don't block deletion if it fails)
     try:
         cloudinary.uploader.destroy(f"room8/profile/{user_id}", invalidate=True)

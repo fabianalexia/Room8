@@ -23,7 +23,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const DEMO_PROFILES = [
   {
     id: "d1", name: "Maya Chen", firstName: "Maya", initials: "MC",
-    sub: "UCLA · Junior · Computer Science", pct: 94, photo: null, isMatch: true,
+    sub: "UCLA · Junior · Computer Science", pct: 94,
+    photo: "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=800&q=80",
+    bio: "CS major obsessed with hackathons and oat milk lattes. I keep a tidy space and love lo-fi music while I work. Looking for someone who won't leave dishes in the sink.",
+    looking_for: "A chill, considerate roomie who respects quiet hours after 10pm. Bonus if you're into hiking or indie films.",
+    isMatch: true,
     tags: [
       { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
       { label: "CS Major",   bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
@@ -33,7 +37,11 @@ const DEMO_PROFILES = [
   },
   {
     id: "d2", name: "Jordan Lee", firstName: "Jordan", initials: "JL",
-    sub: "USC · Sophomore · Business", pct: 81, photo: null, isMatch: false,
+    sub: "USC · Sophomore · Business", pct: 81,
+    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80",
+    bio: "Business major by day, amateur chef by night. I meal-prep on Sundays and keep common areas spotless. Early riser — usually out the door by 7am.",
+    looking_for: "Someone low-drama and easy to live with. I travel a lot for internships so a roomie who's independent is ideal.",
+    isMatch: false,
     tags: [
       { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
       { label: "Business",   bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
@@ -43,7 +51,11 @@ const DEMO_PROFILES = [
   },
   {
     id: "d3", name: "Priya Nair", firstName: "Priya", initials: "PN",
-    sub: "NYU · Senior · Psychology", pct: 88, photo: null, isMatch: true,
+    sub: "NYU · Senior · Psychology", pct: 88,
+    photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80",
+    bio: "Psych senior finishing my thesis on decision-making. I light candles, do yoga at 6am, and appreciate a quiet home. Very clean and communicative.",
+    looking_for: "A grounded, mature roommate. I need a calm environment to write — would love someone who feels the same way.",
+    isMatch: true,
     tags: [
       { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
       { label: "Psychology", bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
@@ -53,7 +65,11 @@ const DEMO_PROFILES = [
   },
   {
     id: "d4", name: "Marcus Webb", firstName: "Marcus", initials: "MW",
-    sub: "Stanford · Junior · Engineering", pct: 76, photo: null, isMatch: false,
+    sub: "Stanford · Junior · Engineering", pct: 76,
+    photo: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=800&q=80",
+    bio: "Mech E junior who spends weekends rock climbing and tinkering with robotics projects. I keep my stuff out of shared spaces and love a good movie night.",
+    looking_for: "Someone who's social but understands that finals week means total silence. Down to split cooking duties.",
+    isMatch: false,
     tags: [
       { label: "✓ Verified",  bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
       { label: "Engineering", bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
@@ -63,7 +79,11 @@ const DEMO_PROFILES = [
   },
   {
     id: "d5", name: "Sofia Reyes", firstName: "Sofia", initials: "SR",
-    sub: "MIT · Freshman · Biology", pct: 91, photo: null, isMatch: true,
+    sub: "MIT · Freshman · Biology", pct: 91,
+    photo: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=800&q=80",
+    bio: "Pre-med bio major from Miami. I wake up early, study hard, and decompress with Pilates or cooking Cuban food. Very tidy — I believe a clean space is a clear mind.",
+    looking_for: "A driven, kind roommate who takes academics seriously but still knows how to have fun on weekends.",
+    isMatch: true,
     tags: [
       { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
       { label: "Biology",    bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
@@ -353,10 +373,6 @@ function StarCanvas({ triggerRef }) {
         const { w, h } = dataRef.current;
         for (let i = 0; i < 7; i++) setTimeout(() => dataRef.current.shots.push(mkShot(w, h, i < 3)), i * 110);
       },
-      triggerSuperLike: () => {
-        const { w, h } = dataRef.current;
-        for (let i = 0; i < 2; i++) setTimeout(() => dataRef.current.shots.push(mkShot(w, h, false)), i * 110);
-      },
     };
 
     const draw = () => {
@@ -450,22 +466,6 @@ function PassButton({ onClick }) {
     }}>✕</button>
   );
 }
-function SuperButton({ onClick, popped }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
-      width:64,height:64,borderRadius:"50%",flexShrink:0,
-      background: "rgba(59,130,246,.12)",
-      border: `1.5px solid ${hov?"#60a5fa":"rgba(59,130,246,.4)"}`,
-      color: hov ? "#93c5fd" : "#60a5fa",
-      display:"flex",alignItems:"center",justifyContent:"center",
-      fontSize:"1.25rem",cursor:"pointer",
-      boxShadow: hov ? "0 0 20px rgba(59,130,246,.3)" : "0 4px 16px rgba(0,0,0,.25)",
-      transition:"all .2s",
-      transform: popped ? "scale(1.2)" : "scale(1)",
-    }}>⭐</button>
-  );
-}
 function LikeButton({ onClick }) {
   const [hov, setHov]   = useState(false);
   const [pop, setPop]   = useState(false);
@@ -503,7 +503,6 @@ export default function SwipeDeck() {
   const [reportTarget, setReportTarget] = useState(null);
   const [profileModal, setProfileModal] = useState(null);
   const [resendSent,   setResendSent]   = useState(false);
-  const [superPop,     setSuperPop]     = useState(false);
   const [menuOpen,     setMenuOpen]     = useState(false);
   const [swiping,      setSwiping]      = useState(false);
 
@@ -578,14 +577,6 @@ export default function SwipeDeck() {
         await skipUser(user.id, candidate.id);
       }
     } catch (err) { console.error(err); }
-  };
-
-  const doSuperLike = async () => {
-    if (!current) return;
-    setSuperPop(true);
-    setTimeout(() => setSuperPop(false), 500);
-    triggerRef.current?.triggerSuperLike();
-    await doSwipe("right", current);
   };
 
   // ── Pointer drag ──────────────────────────────────────────────
@@ -701,23 +692,31 @@ export default function SwipeDeck() {
                 <img
                   src={photo} alt={current.name} draggable={false}
                   onError={(e)=>{ e.target.onerror=null; e.target.style.display="none"; }}
-                  style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"contain",background:"#0F2D5E",pointerEvents:"none"}}
+                  style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",pointerEvents:"none"}}
                 />
               ) : (
-                <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,#1a3560,#0d1e3e)",display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:"18%"}}>
-                  <div style={{width:90,height:90,borderRadius:"50%",background:"rgba(255,255,255,.08)",border:"2px solid rgba(245,166,35,.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem",color:"rgba(255,255,255,.65)",fontFamily:JAKARTA,fontWeight:700}}>
+                <div style={{position:"absolute",inset:0,background:"linear-gradient(160deg,#0d1e3e,#08142a 45%,#050c1a)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:"0 28px"}}>
+                  <div style={{width:96,height:96,borderRadius:"50%",background:"rgba(255,255,255,.08)",border:"2px solid rgba(245,166,35,.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2.2rem",color:"rgba(255,255,255,.65)",fontFamily:JAKARTA,fontWeight:700,flexShrink:0}}>
                     {current.initials || "?"}
                   </div>
+                  {current.bio && (
+                    <p style={{margin:0,fontFamily:JAKARTA,fontSize:13,color:"rgba(255,255,255,.55)",lineHeight:1.6,textAlign:"center",display:"-webkit-box",WebkitLineClamp:4,WebkitBoxOrient:"vertical",overflow:"hidden"}}>
+                      {current.bio}
+                    </p>
+                  )}
                 </div>
               )}
               {/* Gradient scrim */}
-              <div style={{position:"absolute",bottom:0,left:0,right:0,height:140,background:"linear-gradient(to top,#08142a 0%,transparent 100%)",pointerEvents:"none"}} />
+              <div style={{position:"absolute",bottom:0,left:0,right:0,height:photo?190:140,background:"linear-gradient(to top,#08142a 0%,transparent 100%)",pointerEvents:"none"}} />
             </div>
 
             {/* Info zone — overlaps scrim */}
             <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"0 20px 20px"}}>
               <h2 style={{margin:"0 0 3px",fontFamily:JAKARTA,fontSize:26,fontWeight:700,color:WHITE,lineHeight:1.15,textShadow:"0 2px 8px rgba(0,0,0,.5)"}}>{current.name}</h2>
-              <p style={{margin:"0 0 12px",fontFamily:JAKARTA,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.5}}>{current.sub || "\u00a0"}</p>
+              <p style={{margin:"0 0 8px",fontFamily:JAKARTA,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.5}}>{current.sub || "\u00a0"}</p>
+              {photo && current.bio && (
+                <p style={{margin:"0 0 10px",fontFamily:JAKARTA,fontSize:12,color:"rgba(255,255,255,.7)",lineHeight:1.55,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",textShadow:"0 1px 4px rgba(0,0,0,.6)"}}>{current.bio}</p>
+              )}
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {current.tags.map((t,i)=>(
                   <span key={i} style={{background:t.bg,border:`1px solid ${t.border}`,color:t.color,padding:"4px 11px",borderRadius:20,fontSize:"0.7rem",fontWeight:600,fontFamily:JAKARTA}}>{t.label}</span>
@@ -738,10 +737,9 @@ export default function SwipeDeck() {
         </div>
 
         {/* Action buttons */}
-        <div style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",gap:24,paddingTop:10,paddingBottom:10}}>
-          <PassButton  onClick={()=>btnSwipe("left")} />
-          <SuperButton onClick={doSuperLike} popped={superPop} />
-          <LikeButton  onClick={()=>btnSwipe("right")} />
+        <div style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",gap:48,paddingTop:10,paddingBottom:10}}>
+          <PassButton onClick={()=>btnSwipe("left")} />
+          <LikeButton onClick={()=>btnSwipe("right")} />
         </div>
       </div>
     );

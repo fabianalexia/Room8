@@ -15,7 +15,7 @@ const SURFACE = "rgba(255,255,255,0.05)";
 const HF = "'Outfit', sans-serif";
 const BF = "'Inter', sans-serif";
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 const CLASS_YEARS = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate Student", "Other"];
 
@@ -38,7 +38,7 @@ function ProgressBar({ step }) {
   return (
     <div style={{ marginBottom: 36 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-        {["Basic Info", "Housing", "About You", "Photo"].map((label, i) => {
+        {["Basic Info", "Housing", "About You", "Lifestyle", "Photo"].map((label, i) => {
           const n = i + 1;
           const done    = n < step;
           const current = n === step;
@@ -323,8 +323,123 @@ function Step3({ data, update }) {
   );
 }
 
-// ── Step 4: Photo ─────────────────────────────────────────────────────────────
+// ── Step 4: Lifestyle Preferences ────────────────────────────────────────────
+const LIFESTYLE_QUESTIONS = [
+  {
+    key: "sleep_schedule", icon: "😴", label: "Sleep Schedule",
+    options: [
+      { value: "early_bird", label: "Early Bird — up by 7am" },
+      { value: "night_owl",  label: "Night Owl — up past midnight" },
+      { value: "flexible",   label: "Flexible" },
+    ],
+  },
+  {
+    key: "cleanliness", icon: "🧹", label: "Cleanliness",
+    options: [
+      { value: "very_clean", label: "Spotless — clean every day" },
+      { value: "clean",      label: "Clean — tidy weekly" },
+      { value: "relaxed",    label: "Relaxed — a little mess is fine" },
+      { value: "messy",      label: "Not fussy" },
+    ],
+  },
+  {
+    key: "study_habits", icon: "📚", label: "Study Habits",
+    options: [
+      { value: "library",  label: "Library — I study out of the room" },
+      { value: "in_room",  label: "In Room — at my desk" },
+      { value: "anywhere", label: "Anywhere — wherever I land" },
+      { value: "rarely",   label: "Rarely — we're here for fun" },
+    ],
+  },
+  {
+    key: "guests", icon: "👥", label: "Guests",
+    options: [
+      { value: "never",        label: "Never — my room is my sanctuary" },
+      { value: "occasionally", label: "Occasionally — friends sometimes" },
+      { value: "often",        label: "Often — love having people over" },
+    ],
+  },
+  {
+    key: "noise", icon: "🔊", label: "Noise Level",
+    options: [
+      { value: "silent",   label: "Silent — library quiet please" },
+      { value: "quiet",    label: "Quiet — low background ok" },
+      { value: "moderate", label: "Moderate — music & TV fine" },
+      { value: "lively",   label: "Lively — bring the noise" },
+    ],
+  },
+  {
+    key: "social", icon: "😊", label: "Social Vibe",
+    options: [
+      { value: "very_social",  label: "Very Social — hangout every day" },
+      { value: "social",       label: "Social — friendly, like my space" },
+      { value: "private",      label: "Private — respect my alone time" },
+      { value: "very_private", label: "Solo — keep to myself" },
+    ],
+  },
+  {
+    key: "partying", icon: "🎉", label: "Partying",
+    options: [
+      { value: "never",     label: "Not for me" },
+      { value: "sometimes", label: "Sometimes — weekends maybe" },
+      { value: "often",     label: "Often — I like to have fun" },
+    ],
+  },
+  {
+    key: "smoking", icon: "🚬", label: "Smoking",
+    options: [
+      { value: "no",           label: "Non-smoker — no smoking please" },
+      { value: "outside_only", label: "Outside only" },
+      { value: "yes",          label: "Smoker" },
+    ],
+  },
+];
+
 function Step4({ data, setData }) {
+  const prefs = data.dorm_prefs || {};
+  const setPref = (key, value) => setData((prev) => ({
+    ...prev,
+    dorm_prefs: { ...prev.dorm_prefs, [key]: value },
+  }));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <StepHeading
+        title="Your lifestyle"
+        sub="Help us find roommates who actually match how you live."
+      />
+      {LIFESTYLE_QUESTIONS.map((q) => (
+        <div key={q.key}>
+          <label style={{
+            display: "block", marginBottom: 6,
+            fontSize: "0.78rem", fontWeight: 600,
+            color: "rgba(255,255,255,0.55)", fontFamily: BF, letterSpacing: "0.04em",
+          }}>
+            {q.icon} {q.label}
+          </label>
+          <select
+            value={prefs[q.key] || ""}
+            onChange={(e) => setPref(q.key, e.target.value)}
+            style={{
+              ...inputStyle,
+              color: prefs[q.key] ? WHITE : "rgba(255,255,255,0.35)",
+            }}
+          >
+            <option value="">Select…</option>
+            {q.options.map((o) => (
+              <option key={o.value} value={o.value} style={{ color: "#111", background: "#fff" }}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Step 5: Photo ─────────────────────────────────────────────────────────────
+function Step5({ data, setData }) {
   const fileRef = useRef(null);
 
   const handleFile = (e) => {
@@ -461,6 +576,7 @@ export default function SetupPage() {
     budget:       "",
     bio:          "",
     looking_for:  "",
+    dorm_prefs:   {},
     photoFile:    null,
     photoPreview: null,
   });
@@ -488,6 +604,9 @@ export default function SetupPage() {
       const fields = ["first_name", "last_name", "age", "class_year", "major",
                       "school", "housing_type", "room_type", "budget", "bio", "looking_for"];
       fields.forEach((f) => { if (data[f]) fd.append(f, data[f]); });
+      if (data.dorm_prefs && Object.keys(data.dorm_prefs).length > 0) {
+        fd.append("dorm_prefs", JSON.stringify(data.dorm_prefs));
+      }
       if (data.photoFile) fd.append("photo", data.photoFile);
 
       let updatedUser = user;
@@ -528,6 +647,7 @@ export default function SetupPage() {
     <Step2 key={2} data={data} update={update} setData={setData} />,
     <Step3 key={3} data={data} update={update} />,
     <Step4 key={4} data={data} setData={setData} />,
+    <Step5 key={5} data={data} setData={setData} />,
   ][step - 1];
 
   return (

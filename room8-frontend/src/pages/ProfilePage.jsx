@@ -353,9 +353,10 @@ export default function ProfilePage() {
 
   const handleLogout = () => { logout(); navigate("/"); };
 
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting,          setDeleting]          = useState(false);
-  const [deleteErr,         setDeleteErr]         = useState("");
+  const [showDeleteConfirm,  setShowDeleteConfirm]  = useState(false);
+  const [deleting,           setDeleting]           = useState(false);
+  const [deleteErr,          setDeleteErr]          = useState("");
+  const [deleteConfirmText,  setDeleteConfirmText]  = useState("");
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
@@ -654,7 +655,7 @@ export default function ProfilePage() {
         </button>
 
         {/* Delete Account */}
-        <button onClick={() => { setDeleteErr(""); setShowDeleteConfirm(true); }} style={{
+        <button onClick={() => { setDeleteErr(""); setDeleteConfirmText(""); setShowDeleteConfirm(true); }} style={{
           width: "100%", marginTop: 8,
           background: "transparent",
           border: "1px solid rgba(239,68,68,0.2)",
@@ -680,7 +681,7 @@ export default function ProfilePage() {
             padding: 20,
             backdropFilter: "blur(6px)",
           }}
-          onClick={() => { if (!deleting) setShowDeleteConfirm(false); }}
+          onClick={() => { if (!deleting) { setShowDeleteConfirm(false); setDeleteConfirmText(""); } }}
         >
           <div
             style={{
@@ -723,9 +724,38 @@ export default function ProfilePage() {
               </div>
             )}
 
+            <div style={{ marginBottom: 20 }}>
+              <label style={{
+                display: "block", marginBottom: 7,
+                fontSize: "0.8rem", fontWeight: 600,
+                color: "rgba(255,255,255,0.5)",
+                fontFamily: "'Inter', sans-serif",
+              }}>
+                Type <strong style={{ color: "#F87171" }}>DELETE</strong> to confirm
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                disabled={deleting}
+                style={{
+                  width: "100%", padding: "10px 12px",
+                  background: "rgba(239,68,68,0.06)",
+                  border: `1.5px solid ${deleteConfirmText === "DELETE" ? "rgba(239,68,68,0.6)" : "rgba(255,255,255,0.1)"}`,
+                  borderRadius: 8, color: "#F87171",
+                  fontSize: "0.92rem", fontFamily: "'Inter', sans-serif",
+                  boxSizing: "border-box", outline: "none",
+                  letterSpacing: "0.05em", fontWeight: 700,
+                }}
+                onFocus={(e) => (e.target.style.borderColor = "rgba(239,68,68,0.5)")}
+                onBlur={(e) => (e.target.style.borderColor = deleteConfirmText === "DELETE" ? "rgba(239,68,68,0.6)" : "rgba(255,255,255,0.1)")}
+              />
+            </div>
+
             <div style={{ display: "flex", gap: 10 }}>
               <button
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }}
                 disabled={deleting}
                 style={{
                   flex: 1, padding: "12px",
@@ -741,17 +771,18 @@ export default function ProfilePage() {
               </button>
               <button
                 onClick={handleDeleteAccount}
-                disabled={deleting}
+                disabled={deleting || deleteConfirmText !== "DELETE"}
                 style={{
                   flex: 1, padding: "12px",
-                  background: deleting ? "rgba(239,68,68,0.4)" : "#DC2626",
+                  background: (deleting || deleteConfirmText !== "DELETE") ? "rgba(239,68,68,0.25)" : "#DC2626",
                   border: "none",
-                  color: "#FFFFFF",
+                  color: deleteConfirmText !== "DELETE" ? "rgba(255,255,255,0.35)" : "#FFFFFF",
                   borderRadius: 8, fontWeight: 700,
                   fontSize: "0.92rem",
-                  cursor: deleting ? "default" : "pointer",
+                  cursor: (deleting || deleteConfirmText !== "DELETE") ? "default" : "pointer",
                   fontFamily: "'Inter', sans-serif",
-                  boxShadow: deleting ? "none" : "0 4px 16px rgba(220,38,38,0.4)",
+                  boxShadow: (deleting || deleteConfirmText !== "DELETE") ? "none" : "0 4px 16px rgba(220,38,38,0.4)",
+                  transition: "all 0.2s",
                 }}
               >
                 {deleting ? "Deleting…" : "Yes, Delete"}

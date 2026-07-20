@@ -579,7 +579,7 @@ function FanCard({ fan, liking, isMatched, onLikeBack }) {
           <img
             src={fan.photo} alt={fan.name}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-            onError={(e) => { e.target.onerror = null; e.target.src = "/default-avatar.png"; }}
+            onError={(e) => { e.target.onerror = null; e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230F2D5E'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%234b6fa8'/%3E%3Cellipse cx='50' cy='82' rx='28' ry='18' fill='%234b6fa8'/%3E%3C/svg%3E"; }}
           />
         ) : (
           <div style={{

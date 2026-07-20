@@ -34,7 +34,7 @@ const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/set
 function AppShell() {
   return (
     <div style={{
-      height: "calc(100vh - 64px)",
+      height: "100vh",
       overflow: "hidden",
       backgroundColor: "#03040b",
       display: "flex",

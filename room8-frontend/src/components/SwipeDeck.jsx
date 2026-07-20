@@ -208,7 +208,7 @@ export function ProfileModal({ person, onClose }) {
       <div style={{maxWidth:640,margin:"0 auto",paddingBottom:48}}>
         <div style={{position:"relative",height:"52vh",minHeight:280}}>
           {allPhotos.length > 0 ? (
-            <img src={allPhotos[activePhoto]} alt={person.name} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(e)=>{e.target.onerror=null;e.target.src="/default-avatar.png";}} />
+            <img src={allPhotos[activePhoto]} alt={person.name} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(e)=>{e.target.onerror=null;e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230F2D5E'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%234b6fa8'/%3E%3Cellipse cx='50' cy='82' rx='28' ry='18' fill='%234b6fa8'/%3E%3C/svg%3E";}} />
           ) : (
             <div style={{width:"100%",height:"100%",background:"linear-gradient(135deg,#0A1628,#0F2D5E)",display:"flex",alignItems:"center",justifyContent:"center"}}>
               <span style={{fontSize:"5rem",opacity:0.2}}>👤</span>
@@ -219,7 +219,7 @@ export function ProfileModal({ person, onClose }) {
           {allPhotos.length > 1 && (
             <div style={{position:"absolute",bottom:10,left:12,right:12,display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none"}}>
               {allPhotos.map((p,i)=>(
-                <img key={i} src={p} alt="" onClick={()=>setActivePhoto(i)} style={{width:44,height:44,borderRadius:8,objectFit:"cover",border:`2px solid ${i===activePhoto?GOLD:"rgba(255,255,255,.25)"}`,cursor:"pointer",flexShrink:0,opacity:i===activePhoto?1:.65,transition:"all .15s"}} onError={(e)=>{e.target.onerror=null;e.target.src="/default-avatar.png";}} />
+                <img key={i} src={p} alt="" onClick={()=>setActivePhoto(i)} style={{width:44,height:44,borderRadius:8,objectFit:"cover",border:`2px solid ${i===activePhoto?GOLD:"rgba(255,255,255,.25)"}`,cursor:"pointer",flexShrink:0,opacity:i===activePhoto?1:.65,transition:"all .15s"}} onError={(e)=>{e.target.onerror=null;e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230F2D5E'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%234b6fa8'/%3E%3Cellipse cx='50' cy='82' rx='28' ry='18' fill='%234b6fa8'/%3E%3C/svg%3E";}} />
               ))}
             </div>
           )}

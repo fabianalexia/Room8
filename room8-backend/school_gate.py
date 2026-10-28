@@ -8,7 +8,7 @@ from room8_models.user import User
 
 
 def gate_enabled() -> bool:
-    return os.environ.get("SCHOOL_GATE_ENABLED", "true").lower() != "false"
+    return os.environ.get("SCHOOL_GATE_ENABLED", "false").lower() == "true"
 
 
 def default_threshold() -> int:

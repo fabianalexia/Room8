@@ -17,6 +17,7 @@ os.environ.update({
     "ADMIN_EMAILS": "admin@whitman.edu",
     "DEFAULT_UNLOCK_THRESHOLD": "3",
     "RATELIMIT_ENABLED": "false",
+    "SCHOOL_GATE_ENABLED": "true",
 })
 
 from app import app  # noqa: E402
@@ -176,3 +177,12 @@ def test_rejected_user_can_retry(client):
 def test_verification_requires_profile_photo(client):
     u = make_user("a@whitman.edu", photo=None)
     assert client.post("/api/verify/photo/start", json={"consent": True}, headers=auth(u)).status_code == 400
+
+
+def test_gate_is_off_unless_enabled(client, monkeypatch):
+    monkeypatch.delenv("SCHOOL_GATE_ENABLED", raising=False)
+    a = make_user("a@whitman.edu")
+    make_user("b@whitman.edu")
+    r = client.get("/api/schools/status", headers=auth(a)).get_json()
+    assert r["gate_enabled"] is False and r["is_unlocked"] is True
+    assert len(client.get(f"/api/candidates/{a}", headers=auth(a)).get_json()) == 1

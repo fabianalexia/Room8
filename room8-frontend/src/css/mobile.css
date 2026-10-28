@@ -211,3 +211,21 @@ input, select, textarea {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ── Native app shell (Capacitor) ───────────────────────────── */
+html.r8-native,
+html.r8-native body {
+  overscroll-behavior: none;            /* no rubber-band page bounce */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;          /* no long-press callout menu */
+}
+html.r8-native body {
+  -webkit-user-select: none;            /* no accidental text selection while swiping */
+  user-select: none;
+}
+html.r8-native input,
+html.r8-native textarea,
+html.r8-native [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}

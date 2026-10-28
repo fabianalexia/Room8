@@ -1,0 +1,30 @@
+{
+  "appId": "com.swiperoom8.app",
+  "appName": "Room8",
+  "webDir": "dist",
+  "backgroundColor": "#03040b",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#03040b"
+  },
+  "android": {
+    "backgroundColor": "#03040b"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": true,
+      "backgroundColor": "#03040b",
+      "showSpinner": false
+    },
+    "Keyboard": {
+      "resize": "native",
+      "resizeOnFullScreen": true
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#03040b",
+      "overlaysWebView": false
+    }
+  }
+}

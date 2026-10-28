@@ -8,6 +8,7 @@ from room8_models.swipe import Swipe
 from room8_models.message import Message
 from room8_models.block import Block
 from room8_models.roommate_confirmation import RoommateConfirmation
+from school_gate import gate_enabled, is_unlocked
 
 candidates_bp = Blueprint("candidates", __name__, url_prefix="/api")
 
@@ -92,7 +93,20 @@ def get_candidates(user_id: int):
         .filter(~User.id.in_(exclude_ids))
     )
 
-    # Filter by same school if the user has one set
+    # School unlock gate: locked schools see the waitlist, never an empty deck,
+    # and only classmates are shown (no fallback to other schools).
+    if gate_enabled():
+        if not me.school or not is_unlocked(me.school):
+            return jsonify([])
+        same_school = (
+            base_q
+            .filter(User.school == me.school)
+            .order_by(User.id.asc())
+            .all()
+        )
+        return jsonify([u.public_card() for u in same_school])
+
+    # Gate disabled: legacy behavior (same school first, then everyone)
     if me.school:
         same_school = (
             base_q

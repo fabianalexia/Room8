@@ -41,3 +41,16 @@ export default function VerifiedBadge({ isStudent, size = "sm" }) {
     </span>
   );
 }
+
+// Blue check shown next to a name once photo verification is approved
+export function PhotoVerifiedCheck({ verified, size = 18, title = "Photo verified" }) {
+  if (!verified) return null;
+  return (
+    <span title={title} aria-label={title} role="img" style={{ display: "inline-flex", flexShrink: 0, verticalAlign: "middle" }}>
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#1D9BF0" d="M12 1.5l2.6 1.9 3.2-.2 1 3.1 2.6 1.9-1 3.1 1 3.1-2.6 1.9-1 3.1-3.2-.2L12 22.5l-2.6-1.9-3.2.2-1-3.1L2.6 15.8l1-3.1-1-3.1 2.6-1.9 1-3.1 3.2.2z"/>
+        <path fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" d="M7.5 12.3l3 3 6-6.3"/>
+      </svg>
+    </span>
+  );
+}

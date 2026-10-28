@@ -49,6 +49,16 @@ LINKEDIN_USERINFO_URL  = "https://api.linkedin.com/v2/userinfo"
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+def _check_school_unlock(user):
+    """A newly verified student may push their school over the unlock threshold."""
+    try:
+        from school_gate import maybe_unlock
+        if user.school:
+            maybe_unlock(user.school)
+    except Exception as e:
+        print(f"[school_gate] unlock check failed: {e}")
+
+
 def _send_verification_email(user):
     token = secrets.token_urlsafe(32)
     user.verification_token        = token
@@ -191,6 +201,7 @@ def verify_email():
     user.verification_token        = None
     user.verification_token_expiry = None
     db.session.commit()
+    _check_school_unlock(user)
     return redirect(f"{FRONTEND_URL}/login?verified=true"), 302
 
 
@@ -351,6 +362,13 @@ def delete_account():
 
     # 8. Survey responses
     Survey.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+
+    # 8a. Photo verifications (delete any selfie still stored)
+    from room8_models.photo_verification import PhotoVerification
+    from routes.verification_routes import delete_selfie
+    for v in PhotoVerification.query.filter_by(user_id=user_id).all():
+        delete_selfie(v)
+    PhotoVerification.query.filter_by(user_id=user_id).delete(synchronize_session=False)
 
     # 8b. Push subscriptions (FK → users.id, must be removed before deleting user)
     from room8_models.push_subscription import PushSubscription

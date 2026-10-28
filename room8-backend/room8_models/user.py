@@ -57,6 +57,10 @@ class User(db.Model):
     # False → registered with a personal email (community member)
     is_verified_student = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
+    # Photo verification (selfie with pose, reviewed by an admin)
+    is_photo_verified   = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+    photo_verified_at   = db.Column(db.DateTime)
+
     def get_dorm_prefs(self):
         if not self.dorm_prefs:
             return {}
@@ -110,4 +114,5 @@ class User(db.Model):
             # verification
             "email_verified":        bool(self.email_verified),
             "is_verified_student":   bool(self.is_verified_student),
+            "is_photo_verified":     bool(self.is_photo_verified),
         }

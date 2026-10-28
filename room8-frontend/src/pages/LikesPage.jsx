@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import io from "socket.io-client";
 import { getCurrentUser, getLikes, getMatches, likeUser, getToken, API_URL } from "../api";
 import { sendNotification } from "../notifications";
-import VerifiedBadge from "../components/VerifiedBadge";
+import VerifiedBadge, { PhotoVerifiedCheck } from "../components/VerifiedBadge";
 
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
@@ -504,7 +504,7 @@ export default function LikesPage() {
                       <p style={{ margin: 0, color: WHITE, fontWeight: 700, fontSize: "0.95rem", fontFamily: HF }}>
                         {m.name?.split(" ")[0]}{m.age ? `, ${m.age}` : ""}
                       </p>
-                      <VerifiedBadge isStudent={m.is_verified_student} size="sm" />
+                      <VerifiedBadge isStudent={m.is_verified_student} size="sm" /> <PhotoVerifiedCheck verified={m.is_photo_verified} size={16} />
                     </div>
                     {(m.class_year || m.major) && (
                       <p style={{ margin: "2px 0 0", color: MUTED, fontSize: "0.76rem", fontFamily: BF, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
@@ -614,7 +614,7 @@ function FanCard({ fan, liking, isMatched, onLikeBack }) {
 
       {/* Bottom info + action */}
       <div style={{ padding: "12px 12px 14px", flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
-        <VerifiedBadge isStudent={fan.is_verified_student} size="sm" />
+        <VerifiedBadge isStudent={fan.is_verified_student} size="sm" /> <PhotoVerifiedCheck verified={fan.is_photo_verified} size={16} />
         {(fan.class_year || fan.major) && (
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.74rem", margin: 0, fontWeight: 600, fontFamily: BF }}>
             {[fan.class_year, fan.major].filter(Boolean).join(" · ")}

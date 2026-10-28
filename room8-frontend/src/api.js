@@ -41,7 +41,7 @@ export function setCurrentUser(u) {
     "school", "class_year", "major",
     "housing_type", "room_type",
     "dorm_prefs", "looking_for",
-    "is_verified_student",
+    "is_verified_student", "is_photo_verified", "email_verified",
   ];
   const toStore = {};
   FIELDS.forEach(f => { toStore[f] = u[f] ?? null; });
@@ -350,4 +350,61 @@ export function uploadProfilePhoto(userId, file) {
     method: "POST",
     body: form,
   });
+}
+
+// ---------------- School unlock gate ----------------
+export function getSchoolStatus() {
+  return doFetch(`${API_URL}/api/schools/status`);
+}
+
+// ---------------- Photo verification ----------------
+export function getPhotoVerificationStatus() {
+  return doFetch(`${API_URL}/api/verify/photo/status`);
+}
+
+export function startPhotoVerification() {
+  return doFetch(`${API_URL}/api/verify/photo/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ consent: true }),
+  });
+}
+
+export function submitPhotoVerification(file) {
+  const form = new FormData();
+  form.append("selfie", file, file.name || "selfie.jpg");
+  return doFetch(`${API_URL}/api/verify/photo/submit`, { method: "POST", body: form });
+}
+
+// ---------------- Admin ----------------
+export function getAdminMe() {
+  return doFetch(`${API_URL}/api/admin/me`);
+}
+
+export function adminListVerifications(status = "pending") {
+  return doFetch(`${API_URL}/api/admin/verifications?status=${status}`);
+}
+
+export function adminReviewVerification(id, approve, reason = "") {
+  return doFetch(`${API_URL}/api/admin/verifications/${id}/${approve ? "approve" : "reject"}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function adminListSchools() {
+  return doFetch(`${API_URL}/api/admin/schools`);
+}
+
+export function adminUpdateSchool(id, changes) {
+  return doFetch(`${API_URL}/api/admin/schools/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(changes),
+  });
+}
+
+export function adminListReports() {
+  return doFetch(`${API_URL}/api/admin/reports`);
 }

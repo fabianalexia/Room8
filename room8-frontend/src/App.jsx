@@ -27,9 +27,12 @@ import MessagesPage            from "./MessagesPage";
 import AuthCallbackPage        from "./pages/AuthCallbackPage";
 import PrivacyPage             from "./pages/PrivacyPage";
 import TermsPage               from "./pages/TermsPage";
+import PhotoVerifyPage         from "./pages/PhotoVerifyPage";
+import AdminPage               from "./pages/AdminPage";
+import { Capacitor }           from "@capacitor/core";
 
 // Pages that replace the global chrome with their own nav
-const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/setup", "/onboarding/school", "/onboarding/lifestyle", "/profile/setup"];
+const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/setup", "/onboarding/school", "/onboarding/lifestyle", "/profile/setup", "/verify", "/admin"];
 
 function AppShell() {
   return (
@@ -85,6 +88,12 @@ function Layout() {
         <Route path="/discover" element={
           <ProtectedRoute><DiscoverPage /></ProtectedRoute>
         } />
+        <Route path="/verify/photo" element={
+          <ProtectedRoute><PhotoVerifyPage /></ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute><AdminPage /></ProtectedRoute>
+        } />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/privacy"      element={<PrivacyPage />} />
         <Route path="/terms"        element={<TermsPage />} />
@@ -113,8 +122,10 @@ export default function App() {
     requestNotificationPermission();
 
     // Web Push: register SW → ask permission → subscribe (only if logged in)
+    // Service-worker web push does not work inside the native iOS/Android shell;
+    // native push (APNs/FCM) replaces it in the next phase.
     const user = getCurrentUser();
-    if (user) {
+    if (user && !Capacitor.isNativePlatform()) {
       registerServiceWorker().then(async () => {
         const granted = await requestPermission();
         if (granted) await subscribeToPush();

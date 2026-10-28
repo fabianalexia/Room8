@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   getCurrentUser, getCandidates, likeUser, skipUser,
-  reportUser, blockUser, resendVerification,
+  reportUser, blockUser, resendVerification, getSchoolStatus,
 } from "../api";
+import WaitlistScreen from "./WaitlistScreen";
+import { haptic } from "../native";
 import { sendNotification } from "../notifications";
-import VerifiedBadge from "./VerifiedBadge";
+import VerifiedBadge, { PhotoVerifiedCheck } from "./VerifiedBadge";
 
 // ─── Palette ─────────────────────────────────────────────────────
 const GOLD   = "#f5a623";
@@ -226,6 +228,7 @@ export function ProfileModal({ person, onClose }) {
           <div style={{position:"absolute",bottom:allPhotos.length>1?64:18,left:18,right:18}}>
             <div style={{display:"flex",alignItems:"baseline",gap:10}}>
               <h2 style={{margin:0,color:WHITE,fontSize:"clamp(1.6rem,6vw,2rem)",fontWeight:800,letterSpacing:"-0.025em",textShadow:"0 2px 12px rgba(0,0,0,.6)",fontFamily:JAKARTA}}>{person.name}</h2>
+              <PhotoVerifiedCheck verified={person.is_photo_verified} size={22} />
               {person.age && <span style={{color:"rgba(255,255,255,.7)",fontSize:"1.3rem",fontFamily:JAKARTA}}>{person.age}</span>}
             </div>
             <div style={{marginTop:6}}><VerifiedBadge isStudent={person.is_verified_student} size="sm" /></div>
@@ -505,6 +508,7 @@ export default function SwipeDeck() {
   const [resendSent,   setResendSent]   = useState(false);
   const [menuOpen,     setMenuOpen]     = useState(false);
   const [swiping,      setSwiping]      = useState(false);
+  const [gate,         setGate]         = useState(null); // school unlock status from API
 
   const cardRef     = useRef(null);
   const likeRef     = useRef(null);
@@ -517,16 +521,27 @@ export default function SwipeDeck() {
   const load = (reset=false) => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    getCandidates(user.id, reset)
-      .then((d) => { setCandidates(d); setIdx(0); })
+    getSchoolStatus()
+      .catch(() => null) // older backend without the gate: behave as before
+      .then((status) => {
+        setGate(status);
+        if (status?.gate_enabled && !status.is_unlocked) {
+          setCandidates([]);
+          return;
+        }
+        return getCandidates(user.id, reset).then((d) => { setCandidates(d); setIdx(0); });
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(false); }, []); // eslint-disable-line
 
   // Use demo profiles when no real candidates
-  const deck    = candidates.length > 0 ? candidates.map((c) => candidateToCard(c, viewerPrefs)) : DEMO_PROFILES;
-  const usesDemo = candidates.length === 0;
+  // Demo profiles only when the school gate is off; real campuses never see fake people
+  const gateOn   = !!gate?.gate_enabled;
+  const locked   = gateOn && !gate.is_unlocked;
+  const deck    = candidates.length > 0 ? candidates.map((c) => candidateToCard(c, viewerPrefs)) : (gateOn ? [] : DEMO_PROFILES);
+  const usesDemo = candidates.length === 0 && !gateOn;
   const current = idx < deck.length ? deck[idx] : null;
 
   // ── Direct-DOM transform helpers ─────────────────────────────
@@ -544,6 +559,7 @@ export default function SwipeDeck() {
   const doSwipe = async (dir, candidate) => {
     if (swiping || !candidate) return;
     setSwiping(true);
+    haptic("light");
     const flyX = dir === "right" ? 700 : -700;
     applyXY(flyX, -80, "transform .35s ease-in");
     await sleep(350);
@@ -571,6 +587,7 @@ export default function SwipeDeck() {
           setMatchCard(candidate);
           setShowMatch(true);
           triggerRef.current?.triggerMatch();
+          haptic("match");
           sendNotification("You have a new match on Room8!", `You and ${candidate.firstName} liked each other.`);
         }
       } else {
@@ -717,7 +734,7 @@ export default function SwipeDeck() {
 
             {/* Info zone — overlaps scrim */}
             <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"0 20px 20px"}}>
-              <h2 style={{margin:"0 0 3px",fontFamily:JAKARTA,fontSize:26,fontWeight:700,color:WHITE,lineHeight:1.15,textShadow:"0 2px 8px rgba(0,0,0,.5)"}}>{current.name}</h2>
+              <h2 style={{margin:"0 0 3px",fontFamily:JAKARTA,fontSize:26,fontWeight:700,color:WHITE,lineHeight:1.15,textShadow:"0 2px 8px rgba(0,0,0,.5)",display:"flex",alignItems:"center",gap:8}}>{current.name}<PhotoVerifiedCheck verified={current.is_photo_verified} size={22} /></h2>
               <p style={{margin:"0 0 8px",fontFamily:JAKARTA,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.5}}>{current.sub || "\u00a0"}</p>
               {photo && current.bio && (
                 <p style={{margin:"0 0 10px",fontFamily:JAKARTA,fontSize:12,color:"rgba(255,255,255,.7)",lineHeight:1.55,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",textShadow:"0 1px 4px rgba(0,0,0,.6)"}}>{current.bio}</p>
@@ -796,6 +813,8 @@ export default function SwipeDeck() {
           </div>
         ) : !user ? (
           <p style={{color:MUTED,fontFamily:JAKARTA}}>Please log in to browse candidates.</p>
+        ) : locked ? (
+          <WaitlistScreen status={gate} user={user} onRefresh={()=>load(false)} />
         ) : renderDeck()}
       </div>
 

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, setCurrentUser, getProfile, updateProfile, addPhoto, removePhoto, logout, deleteAccount, removeToken } from "../api";
-import VerifiedBadge from "../components/VerifiedBadge";
+import VerifiedBadge, { PhotoVerifiedCheck } from "../components/VerifiedBadge";
 
 const NAVY   = "#0F2D5E";
 const GOLD   = "#F59E0B";
@@ -417,8 +417,18 @@ export default function ProfilePage() {
             <h2 style={{ margin: 0, color: WHITE, fontWeight: 800, fontSize: "1.4rem", letterSpacing: "-0.02em" }}>
               {displayName}
             </h2>
-            <div style={{ marginTop: 5 }}>
+            <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <VerifiedBadge isStudent={user.is_verified_student} size="sm" />
+              {user.is_photo_verified ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#7cc4f7", fontSize: "0.72rem", fontWeight: 700 }}>
+                  <PhotoVerifiedCheck verified size={16} /> Photo verified
+                </span>
+              ) : (
+                <button onClick={() => navigate("/verify/photo")} style={{
+                  background: "rgba(29,155,240,.12)", border: "1px solid rgba(29,155,240,.4)", color: "#7cc4f7",
+                  borderRadius: 6, padding: "2px 8px", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer",
+                }}>Get photo verified</button>
+              )}
             </div>
             {user.school && (
               <p style={{ margin: "4px 0 0", color: "rgba(245,158,11,0.8)", fontSize: "0.85rem", fontWeight: 600 }}>

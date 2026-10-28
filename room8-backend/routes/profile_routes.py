@@ -144,6 +144,13 @@ def update_profile(user_id):
             db.session.rollback()
             return jsonify({"error": f"Database error: {str(e)}"}), 500
 
+        if "school" in data and user.school:
+            try:
+                from school_gate import maybe_unlock
+                maybe_unlock(user.school)
+            except Exception as e:
+                print(f"[school_gate] unlock check failed: {e}")
+
         return jsonify({"ok": True, "user": user.public()})
 
     except Exception as e:

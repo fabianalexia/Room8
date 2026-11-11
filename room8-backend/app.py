@@ -184,6 +184,11 @@ def create_app():
             ("users", "verification_token_expiry",  "TIMESTAMP"),
             ("users", "is_verified_student",         "BOOLEAN DEFAULT FALSE"),
             ("users", "is_photo_verified",           "BOOLEAN DEFAULT FALSE"),
+            ("users", "edu_email",                   "VARCHAR(255)"),
+            ("users", "edu_verified",                "BOOLEAN DEFAULT FALSE"),
+            ("users", "edu_code_hash",               "VARCHAR(255)"),
+            ("users", "edu_code_expiry",             "TIMESTAMP"),
+            ("users", "edu_code_attempts",           "INTEGER DEFAULT 0"),
             ("users", "photo_verified_at",           "TIMESTAMP"),
             ("messages", "read",                     "BOOLEAN DEFAULT FALSE"),
         ])

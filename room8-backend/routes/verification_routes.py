@@ -1,7 +1,8 @@
 # Photo verification (Option B: selfie with a random pose, reviewed by an admin)
+import re
 import secrets
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -10,6 +11,7 @@ from extensions import limiter
 from room8_models import db
 from room8_models.user import User
 from room8_models.photo_verification import PhotoVerification
+from werkzeug.security import generate_password_hash, check_password_hash
 
 verify_bp = Blueprint("verify", __name__, url_prefix="/api/verify")
 
@@ -145,3 +147,95 @@ def delete_selfie(v: PhotoVerification) -> None:
     except Exception as e:
         print(f"[verify] selfie delete failed for {v.selfie_public_id}: {e}")
     v.selfie_public_id = None
+
+
+# ── .edu verification by emailed 6-digit code ─────────────────────────────────
+
+EDU_RE = re.compile(r"^[^@\s]+@([a-z0-9-]+\.)+edu$")
+CODE_TTL = timedelta(minutes=15)
+MAX_ATTEMPTS = 5
+
+
+def _code_email(code: str, first_name: str | None) -> str:
+    return f"""
+    <div style="font-family:Arial,sans-serif;max-width:420px">
+      <p>Hi {first_name or 'there'},</p>
+      <p>Your Room8 student verification code is:</p>
+      <p style="font-size:32px;font-weight:800;letter-spacing:8px;margin:16px 0">{code}</p>
+      <p>It expires in 15 minutes. If you didn't request this, you can ignore this email.</p>
+    </div>
+    """
+
+
+@verify_bp.post("/edu/send")
+@jwt_required()
+@limiter.limit("5 per hour")
+def edu_send():
+    from mailer import send_email
+
+    user = db.session.get(User, int(get_jwt_identity()))
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    email = ((request.get_json(silent=True) or {}).get("email") or "").strip().lower()
+    if not EDU_RE.match(email):
+        return jsonify({"error": "Enter your school email ending in .edu"}), 400
+
+    taken = User.query.filter(User.edu_email == email, User.edu_verified == True, User.id != user.id).first()  # noqa: E712
+    if taken:
+        return jsonify({"error": "That school email is already verified on another account"}), 400
+
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    user.edu_email = email
+    user.edu_code_hash = generate_password_hash(code)
+    user.edu_code_expiry = datetime.utcnow() + CODE_TTL
+    user.edu_code_attempts = 0
+    db.session.commit()
+
+    try:
+        send_email(email, f"{code} is your Room8 verification code", _code_email(code, user.first_name))
+    except Exception as e:
+        print(f"[edu_send] email failed for user {user.id}: {e}")
+        return jsonify({"error": "We couldn't send the code. Try again in a minute."}), 502
+    return jsonify({"ok": True, "sent_to": email})
+
+
+@verify_bp.post("/edu/confirm")
+@jwt_required()
+@limiter.limit("20 per hour")
+def edu_confirm():
+    user = db.session.get(User, int(get_jwt_identity()))
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    code = str((request.get_json(silent=True) or {}).get("code") or "").strip()
+    if not user.edu_code_hash or not user.edu_code_expiry:
+        return jsonify({"error": "Request a new code first"}), 400
+    if datetime.utcnow() > user.edu_code_expiry:
+        return jsonify({"error": "That code expired. Send a new one."}), 400
+    if user.edu_code_attempts >= MAX_ATTEMPTS:
+        return jsonify({"error": "Too many tries. Send a new code."}), 400
+
+    if not check_password_hash(user.edu_code_hash, code):
+        user.edu_code_attempts += 1
+        db.session.commit()
+        left = MAX_ATTEMPTS - user.edu_code_attempts
+        return jsonify({"error": f"Wrong code. {left} tries left." if left else "Too many tries. Send a new code."}), 400
+
+    user.edu_verified = True
+    user.is_verified_student = True
+    if user.email and user.email.lower() == (user.edu_email or "").lower():
+        user.email_verified = True
+    user.edu_code_hash = None
+    user.edu_code_expiry = None
+    user.edu_code_attempts = 0
+    db.session.commit()
+
+    try:
+        from school_gate import maybe_unlock
+        if user.school:
+            maybe_unlock(user.school)
+    except Exception as e:
+        print(f"[edu_confirm] unlock check failed: {e}")
+
+    return jsonify({"ok": True, "user": user.public()})

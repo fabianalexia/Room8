@@ -419,6 +419,12 @@ export default function ProfilePage() {
             </h2>
             <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <VerifiedBadge isStudent={user.is_verified_student} size="sm" />
+              {!user.edu_verified && !(user.is_verified_student && user.email_verified) && (
+                <button onClick={() => navigate("/verify/student")} style={{
+                  background: "rgba(245,166,35,.12)", border: "1px solid rgba(245,166,35,.45)", color: "#f5a623",
+                  borderRadius: 6, padding: "2px 8px", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer",
+                }}>Verify school email</button>
+              )}
               {user.is_photo_verified ? (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#7cc4f7", fontSize: "0.72rem", fontWeight: 700 }}>
                   <PhotoVerifiedCheck verified size={16} /> Photo verified

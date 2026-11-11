@@ -29,15 +29,22 @@ def get_or_create_school(name: str | None) -> School | None:
     return school
 
 
-def verified_count(name: str) -> int:
-    """Only verified students with a confirmed email count toward unlocking."""
-    return (
-        User.query
-        .filter(User.school == name)
-        .filter(User.is_verified_student == True)   # noqa: E712
-        .filter(User.email_verified == True)        # noqa: E712
-        .count()
+def proven_student_filter():
+    """A student counts once they proved a .edu inbox: either their account email
+    is a verified .edu, or they confirmed a .edu code."""
+    from sqlalchemy import or_, and_
+    return or_(
+        User.edu_verified == True,                                               # noqa: E712
+        and_(User.is_verified_student == True, User.email_verified == True),   # noqa: E712
     )
+
+
+def is_proven_student(user) -> bool:
+    return bool(user and (user.edu_verified or (user.is_verified_student and user.email_verified)))
+
+
+def verified_count(name: str) -> int:
+    return User.query.filter(User.school == name).filter(proven_student_filter()).count()
 
 
 def _notify_unlocked(school: School) -> None:

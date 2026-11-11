@@ -41,7 +41,7 @@ export function setCurrentUser(u) {
     "school", "class_year", "major",
     "housing_type", "room_type",
     "dorm_prefs", "looking_for",
-    "is_verified_student", "is_photo_verified", "email_verified",
+    "is_verified_student", "is_photo_verified", "email_verified", "edu_verified",
   ];
   const toStore = {};
   FIELDS.forEach(f => { toStore[f] = u[f] ?? null; });
@@ -407,4 +407,21 @@ export function adminUpdateSchool(id, changes) {
 
 export function adminListReports() {
   return doFetch(`${API_URL}/api/admin/reports`);
+}
+
+// ---------------- .edu verification code ----------------
+export function sendEduCode(email) {
+  return doFetch(`${API_URL}/api/verify/edu/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function confirmEduCode(code) {
+  return doFetch(`${API_URL}/api/verify/edu/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
 }

@@ -195,3 +195,57 @@ def test_admin_pinned_by_id_without_verified_email(client, monkeypatch):
     assert client.get("/api/admin/me", headers=auth(uid)).get_json()["is_admin"] is True
     other = make_user("x@whitman.edu", verified=False)
     assert client.get("/api/admin/me", headers=auth(other)).get_json()["is_admin"] is False
+
+
+# ── .edu code verification ────────────────────────────────────────────────────
+
+def _send_code(client, uid, email):
+    sent = {}
+    def fake_send(to, subject, html, cc=None):
+        sent["to"] = to
+        sent["code"] = subject.split()[0]
+    with mock.patch("mailer.send_email", side_effect=fake_send):
+        r = client.post("/api/verify/edu/send", json={"email": email}, headers=auth(uid))
+    return r, sent
+
+
+def test_edu_code_flow_counts_toward_unlock(client):
+    a = make_user("alexia@icloud.com", student=False, verified=False)   # personal email account
+    r, sent = _send_code(client, a, "alexia@whitman.edu")
+    assert r.status_code == 200 and sent["to"] == "alexia@whitman.edu"
+    assert client.get("/api/schools/status", headers=auth(a)).get_json()["school"]["verified_count"] == 0
+    bad = client.post("/api/verify/edu/confirm", json={"code": "000000" if sent["code"] != "000000" else "111111"}, headers=auth(a))
+    assert bad.status_code == 400 and "tries left" in bad.get_json()["error"]
+    ok = client.post("/api/verify/edu/confirm", json={"code": sent["code"]}, headers=auth(a)).get_json()
+    assert ok["user"]["edu_verified"] is True and ok["user"]["is_verified_student"] is True
+    st = client.get("/api/schools/status", headers=auth(a)).get_json()
+    assert st["school"]["verified_count"] == 1 and st["you_count"] is True
+
+
+def test_edu_rejects_non_edu_and_reused_email(client):
+    a = make_user("a@icloud.com", student=False, verified=False)
+    b = make_user("b@icloud.com", student=False, verified=False)
+    assert _send_code(client, a, "a@gmail.com")[0].status_code == 400
+    _, sent = _send_code(client, a, "same@whitman.edu")
+    client.post("/api/verify/edu/confirm", json={"code": sent["code"]}, headers=auth(a))
+    assert _send_code(client, b, "same@whitman.edu")[0].status_code == 400
+
+
+def test_edu_code_locks_after_five_wrong(client):
+    a = make_user("a@icloud.com", student=False, verified=False)
+    _, sent = _send_code(client, a, "a@whitman.edu")
+    wrong = "123456" if sent["code"] != "123456" else "654321"
+    for _ in range(5):
+        client.post("/api/verify/edu/confirm", json={"code": wrong}, headers=auth(a))
+    r = client.post("/api/verify/edu/confirm", json={"code": sent["code"]}, headers=auth(a))
+    assert r.status_code == 400 and "new code" in r.get_json()["error"]
+
+
+def test_mailer_uses_resend_when_key_set(monkeypatch):
+    import mailer
+    monkeypatch.setenv("RESEND_API_KEY", "re_test")
+    resp = mock.Mock(status_code=200, text="{}")
+    with mock.patch("mailer.requests.post", return_value=resp) as post:
+        mailer.send_email("x@whitman.edu", "Hi", "<p>hi</p>")
+    assert post.call_args.kwargs["json"]["to"] == ["x@whitman.edu"]
+    assert post.call_args.kwargs["headers"]["Authorization"] == "Bearer re_test"

@@ -32,6 +32,7 @@ import PrivacyPage             from "./pages/PrivacyPage";
 import TermsPage               from "./pages/TermsPage";
 import PhotoVerifyPage         from "./pages/PhotoVerifyPage";
 import AdminPage               from "./pages/AdminPage";
+import StudentVerifyPage       from "./pages/StudentVerifyPage";
 import { Capacitor }           from "@capacitor/core";
 
 // Pages that replace the global chrome with their own nav
@@ -96,6 +97,9 @@ function Layout() {
         } />
         <Route path="/verify/photo" element={
           <ProtectedRoute><PhotoVerifyPage /></ProtectedRoute>
+        } />
+        <Route path="/verify/student" element={
+          <ProtectedRoute><StudentVerifyPage /></ProtectedRoute>
         } />
         <Route path="/admin" element={
           <ProtectedRoute><AdminPage /></ProtectedRoute>

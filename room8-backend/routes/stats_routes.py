@@ -11,17 +11,13 @@ stats_bp = Blueprint("stats", __name__, url_prefix="/api/stats")
 
 @stats_bp.get("/public")
 def public_stats():
-    """Counts only verified students with a confirmed email. Returns totals, never names."""
-    base = (
-        User.query
-        .filter(User.is_verified_student == True)   # noqa: E712
-        .filter(User.email_verified == True)        # noqa: E712
-    )
+    """Counts only students who proved a .edu inbox. Returns totals, never names."""
+    from school_gate import proven_student_filter
+    base = User.query.filter(proven_student_filter())
     students = base.count()
     schools = (
         db.session.query(db.func.count(db.distinct(User.school)))
-        .filter(User.is_verified_student == True)   # noqa: E712
-        .filter(User.email_verified == True)        # noqa: E712
+        .filter(proven_student_filter())
         .filter(User.school.isnot(None))
         .filter(User.school != "")
         .scalar()

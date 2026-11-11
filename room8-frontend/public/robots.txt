@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /admin
+Disallow: /messages
+Disallow: /profile
+Disallow: /likes
+Disallow: /discover
+Disallow: /setup
+Disallow: /onboarding
+Disallow: /verify
+
+Sitemap: https://swiperoom8.com/sitemap.xml

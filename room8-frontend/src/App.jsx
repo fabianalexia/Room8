@@ -9,6 +9,9 @@ import BottomNav     from "./components/BottomNav";
 import ProtectedRoute from "./ProtectedRoute";
 
 import Home                  from "./Home";
+import ComparePage           from "./pages/ComparePage";
+import ChangelogPage         from "./pages/ChangelogPage";
+import { useRouteMeta }       from "./seo";
 import Purpose               from "./Purpose";
 import SchoolsPage           from "./pages/SchoolsPage";
 import LoginPage             from "./pages/LoginPage";
@@ -52,6 +55,7 @@ function AppShell() {
 function Layout() {
   const { pathname } = useLocation();
   const isAppPage = APP_PAGES.some((p) => pathname.startsWith(p));
+  useRouteMeta(pathname);
 
   return (
     <>
@@ -62,6 +66,8 @@ function Layout() {
         <Route path="/"              element={<Home />} />
         <Route path="/purpose"       element={<Purpose />} />
         <Route path="/schools"       element={<SchoolsPage />} />
+        <Route path="/vs/:slug"      element={<ComparePage />} />
+        <Route path="/changelog"     element={<ChangelogPage />} />
         <Route path="/login"            element={<LoginPage />} />
         <Route path="/register"         element={<RegisterPage />} />
         <Route path="/forgot-password"  element={<ForgotPasswordPage />} />

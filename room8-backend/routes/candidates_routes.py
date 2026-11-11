@@ -91,6 +91,7 @@ def get_candidates(user_id: int):
         db.session.query(User)
         .filter(User.id != user_id)
         .filter(~User.id.in_(exclude_ids))
+        .filter(User.is_banned == False)  # noqa: E712
     )
 
     # School unlock gate: locked schools see the waitlist, never an empty deck,
@@ -196,6 +197,8 @@ def get_likes(user_id: int):
         .join(Swipe, Swipe.user_id == User.id)
         .filter(Swipe.action == "like", Swipe.target_id == user_id)
         .filter(~User.id.in_(i_liked_ids))
+        .filter(~User.id.in_(_exclude_blocked(user_id)))
+        .filter(User.is_banned == False)  # noqa: E712
         .order_by(User.id.asc())
         .all()
     )

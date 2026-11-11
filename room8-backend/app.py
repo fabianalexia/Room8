@@ -76,7 +76,9 @@ def create_app():
         if not user_id:
             return True
         user = db.session.get(_User, int(user_id))
-        if not user or not user.token_valid_after:
+        if not user or user.is_banned:
+            return True
+        if not user.token_valid_after:
             return False  # no invalidation timestamp set — token is valid
         return jwt_data.get("iat", 0) < user.token_valid_after.timestamp()
 
@@ -185,6 +187,8 @@ def create_app():
             ("users", "verification_token_expiry",  "TIMESTAMP"),
             ("users", "is_verified_student",         "BOOLEAN DEFAULT FALSE"),
             ("users", "is_photo_verified",           "BOOLEAN DEFAULT FALSE"),
+            ("users", "terms_accepted_at",           "TIMESTAMP"),
+            ("users", "is_banned",                   "BOOLEAN DEFAULT FALSE"),
             ("users", "edu_email",                   "VARCHAR(255)"),
             ("users", "edu_verified",                "BOOLEAN DEFAULT FALSE"),
             ("users", "edu_code_hash",               "VARCHAR(255)"),

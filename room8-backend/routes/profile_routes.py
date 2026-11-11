@@ -82,6 +82,9 @@ def update_profile(user_id):
         # Sanitize free-text fields
         try:
             if "bio" in data:
+                from moderation import is_objectionable
+                if is_objectionable(data["bio"]) or is_objectionable(data.get("looking_for")):
+                    return jsonify({"error": "Your profile text breaks Room8's community rules. Please edit it."}), 400
                 user.bio = sanitize(data["bio"], max_len=MAX_BIO_LEN)
             if "looking_for" in data:
                 user.looking_for = sanitize(data["looking_for"], max_len=MAX_LOOKING_FOR_LEN)

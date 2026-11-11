@@ -40,6 +40,9 @@ def create_post():
         return jsonify({"error": "Post too long (max 500 chars)"}), 400
 
     content = sanitize(content)
+    from moderation import is_objectionable, BLOCKED_MESSAGE
+    if is_objectionable(content):
+        return jsonify({"error": BLOCKED_MESSAGE}), 400
     post = Post(user_id=user_id, content=content)
     db.session.add(post)
     db.session.commit()
@@ -103,6 +106,9 @@ def add_reply(post_id):
         return jsonify({"error": "Reply too long (max 300 chars)"}), 400
 
     content = sanitize(content)
+    from moderation import is_objectionable, BLOCKED_MESSAGE
+    if is_objectionable(content):
+        return jsonify({"error": BLOCKED_MESSAGE}), 400
     post = db.session.get(Post, post_id)
     if not post:
         return jsonify({"error": "Post not found"}), 404

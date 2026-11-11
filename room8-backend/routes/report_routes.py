@@ -36,4 +36,24 @@ def submit_report():
         db.session.add(Swipe(user_id=reporter_id, target_id=reported_id, action="skip"))
 
     db.session.commit()
+    _notify_admins(reporter_id, reported_id, reason, notes)
     return jsonify({"ok": True}), 201
+
+
+def _notify_admins(reporter_id, reported_id, reason, notes):
+    """Email admins so reports get handled within 24 hours (App Store rule)."""
+    try:
+        from admin_auth import admin_emails
+        from mailer import send_email
+        to = sorted(admin_emails())
+        if not to:
+            return
+        send_email(
+            to,
+            f"Room8 report: user {reported_id} ({reason})",
+            f"<p>User {reporter_id} reported user {reported_id}.</p>"
+            f"<p><b>Reason:</b> {reason}<br><b>Notes:</b> {notes or 'none'}</p>"
+            f"<p>Review it at <a href='https://swiperoom8.com/admin'>swiperoom8.com/admin</a> within 24 hours.</p>",
+        )
+    except Exception as e:
+        print(f"[report] admin email failed: {e}")

@@ -14,8 +14,17 @@ def admin_emails() -> set[str]:
     return {e.strip().lower() for e in raw.split(",") if e.strip()}
 
 
+def admin_user_ids() -> set[int]:
+    raw = os.environ.get("ADMIN_USER_IDS", "")
+    return {int(x) for x in raw.split(",") if x.strip().isdigit()}
+
+
 def is_admin(user: User | None) -> bool:
-    return bool(user and user.email and user.email.lower() in admin_emails() and user.email_verified)
+    """Admin = email listed in ADMIN_EMAILS, and either a verified email or the
+    account id pinned in ADMIN_USER_IDS (for when verification email is down)."""
+    if not (user and user.email and user.email.lower() in admin_emails()):
+        return False
+    return bool(user.email_verified or user.id in admin_user_ids())
 
 
 def admin_required(fn):

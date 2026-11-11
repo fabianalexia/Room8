@@ -174,6 +174,21 @@ def update_school(school_id, admin):
     return jsonify(school.to_dict(verified_count(school.name)))
 
 
+# ── Bans ──────────────────────────────────────────────────────────────────────
+
+@admin_bp.post("/users/<int:user_id>/ban")
+@admin_required
+def ban_user(user_id, admin):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    if user.id == admin.id:
+        return jsonify({"error": "You can't ban yourself"}), 400
+    user.is_banned = (request.get_json(silent=True) or {}).get("banned", True) is not False
+    db.session.commit()
+    return jsonify({"ok": True, "is_banned": bool(user.is_banned)})
+
+
 # ── Reports (App Store requires acting on reports quickly) ────────────────────
 
 @admin_bp.get("/reports")
@@ -192,6 +207,7 @@ def list_reports(admin):
             "reporter":   {"id": r.reporter_id, "email": reporter.email if reporter else None},
             "reported":   {"id": r.reported_id, "email": reported.email if reported else None,
                            "name": f"{reported.first_name or ''} {reported.last_name or ''}".strip() if reported else None,
-                           "photo": reported.photo if reported else None},
+                           "photo": reported.photo if reported else None,
+                           "is_banned": bool(reported.is_banned) if reported else False},
         })
     return jsonify(out)

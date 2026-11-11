@@ -91,6 +91,18 @@ def _issue_tokens(user):
     return jsonify({"ok": True, "user": user.public(), "access_token": access_token, "refresh_token": refresh_token})
 
 
+@auth_bp.route("/accept-terms", methods=["POST"])
+@jwt_required()
+def accept_terms():
+    user = db.session.get(User, int(get_jwt_identity()))
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    if not user.terms_accepted_at:
+        user.terms_accepted_at = datetime.utcnow()
+        db.session.commit()
+    return jsonify({"ok": True, "user": user.public()})
+
+
 # ── register ──────────────────────────────────────────────────────────────────
 
 @auth_bp.route("/register", methods=["POST"])
@@ -116,6 +128,7 @@ def register():
         first_name=first_name,
         last_name=last_name,
         is_verified_student=is_student,
+        terms_accepted_at=datetime.utcnow() if data.get("agreed_to_terms") else None,
     )
     db.session.add(new_user)
     db.session.commit()
@@ -143,6 +156,8 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password_hash, password):
+        if user.is_banned:
+            return jsonify({"error": "This account has been suspended for breaking Room8's community rules."}), 403
         return _issue_tokens(user), 200
 
     return jsonify({"error": "Invalid email or password"}), 401
@@ -458,6 +473,8 @@ def app_exchange():
     user = db.session.get(User, row.user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
+    if user.is_banned:
+        return jsonify({"error": "This account has been suspended."}), 403
     return _issue_tokens(user)
 
 

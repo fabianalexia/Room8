@@ -182,6 +182,19 @@ export default function TermsPage() {
           </p>
         </Section>
 
+        <Section title="7a. Zero Tolerance for Objectionable Content and Abuse">
+          <p style={{ margin: "0 0 10px" }}>
+            Room8 has zero tolerance for objectionable content or abusive users. You may not post or send
+            hate speech, slurs, threats, harassment, sexual content, or content that targets anyone for their
+            identity. Room8 automatically blocks some objectionable messages, and you can report or block any
+            user from their profile, swipe card, or chat.
+          </p>
+          <p style={{ margin: 0 }}>
+            We review every report within 24 hours. Accounts that break these rules are removed, and the
+            reported content is deleted.
+          </p>
+        </Section>
+
         <Section title="8. Account Suspension and Termination">
           <p style={{ margin: "0 0 10px" }}>
             We reserve the right to suspend or permanently terminate any account that:

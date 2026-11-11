@@ -64,6 +64,10 @@ class User(db.Model):
     edu_code_expiry      = db.Column(db.DateTime)
     edu_code_attempts    = db.Column(db.Integer, nullable=False, default=0, server_default="0")
 
+    # App Store safety: terms acceptance and bans
+    terms_accepted_at    = db.Column(db.DateTime)
+    is_banned            = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+
     # Photo verification (selfie with pose, reviewed by an admin)
     is_photo_verified   = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
     photo_verified_at   = db.Column(db.DateTime)
@@ -123,4 +127,5 @@ class User(db.Model):
             "is_verified_student":   bool(self.is_verified_student),
             "is_photo_verified":     bool(self.is_photo_verified),
             "edu_verified":          bool(self.edu_verified),
+            "terms_accepted":        bool(self.terms_accepted_at),
         }

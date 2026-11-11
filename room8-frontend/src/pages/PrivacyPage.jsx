@@ -125,7 +125,8 @@ export default function PrivacyPage() {
         <Section title="2. How We Use Your Information">
           <Ul items={[
             "Roommate matching — we use your profile and preferences to surface compatible matches",
-            "School verification — your .edu email is used to verify you are an enrolled student",
+            "School verification — we email a one-time code to your .edu address to confirm you are a student. The code expires after 15 minutes and is stored only in scrambled (hashed) form",
+            "Photo verification (optional) — if you choose to get photo verified, you take a selfie copying a pose we show you. A Room8 team member compares it to your profile photos. The selfie is stored privately, never shown on your profile, and permanently deleted as soon as the review is finished. We do not create or keep face templates or other biometric identifiers",
             "Messaging — messages are stored to deliver them to the recipient and display your conversation history",
             "Account management — your email is used for password resets, security notices, and product updates",
             "Safety and moderation — reports and block actions are processed to keep the platform safe",
@@ -178,7 +179,7 @@ export default function PrivacyPage() {
         <Section title="6. Your Rights and Choices">
           <Ul items={[
             "Update your profile — you can edit your profile information at any time from the Profile tab",
-            "Delete your account — you can request account deletion by emailing us at partner@swiperoom8.com. We will delete your profile, photos, and messages within 30 days.",
+            "Delete your account — you can delete your account at any time from the Profile tab in the app or on the website. This immediately removes your profile, photos, messages, matches, and any verification selfie. You can also email partner@swiperoom8.com and we will do it for you.",
             "Data access and portability — you can request a copy of the data we hold about you by emailing partner@swiperoom8.com",
             "Opt out of housing notifications — if you do not want your information shared with your housing office, do not use the \"Confirm Roommate\" feature",
           ]} />

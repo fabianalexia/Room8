@@ -52,6 +52,7 @@ export default function RegisterPage() {
         last_name:  form.last_name,
         email:      form.email,
         password:   form.password,
+        agreed_to_terms: agreedToTerms,
       });
       // JWT is in an httpOnly cookie set by the server — only store display info locally
       setCurrentUser(res.user);

@@ -6,6 +6,10 @@ on:
     paths:
       - "room8-frontend/**"
       - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "room8-frontend/**"
+      - ".github/workflows/android.yml"
   workflow_dispatch:
 
 concurrency:

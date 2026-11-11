@@ -25,3 +25,10 @@ export async function haptic(kind = "light") {
     else await Haptics.impact({ style: kind === "medium" ? ImpactStyle.Medium : ImpactStyle.Light });
   } catch { /* plugin unavailable */ }
 }
+
+// Deep links (OAuth return) need the router's navigate, so App calls this once.
+export function setupNativeDeepLinks(navigate) {
+  if (!isNative || window.__r8DeepLinks) return;
+  window.__r8DeepLinks = true;
+  import("./oauth").then(({ listenForOAuthReturn }) => listenForOAuthReturn(navigate));
+}

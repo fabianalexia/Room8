@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { setupNativeDeepLinks } from "./native";
 import { requestNotificationPermission, registerServiceWorker, requestPermission, subscribeToPush } from "./notifications";
 import { getCurrentUser } from "./api";
 
@@ -55,6 +56,8 @@ function AppShell() {
 
 function Layout() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => { setupNativeDeepLinks(navigate); }, [navigate]);
   const isAppPage = APP_PAGES.some((p) => pathname.startsWith(p));
   useRouteMeta(pathname);
 

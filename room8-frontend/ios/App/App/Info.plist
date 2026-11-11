@@ -72,5 +72,16 @@
 	<string>Room8 lets you choose profile photos from your library.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Room8 can save photos you take to your library.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.swiperoom8.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.swiperoom8.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

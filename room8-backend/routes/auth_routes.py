@@ -32,6 +32,9 @@ VERIFICATION_TTL = timedelta(hours=48)
 
 # ── OAuth constants ────────────────────────────────────────────────────────────
 OAUTH_CALLBACK_BASE = "https://swiperoom8.com/auth/callback"
+# Native app deep link (must match appId in capacitor.config.json)
+APP_CALLBACK_BASE   = os.environ.get("APP_CALLBACK_BASE", "com.swiperoom8.app://auth/callback")
+APP_EXCHANGE_TTL    = timedelta(minutes=3)
 
 GOOGLE_CLIENT_ID     = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
@@ -371,6 +374,10 @@ def delete_account():
         delete_selfie(v)
     PhotoVerification.query.filter_by(user_id=user_id).delete(synchronize_session=False)
 
+    # 8a2. Pending app sign-in codes
+    from room8_models.oauth_exchange import OAuthExchange
+    OAuthExchange.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+
     # 8b. Push subscriptions (FK → users.id, must be removed before deleting user)
     from room8_models.push_subscription import PushSubscription
     PushSubscription.query.filter_by(user_id=user_id).delete(synchronize_session=False)
@@ -408,6 +415,52 @@ def _oauth_login_or_create(email, first_name, last_name):
     return create_access_token(identity=str(user.id))
 
 
+def _oauth_user_id(email):
+    return User.query.filter_by(email=email).first().id
+
+
+def _oauth_finish(email, first_name, last_name, provider_session_key):
+    """Redirect to the web callback with a JWT, or to the app with a one-time code."""
+    token = _oauth_login_or_create(email, first_name, last_name)
+    if session.pop(provider_session_key, False):
+        import hashlib
+        from room8_models.oauth_exchange import OAuthExchange
+        code = secrets.token_urlsafe(32)
+        db.session.add(OAuthExchange(
+            code_hash=hashlib.sha256(code.encode()).hexdigest(),
+            user_id=_oauth_user_id(email),
+            expires_at=datetime.utcnow() + APP_EXCHANGE_TTL,
+        ))
+        db.session.commit()
+        return redirect(f"{APP_CALLBACK_BASE}?code={code}")
+    return redirect(f"{OAUTH_CALLBACK_BASE}?token={token}")
+
+
+def _oauth_error(code, provider_session_key):
+    base = APP_CALLBACK_BASE if session.pop(provider_session_key, False) else OAUTH_CALLBACK_BASE
+    return redirect(f"{base}?error={code}")
+
+
+@auth_bp.route("/app-exchange", methods=["POST"])
+@limiter.limit("30 per hour")
+def app_exchange():
+    """Native app trades its one-time OAuth code for a JWT."""
+    import hashlib
+    from room8_models.oauth_exchange import OAuthExchange
+    code = ((request.get_json(silent=True) or {}).get("code") or "").strip()
+    if not code:
+        return jsonify({"error": "code required"}), 400
+    row = OAuthExchange.query.filter_by(code_hash=hashlib.sha256(code.encode()).hexdigest()).first()
+    if not row or row.used or datetime.utcnow() > row.expires_at:
+        return jsonify({"error": "Sign-in link expired. Please try again."}), 400
+    row.used = True
+    db.session.commit()
+    user = db.session.get(User, row.user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return _issue_tokens(user)
+
+
 # ── Google OAuth ──────────────────────────────────────────────────────────────
 
 @auth_bp.route("/google")
@@ -420,6 +473,7 @@ def google_login():
                                                 access_type="offline",
                                                 prompt="select_account")
     session["google_oauth_state"] = state
+    session["google_oauth_app"] = request.args.get("app") == "1"
     return redirect(auth_url)
 
 
@@ -428,7 +482,7 @@ def google_callback():
     print(f"[google_callback] HIT - args: {dict(request.args)}")
     if request.args.get("error"):
         print(f"[google_callback] provider error: {request.args.get('error')}")
-        return redirect(f"{OAUTH_CALLBACK_BASE}?error=access_denied")
+        return _oauth_error("access_denied", "google_oauth_app")
     try:
         print("[google_callback] step 1: starting")
         session.pop("google_oauth_state", None)
@@ -443,7 +497,7 @@ def google_callback():
             import traceback
             print(f"[google_callback] FETCH_TOKEN FAILED: {fetch_err}")
             print(traceback.format_exc())
-            return redirect(f"{OAUTH_CALLBACK_BASE}?error=fetch_token_failed")
+            return _oauth_error("fetch_token_failed", "google_oauth_app")
         info = google.get(GOOGLE_USERINFO_URL).json()
         print(f"[google_callback] step 4: userinfo={info}")
         email = (info.get("email") or "").strip().lower()
@@ -451,15 +505,14 @@ def google_callback():
         last_name = info.get("family_name") or " ".join(info.get("name", "").split()[1:])
         print(f"[google_callback] step 5: email={email}")
         if not email:
-            return redirect(f"{OAUTH_CALLBACK_BASE}?error=no_email")
-        token = _oauth_login_or_create(email, first_name, last_name)
-        print(f"[google_callback] step 6: token created, redirecting")
-        return redirect(f"{OAUTH_CALLBACK_BASE}?token={token}")
+            return _oauth_error("no_email", "google_oauth_app")
+        print(f"[google_callback] step 6: signing in, redirecting")
+        return _oauth_finish(email, first_name, last_name, "google_oauth_app")
     except Exception as e:
         import traceback
         print(f"[google_callback] OUTER error: {e}")
         print(traceback.format_exc())
-        return redirect(f"{OAUTH_CALLBACK_BASE}?error=oauth_failed")
+        return _oauth_error("oauth_failed", "google_oauth_app")
 
 
 # ── LinkedIn OAuth ────────────────────────────────────────────────────────────
@@ -472,6 +525,7 @@ def linkedin_login():
                              scope=["openid", "email", "profile"])
     auth_url, state = linkedin.authorization_url(LINKEDIN_AUTH_URL)
     session["linkedin_oauth_state"] = state
+    session["linkedin_oauth_app"] = request.args.get("app") == "1"
     return redirect(auth_url)
 
 
@@ -479,7 +533,7 @@ def linkedin_login():
 def linkedin_callback():
     if request.args.get("error"):
         print(f"[linkedin_callback] LinkedIn returned error: {request.args.get('error')}")
-        return redirect(f"{OAUTH_CALLBACK_BASE}?error=access_denied")
+        return _oauth_error("access_denied", "linkedin_oauth_app")
     try:
         session.pop("linkedin_oauth_state", None)
         linkedin = OAuth2Session(LINKEDIN_CLIENT_ID, redirect_uri=LINKEDIN_REDIRECT_URI)
@@ -498,11 +552,10 @@ def linkedin_callback():
         first_name = info.get("given_name") or info.get("name", "").split()[0]
         last_name  = info.get("family_name") or " ".join(info.get("name", "").split()[1:])
         if not email:
-            return redirect(f"{OAUTH_CALLBACK_BASE}?error=no_email")
-        token = _oauth_login_or_create(email, first_name, last_name)
-        return redirect(f"{OAUTH_CALLBACK_BASE}?token={token}")
+            return _oauth_error("no_email", "linkedin_oauth_app")
+        return _oauth_finish(email, first_name, last_name, "linkedin_oauth_app")
     except Exception as e:
         import traceback
         print(f"[linkedin_callback] error: {e}")
         print(traceback.format_exc())
-        return redirect(f"{OAUTH_CALLBACK_BASE}?error=oauth_failed")
+        return _oauth_error("oauth_failed", "linkedin_oauth_app")

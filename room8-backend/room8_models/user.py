@@ -64,6 +64,9 @@ class User(db.Model):
     edu_code_expiry      = db.Column(db.DateTime)
     edu_code_attempts    = db.Column(db.Integer, nullable=False, default=0, server_default="0")
 
+    # Sign in with Apple: stable Apple user id
+    apple_sub            = db.Column(db.String(255), unique=True, index=True)
+
     # App Store safety: terms acceptance and bans
     terms_accepted_at    = db.Column(db.DateTime)
     is_banned            = db.Column(db.Boolean, nullable=False, default=False, server_default="0")

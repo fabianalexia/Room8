@@ -189,6 +189,7 @@ def create_app():
             ("users", "is_verified_student",         "BOOLEAN DEFAULT FALSE"),
             ("users", "is_photo_verified",           "BOOLEAN DEFAULT FALSE"),
             ("users", "terms_accepted_at",           "TIMESTAMP"),
+            ("users", "apple_sub",                   "VARCHAR(255)"),
             ("users", "is_banned",                   "BOOLEAN DEFAULT FALSE"),
             ("users", "edu_email",                   "VARCHAR(255)"),
             ("users", "edu_verified",                "BOOLEAN DEFAULT FALSE"),

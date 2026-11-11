@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { login as apiLogin, setCurrentUser, setToken, getToken } from "../api";
 import { startOAuth } from "../oauth";
+import AppleSignInButton from "../components/AppleSignInButton";
 import logoImg from "../assets/images/logo.png";
 
 const NAVY  = "#0F2D5E";
@@ -233,6 +234,7 @@ export default function LoginPage() {
 
         {/* OAuth buttons */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <AppleSignInButton onError={setErr} />
           <button
             onClick={() => startOAuth("google")}
             style={{

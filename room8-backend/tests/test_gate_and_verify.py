@@ -186,3 +186,12 @@ def test_gate_is_off_unless_enabled(client, monkeypatch):
     r = client.get("/api/schools/status", headers=auth(a)).get_json()
     assert r["gate_enabled"] is False and r["is_unlocked"] is True
     assert len(client.get(f"/api/candidates/{a}", headers=auth(a)).get_json()) == 1
+
+
+def test_admin_pinned_by_id_without_verified_email(client, monkeypatch):
+    uid = make_user("admin@whitman.edu", verified=False)
+    assert client.get("/api/admin/me", headers=auth(uid)).get_json()["is_admin"] is False
+    monkeypatch.setenv("ADMIN_USER_IDS", str(uid))
+    assert client.get("/api/admin/me", headers=auth(uid)).get_json()["is_admin"] is True
+    other = make_user("x@whitman.edu", verified=False)
+    assert client.get("/api/admin/me", headers=auth(other)).get_json()["is_admin"] is False

@@ -1,0 +1,21 @@
+# Room8
+
+> Room8 is a roommate matching app for college students in the US. Students sign up with their school .edu email, confirm it, and match with classmates on sleep schedules, study habits, cleanliness and noise tolerance. Free for students.
+
+Status (November 2026): early access is open on the web at swiperoom8.com and works in a phone or laptop browser. A native iPhone app is in progress. Room8 is built by co-founders Alexia Fabian and Lilla Tillo and started as a student project at The Evergreen State College in 2024.
+
+## Key pages
+
+- [Home](https://swiperoom8.com/): what Room8 is and how matching works
+- [For Universities](https://swiperoom8.com/schools): partnering with housing offices
+- [Changelog](https://swiperoom8.com/changelog): dated list of shipped features
+- [Room8 vs MeetYourClass](https://swiperoom8.com/vs/room8-vs-meetyourclass)
+- [Room8 vs ZeeMee](https://swiperoom8.com/vs/room8-vs-zeemee)
+- [Privacy Policy](https://swiperoom8.com/privacy): Room8 does not sell user data or share it with advertisers
+- [Terms of Service](https://swiperoom8.com/terms)
+
+## How verification works
+
+- Students register with their school .edu email and confirm a link sent to it. Those accounts are marked as verified students.
+- Optional photo verification: the student takes a selfie in a requested pose and the Room8 team reviews it by hand. Approved profiles get a verified badge.
+- Students can report and block other users.

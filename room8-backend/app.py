@@ -26,6 +26,7 @@ from routes.roommate_routes import roommate_bp
 from routes.push_routes import push_bp
 from routes.school_routes import school_bp
 from routes.verification_routes import verify_bp
+from routes.stats_routes import stats_bp
 from routes.admin_routes import admin_bp
 
 # Load .env if present (development)
@@ -223,6 +224,7 @@ def create_app():
     app.register_blueprint(push_bp)
     app.register_blueprint(school_bp)
     app.register_blueprint(verify_bp)
+    app.register_blueprint(stats_bp)
     app.register_blueprint(admin_bp)
 
     # Register socket event handlers (must come after socketio.init_app)

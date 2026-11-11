@@ -3,7 +3,8 @@ import React, {
   useRef, useEffect, useState, useCallback,
 } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { getCurrentUser } from "./api";
+import { getCurrentUser, API_URL } from "./api";
+import { FOUNDERS, TESTIMONIALS, TESTIMONIALS_MIN_TO_SHOW, COUNTER_MIN_TO_SHOW } from "./siteContent";
 import {
   motion, useScroll, useTransform, useInView,
   animate, useMotionValue, useSpring,
@@ -37,7 +38,7 @@ const UNIVERSITIES = [
   "UChicago","Vanderbilt","Emory University","UC Berkeley","Notre Dame","UNC Chapel Hill",
 ];
 const FEATURES = [
-  { icon:"🏫", title:"School Verified",    desc:"Every profile is verified to your institution. Only real students from your campus — zero impostors, zero strangers.", badge:"Campus Only"  },
+  { icon:"🏫", title:"School Verified",    desc:"Verify with your .edu email. Click the link we send and you're in. No student ID uploads, no paperwork.", badge:"Campus Only", more:{ label:"How verification works", href:"#faq-verification" } },
   { icon:"🎯", title:"Deep Compatibility", desc:"We match on sleep schedules, study habits, cleanliness, and noise tolerance — the things that actually matter when you share a space.", badge:"AI Matched"  },
   { icon:"🔒", title:"Built-In Safety",    desc:"Verified profiles, built-in reporting, and block tools. Your wellbeing is a core feature of Room8, not an afterthought.", badge:"Trusted & Safe" },
   { icon:"💬", title:"Instant Messaging",  desc:"Mutual match? Start chatting immediately. No housing office emails, no awkward Facebook group posts.", badge:"Real-Time"    },
@@ -47,10 +48,19 @@ const STEPS = [
   { n:"02", icon:"🔍", title:"Discover Your Campus",   desc:"Browse verified students from your school. Our algorithm shows your strongest compatibility matches first."         },
   { n:"03", icon:"✨", title:"Match & Move In",         desc:"Swipe right, get a mutual match, and start the conversation. From first match to move-in day — Room8 is with you." },
 ];
-const TESTIMONIALS = [
-  { quote:"Room8 is what dorm housing should have always been. Found my junior year apartment roommate in a week. Same sleep schedule, same study habits — we get along perfectly.",           name:"Maya R.",      school:"University of Michigan", year:"Junior",            stars:5 },
-  { quote:"As a Resident Life coordinator, I recommend Room8 to every incoming student. The school verification gives us — and parents — genuine peace of mind.",                            name:"Dr. James T.", school:"Boston University",       year:"Resident Director", stars:5 },
-  { quote:"I was nervous about going off-campus. Room8's compatibility score was spot-on. Eight months in, zero conflicts about cleaning or noise. I couldn't ask for a better roommate.",    name:"Carlos M.",    school:"UCLA",                     year:"Senior",            stars:5 },
+// Testimonials: real ones only, added in src/siteContent.js
+
+const FAQS = [
+  { id:"faq-verification", q:"How does school verification work?",
+    a:"Sign up with your school .edu email and click the link we send to it. That marks you as a verified student at your school. Want the verified badge too? Take a quick selfie in the pose we ask for and our team checks it by hand. No student ID uploads, no paperwork." },
+  { id:"faq-data", q:"Do you sell my data?",
+    a:"No. We never sell your data and we don't share it with advertisers or data brokers. Your answers about how you live are used to match you with roommates. Your housing office only hears from us if you use Confirm Roommate.", link:{ label:"Read the privacy policy", to:"/privacy" } },
+  { id:"faq-free", q:"Is Room8 free?",
+    a:"Yes. Room8 is free for students." },
+  { id:"faq-app", q:"Is there an app?",
+    a:"Room8 works in your phone or laptop browser right now at swiperoom8.com. A native iPhone app is in progress." },
+  { id:"faq-random", q:"Why not just go random?",
+    a:"Going random means hoping your roommate's sleep schedule, study habits, cleanliness and noise tolerance line up with yours. Room8 asks about those up front and shows you your best matches first, so you can talk before move-in day." },
 ];
 
 /* ══════════════════════════════════════════════════════════════════
@@ -521,44 +531,136 @@ function FeatureCard({ f, delay }) {
         }}>{f.badge}</div>
         <h3 style={{ fontFamily:HF, fontWeight:700, fontSize:"1.12rem", color:NAVY, margin:"0 0 10px", lineHeight:1.3 }}>{f.title}</h3>
         <p style={{ color:MUTED, fontSize:"0.92rem", lineHeight:1.72, margin:0, fontFamily:BF }}>{f.desc}</p>
+        {f.more && (
+          <a href={f.more.href} style={{ display:"inline-block", marginTop:12, color:BLUE, fontSize:"0.85rem", fontWeight:600, fontFamily:BF, textDecoration:"none" }}>{f.more.label} →</a>
+        )}
       </motion.div>
     </FadeUp>
   );
 }
 
-/* ─── Testimonial Card ───────────────────────────────────────────── */
-function TestimonialCard({ t, dir, delay }) {
+/* ─── Testimonial Card (real beta testers only) ──────────────────── */
+function TestimonialCard({ t, delay }) {
   return (
-    <motion.div
-      initial={{ opacity:0, x:dir==="left"?-56:dir==="right"?56:0, y:dir==="center"?44:0, filter:"blur(8px)" }}
-      whileInView={{ opacity:1, x:0, y:0, filter:"blur(0px)" }}
+    <motion.figure
+      initial={{ opacity:0, y:36 }}
+      whileInView={{ opacity:1, y:0 }}
       viewport={{ once:true, margin:"-50px" }}
-      transition={{ duration:0.8, delay, ease:[0.16,1,0.3,1] }}
-      whileHover={{ y:-5 }}
+      transition={{ duration:0.7, delay, ease:[0.16,1,0.3,1] }}
       style={{
-        background:WHITE, border:`1px solid ${BORD}`, borderRadius:20,
-        padding:"32px 28px", height:"100%",
-        boxShadow:"0 4px 28px rgba(0,0,0,0.06)",
+        margin:0, background:WHITE, border:`1px solid ${BORD}`, borderRadius:20,
+        padding:"28px 26px", height:"100%", boxShadow:"0 4px 28px rgba(0,0,0,0.06)",
         display:"flex", flexDirection:"column",
       }}
     >
-      <div style={{ width:44, height:3, background:`linear-gradient(90deg,${GOLD},${GOLD_D})`, borderRadius:2, marginBottom:22 }} />
-      <div style={{ display:"flex", gap:3, marginBottom:16 }}>
-        {[...Array(t.stars)].map((_,i)=>(
-          <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={GOLD}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        ))}
-      </div>
-      <p style={{ color:"#1E293B", fontSize:"0.95rem", lineHeight:1.78, margin:"0 0 24px", fontStyle:"italic", flex:1, fontFamily:BF }}>"{t.quote}"</p>
-      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-        <div style={{ width:40, height:40, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${NAVY},${BLUE})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.75rem", fontWeight:700, color:WHITE, fontFamily:HF }}>
-          {t.name.split(" ").map(w=>w[0]).join("")}
-        </div>
+      <blockquote style={{ margin:"0 0 22px", color:"#1E293B", fontSize:"0.98rem", lineHeight:1.7, flex:1, fontFamily:BF }}>
+        "{t.quote}"
+      </blockquote>
+      <figcaption style={{ display:"flex", alignItems:"center", gap:12 }}>
+        {t.photo ? (
+          <img src={t.photo} alt={t.name} width={44} height={44} style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+        ) : (
+          <div style={{ width:44, height:44, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${NAVY},${BLUE})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.78rem", fontWeight:700, color:WHITE, fontFamily:HF }}>
+            {t.name.split(" ").map(w=>w[0]).join("")}
+          </div>
+        )}
         <div>
-          <div style={{ fontWeight:700, color:NAVY, fontSize:"0.9rem", fontFamily:HF }}>{t.name}</div>
-          <div style={{ color:MUTED, fontSize:"0.78rem", marginTop:1, fontFamily:BF }}>{t.year} · {t.school}</div>
+          <div style={{ fontWeight:700, color:NAVY, fontSize:"0.92rem", fontFamily:HF }}>{t.name}</div>
+          <div style={{ color:MUTED, fontSize:"0.8rem", marginTop:1, fontFamily:BF }}>{[t.year, t.school].filter(Boolean).join(", ")}</div>
+        </div>
+      </figcaption>
+    </motion.figure>
+  );
+}
+
+/* ─── Signup counter: real verified count from the API ──────────── */
+function SignupCounter() {
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`${API_URL}/api/stats/public`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (alive) setStats(d); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  if (!stats || stats.verified_students < COUNTER_MIN_TO_SHOW) return null;
+  const updated = new Date(stats.updated_at + "T12:00:00").toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  return (
+    <motion.p
+      initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ duration:0.6 }}
+      style={{ margin:"18px 0 0", color:"rgba(255,255,255,0.7)", fontSize:"0.92rem", fontFamily:BF }}
+    >
+      <strong style={{ color:GOLD }}>{stats.verified_students.toLocaleString()}</strong> verified students from{" "}
+      <strong style={{ color:GOLD }}>{stats.schools}</strong> {stats.schools === 1 ? "campus" : "campuses"} already signed up
+      <span style={{ display:"block", fontSize:"0.72rem", color:"rgba(255,255,255,0.35)", marginTop:4 }}>Updated {updated}</span>
+    </motion.p>
+  );
+}
+
+/* ─── Founders (audit D3.3) ──────────────────────────────────────── */
+function FounderSection() {
+  return (
+    <section id="about" style={{ background:WHITE, padding:"104px 24px" }}>
+      <div style={{ maxWidth:960, margin:"0 auto" }}>
+        <div style={{ textAlign:"center", marginBottom:48 }}>
+          <div style={{ display:"inline-flex", background:"rgba(15,45,94,0.06)", border:"1px solid rgba(15,45,94,0.1)", borderRadius:100, padding:"6px 18px", marginBottom:20 }}>
+            <span style={{ fontSize:"0.64rem", fontWeight:700, color:NAVY, fontFamily:BF, letterSpacing:"0.22em", textTransform:"uppercase" }}>Who's behind Room8</span>
+          </div>
+          <h2 style={{ fontFamily:HF, fontWeight:800, fontSize:"clamp(1.8rem,3.6vw,2.6rem)", color:NAVY, letterSpacing:"-0.025em", margin:"0 0 14px" }}>Built by students who've been there</h2>
+          <p style={{ color:MUTED, fontSize:"1rem", lineHeight:1.7, maxWidth:560, margin:"0 auto", fontFamily:BF }}>
+            Room8 started as a student project at The Evergreen State College in 2024. We're two co-founders building it for students like us.
+          </p>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:24 }}>
+          {FOUNDERS.map(f => (
+            <div key={f.name} style={{ border:`1px solid ${BORD}`, borderRadius:20, padding:"28px 26px", display:"flex", gap:18, alignItems:"flex-start", boxShadow:"0 4px 20px rgba(0,0,0,0.04)" }}>
+              {f.photo ? (
+                <img src={f.photo} alt={f.name} width={72} height={72} style={{ width:72, height:72, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+              ) : (
+                <div style={{ width:72, height:72, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${NAVY},${BLUE})`, display:"flex", alignItems:"center", justifyContent:"center", color:WHITE, fontWeight:800, fontFamily:HF, fontSize:"1.2rem" }}>
+                  {f.name.split(" ").map(w=>w[0]).join("")}
+                </div>
+              )}
+              <div>
+                <div style={{ fontFamily:HF, fontWeight:700, fontSize:"1.1rem", color:NAVY }}>{f.name}</div>
+                <div style={{ color:MUTED, fontSize:"0.85rem", fontFamily:BF, marginTop:2 }}>{f.role}, {f.school}</div>
+                {f.story && <p style={{ color:"#334155", fontSize:"0.92rem", lineHeight:1.65, margin:"12px 0 0", fontFamily:BF }}>{f.story}</p>}
+                {f.links.length > 0 && (
+                  <div style={{ display:"flex", gap:14, marginTop:12, flexWrap:"wrap" }}>
+                    {f.links.filter(l => l.href).map(l => (
+                      <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" style={{ color:BLUE, fontSize:"0.85rem", fontWeight:600, fontFamily:BF, textDecoration:"none" }}>{l.label} →</a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    </motion.div>
+    </section>
+  );
+}
+
+/* ─── FAQ (audit D1.4) ───────────────────────────────────────────── */
+function FAQSection() {
+  return (
+    <section id="faq" style={{ background:SURF, padding:"104px 24px" }}>
+      <div style={{ maxWidth:760, margin:"0 auto" }}>
+        <h2 style={{ textAlign:"center", fontFamily:HF, fontWeight:800, fontSize:"clamp(1.8rem,3.6vw,2.6rem)", color:NAVY, letterSpacing:"-0.025em", margin:"0 0 40px" }}>Questions students ask</h2>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {FAQS.map(f => (
+            <details key={f.id} id={f.id} style={{ background:WHITE, border:`1px solid ${BORD}`, borderRadius:14, padding:"18px 22px" }}>
+              <summary style={{ fontFamily:HF, fontWeight:700, fontSize:"1.02rem", color:NAVY, cursor:"pointer" }}>{f.q}</summary>
+              <p style={{ color:"#334155", fontSize:"0.94rem", lineHeight:1.7, margin:"12px 0 0", fontFamily:BF }}>
+                {f.a}{" "}
+                {f.link && <Link to={f.link.to} style={{ color:BLUE, fontWeight:600 }}>{f.link.label}</Link>}
+              </p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -587,6 +689,15 @@ export default function Home() {
   const heroOp = useTransform(heroP,[0,0.6],[1,0]);
 
   // Cursor CSS: hide native cursor only on desktop
+  // Footer links like /#about and /#faq land here from other pages
+  useEffect(() => {
+    if (!window.location.hash) return;
+    const t = setTimeout(() => {
+      document.querySelector(window.location.hash)?.scrollIntoView({ behavior: "smooth" });
+    }, 300);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     document.body.classList.add("r8-cursor-page");
     return () => document.body.classList.remove("r8-cursor-page");
@@ -660,7 +771,7 @@ export default function Home() {
               style={{ fontSize:"0.42rem", color:GOLD }}
             >◆</motion.span>
             <span style={{ fontSize:"0.78rem", fontWeight:600, color:GOLD, fontFamily:BF, letterSpacing:"0.1em" }}>
-              Launching at universities near you
+              Early access is open. Free for students.
             </span>
           </motion.div>
 
@@ -690,21 +801,26 @@ export default function Home() {
           }} />
 
           {/* MASSIVE headline — clipped reveal */}
-          {["Find Your","People."].map((line,i)=>(
-            <div key={line} style={{ overflow:"hidden", position:"relative", zIndex:1, background:"transparent" }}>
-              <motion.h1
-                initial={{ y:"108%" }}
-                animate={{ y:0 }}
-                transition={{ duration:0.95, delay:0.18+i*0.14, ease:[0.16,1,0.3,1] }}
-                style={{
-                  fontFamily:HF, fontWeight:900, margin:0, lineHeight:0.92,
-                  letterSpacing:"-0.04em",
-                  fontSize:"clamp(100px, 15vw, 175px)",
-                  color: i===1 ? GOLD : WHITE,
-                }}
-              >{line}</motion.h1>
-            </div>
-          ))}
+          <h1
+            className="hero-h1"
+            style={{
+              fontFamily:HF, fontWeight:900, margin:0, lineHeight:0.92,
+              letterSpacing:"-0.04em",
+              fontSize:"clamp(56px, 15vw, 175px)",
+              position:"relative", zIndex:1,
+            }}
+          >
+            {["Find Your","People."].map((line,i)=>(
+              <span key={line} style={{ display:"block", overflow:"hidden" }}>
+                <motion.span
+                  initial={{ y:"108%" }}
+                  animate={{ y:0 }}
+                  transition={{ duration:0.95, delay:0.18+i*0.14, ease:[0.16,1,0.3,1] }}
+                  style={{ display:"block", color: i===1 ? GOLD : WHITE }}
+                >{line}{i===0 ? " " : ""}</motion.span>
+              </span>
+            ))}
+          </h1>
 
           {/* Subtitle */}
           <motion.p
@@ -751,6 +867,18 @@ export default function Home() {
               }}
             >See How It Works</motion.button>
           </motion.div>
+
+          {/* Privacy promise (audit D1.4) */}
+          <motion.p
+            initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ duration:0.6, delay:0.8 }}
+            style={{ margin:"18px 0 0", color:"rgba(255,255,255,0.55)", fontSize:"0.85rem", fontFamily:BF }}
+          >
+            🔒 We never sell your data or share it with advertisers.{" "}
+            <Link to="/privacy" style={{ color:"rgba(255,255,255,0.8)", textDecoration:"underline" }}>Privacy policy</Link>
+          </motion.p>
+
+          {/* Real signup count (audit D3.1) */}
+          <SignupCounter />
 
           {/* Dramatic scroll indicator */}
           <motion.div
@@ -908,6 +1036,17 @@ export default function Home() {
         </div>
       </ParallaxSection>
 
+      {TESTIMONIALS.length >= TESTIMONIALS_MIN_TO_SHOW && (
+        <section style={{ background:WHITE, padding:"104px 24px" }}>
+          <div style={{ maxWidth:1080, margin:"0 auto" }}>
+            <h2 style={{ textAlign:"center", fontFamily:HF, fontWeight:800, fontSize:"clamp(1.8rem,3.6vw,2.6rem)", color:NAVY, letterSpacing:"-0.025em", margin:"0 0 48px" }}>What beta testers are saying</h2>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:24 }}>
+              {TESTIMONIALS.slice(0,6).map((t,i)=>(<TestimonialCard key={t.name} t={t} delay={i*0.08} />))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <SectionDivider dark />
 
       {/* ════════════════════════════════════════════════════════════
@@ -928,8 +1067,8 @@ export default function Home() {
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:20 }}>
             {[
-              { label:"Launching Spring 2026", sub:"Early access now open", icon:"🚀" },
-              { label:"Beta Access Available", sub:"Join the waitlist today", icon:"🔑" },
+              { label:"Early Access Open Now", sub:"Sign up free with your .edu email", icon:"🚀" },
+              { label:"Campus Pilots Next",    sub:"First campus pilots start this spring", icon:"🔑" },
               { label:"Built for Students",    sub:"Free, always",           icon:"🎓" },
               { label:"Seeking Partners",      sub:"Universities welcome",   icon:"🏫" },
             ].map((s,i)=>(
@@ -991,7 +1130,7 @@ export default function Home() {
             {/* Right: benefit cards */}
             <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
               {[
-                { icon:"✅", title:"School-Verified Profiles", desc:"Only students from your institution can join your campus pool." },
+                { icon:"✅", title:"School-Verified Profiles", desc:"Students verify with their school .edu email, and verified students are marked on their profile." },
                 { icon:"🛡️", title:"Safety First",             desc:"Built-in reporting, blocking, and moderation tools." },
                 { icon:"📊", title:"Housing Insights",         desc:"Aggregate data on student housing preferences at your school." },
                 { icon:"💬", title:"Dedicated Support",        desc:"White-glove onboarding and ongoing support for your housing office." },
@@ -1014,6 +1153,10 @@ export default function Home() {
           </div>
         </div>
       </ParallaxSection>
+
+      <FounderSection />
+
+      <FAQSection />
 
       <SectionDivider dark />
 
@@ -1098,10 +1241,11 @@ export default function Home() {
           .hero-cards > *:nth-child(3),
           .hero-cards > *:nth-child(4) { display: none !important; }
         }
-        @media (max-width: 640px) {
+        @media (max-width: 767px) {
           .hero-cards { display: none !important; }
           .step-connector { display: none !important; }
         }
+        #faq details > summary::-webkit-details-marker { color: ${GOLD}; }
         @media (max-width: 600px) {
           section { padding-top: 72px !important; padding-bottom: 72px !important; }
         }

@@ -1,6 +1,7 @@
 // src/components/Footer.jsx
 import React from "react";
 import { Link } from "react-router-dom";
+import { FOUNDERS, LEGAL_ENTITY } from "../siteContent";
 
 const DARK   = "#050D1F";
 const GOLD   = "#F59E0B";
@@ -30,17 +31,22 @@ export default function Footer() {
         </span>
 
         <nav style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-          <a href="/#purpose" style={linkStyle}>Mission</a>
+          <a href="/#about" style={linkStyle}>About</a>
           <a href="/#how-it-works" style={linkStyle}>How It Works</a>
+          <a href="/#faq" style={linkStyle}>FAQ</a>
           <Link to="/schools" style={linkStyle}>For Schools</Link>
           <Link to="/register" style={linkStyle}>Sign Up</Link>
+          <Link to="/vs/room8-vs-meetyourclass" style={linkStyle}>Room8 vs MeetYourClass</Link>
+          <Link to="/vs/room8-vs-zeemee" style={linkStyle}>Room8 vs ZeeMee</Link>
+          <Link to="/changelog" style={linkStyle}>Changelog</Link>
           <Link to="/privacy" style={linkStyle}>Privacy Policy</Link>
           <Link to="/terms" style={linkStyle}>Terms of Service</Link>
         </nav>
 
-        <p style={{ color: MUTED, fontSize: "0.8rem", margin: 0, fontFamily: BF }}>
-          © {new Date().getFullYear()} Room8. All rights reserved.
-        </p>
+        <div style={{ color: MUTED, fontSize: "0.8rem", margin: 0, fontFamily: BF, lineHeight: 1.7, textAlign: "left", width: "100%" }}>
+          <div>© {new Date().getFullYear()} {LEGAL_ENTITY || "Room8"}. All rights reserved.</div>
+          <div>Built by {FOUNDERS.map(f => f.name).join(" and ")}. We never sell your data. <Link to="/privacy" style={{ ...linkStyle, fontSize: "0.8rem", textDecoration: "underline" }}>Privacy</Link></div>
+        </div>
       </div>
     </footer>
   );

@@ -158,6 +158,7 @@ def create_app():
     from room8_models.school import School                               # noqa: F401
     from room8_models.photo_verification import PhotoVerification        # noqa: F401
     from room8_models.oauth_exchange import OAuthExchange                # noqa: F401
+    from room8_models.device_token import DeviceToken                    # noqa: F401
 
     with app.app_context():
         db.create_all()

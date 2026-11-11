@@ -49,6 +49,9 @@ export function setCurrentUser(u) {
 }
 
 export function logout() {
+  // Native app: stop pushes to this phone (fire-and-forget, needs the token, so before removing it)
+  const jwtForPush = getToken();
+  import("./push").then(({ unregisterNativePush }) => unregisterNativePush(jwtForPush)).catch(() => {});
   removeToken();
   localStorage.removeItem(LS_KEY);
   // Fire-and-forget: invalidate the token server-side

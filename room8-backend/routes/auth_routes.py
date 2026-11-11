@@ -393,6 +393,10 @@ def delete_account():
     from room8_models.oauth_exchange import OAuthExchange
     OAuthExchange.query.filter_by(user_id=user_id).delete(synchronize_session=False)
 
+    # 8a3. Native app push tokens
+    from room8_models.device_token import DeviceToken
+    DeviceToken.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+
     # 8b. Push subscriptions (FK → users.id, must be removed before deleting user)
     from room8_models.push_subscription import PushSubscription
     PushSubscription.query.filter_by(user_id=user_id).delete(synchronize_session=False)

@@ -65,11 +65,10 @@ export default function WaitlistScreen({ status, user, onRefresh }) {
       </div>
 
       {!status.you_count && (
-        <p style={{ ...p, color: "#fcd34d", fontSize: 13 }}>
-          {user?.is_verified_student
-            ? "Verify your email to count toward unlocking your school."
-            : "Only students with a school email count toward unlocking. Sign up with your .edu email to be counted."}
-        </p>
+        <>
+          <p style={{ ...p, color: "#fcd34d", fontSize: 13 }}>You're not counted yet. Verify your school email to help unlock {name}.</p>
+          <button style={secondaryGold} onClick={() => navigate("/verify/student")}>Verify school email</button>
+        </>
       )}
 
       <button style={primaryBtn} onClick={share}>{copied ? "Link copied" : "Invite classmates"}</button>
@@ -107,5 +106,9 @@ const primaryBtn = {
 const secondaryBtn = {
   width: "100%", background: "rgba(29,155,240,.12)", color: "#7cc4f7", border: "1px solid rgba(29,155,240,.4)",
   padding: "12px 20px", borderRadius: 12, fontWeight: 700, fontSize: "0.92rem", cursor: "pointer", fontFamily: JAKARTA,
+};
+const secondaryGold = {
+  width: "100%", background: "rgba(245,166,35,.12)", color: GOLD, border: "1px solid rgba(245,166,35,.45)",
+  padding: "12px 20px", borderRadius: 12, fontWeight: 800, fontSize: "0.95rem", cursor: "pointer", fontFamily: JAKARTA,
 };
 const linkBtn = { background: "none", border: "none", color: MUTED, fontFamily: JAKARTA, fontSize: 13, cursor: "pointer", textDecoration: "underline" };

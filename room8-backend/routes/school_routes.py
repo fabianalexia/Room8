@@ -16,5 +16,6 @@ def my_school_status():
     if not user:
         return jsonify({"error": "User not found"}), 404
     data = status_for(user.school)
-    data["you_count"] = bool(user.is_verified_student and user.email_verified)
+    from school_gate import is_proven_student
+    data["you_count"] = is_proven_student(user)
     return jsonify(data)

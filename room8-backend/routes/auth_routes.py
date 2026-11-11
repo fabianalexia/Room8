@@ -20,6 +20,7 @@ from extensions import mail, limiter
 from room8_models.user import User
 from room8_models import db
 from utils import sanitize
+from mailer import send_email
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -65,9 +66,9 @@ def _send_verification_email(user):
     user.verification_token_expiry = datetime.utcnow() + VERIFICATION_TTL
     db.session.commit()
     link = f"{BACKEND_URL}/api/auth/verify-email?token={token}"
-    msg = Message(
+    msg = dict(
         subject="Verify your Room8 email",
-        recipients=[user.email],
+        to=[user.email],
         html=f"""
         <p>Hi {user.first_name or 'there'},</p>
         <p>Thanks for joining Room8! Click below to verify your email address:</p>
@@ -77,7 +78,7 @@ def _send_verification_email(user):
         <p>This link expires in 48 hours. If you didn't create a Room8 account, you can ignore this email.</p>
         """,
     )
-    mail.send(msg)
+    send_email(**msg)
 
 
 def _issue_tokens(user):
@@ -250,9 +251,9 @@ def forgot_password():
     db.session.commit()
 
     link = f"{FRONTEND_URL}/reset-password?token={token}"
-    msg = Message(
+    msg = dict(
         subject="Reset your Room8 password",
-        recipients=[user.email],
+        to=[user.email],
         html=f"""
         <p>Hi {user.first_name or 'there'},</p>
         <p>We received a request to reset your Room8 password. Click below to choose a new one:</p>
@@ -263,7 +264,7 @@ def forgot_password():
         """,
     )
     try:
-        mail.send(msg)
+        send_email(**msg)
     except Exception as e:
         print(f"[mail] reset send failed: {e}")
         return jsonify({"error": "Failed to send email. Try again shortly."}), 500

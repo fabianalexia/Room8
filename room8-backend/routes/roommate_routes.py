@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+from mailer import send_email
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_mail import Message as MailMessage
@@ -270,16 +271,16 @@ def _send_housing_email(user_a, user_b, confirmed_at):
         cc = []
 
     try:
-        msg = MailMessage(
+        msg = dict(
             subject=(
                 f"Confirmed Roommate Pair: "
                 f"{user_a.first_name} {user_a.last_name} & "
                 f"{user_b.first_name} {user_b.last_name}"
             ),
-            recipients=recipients,
+            to=recipients,
             cc=cc,
             html=html,
         )
-        mail.send(msg)
+        send_email(**msg)
     except Exception as e:
         print(f"[mail] housing office email failed: {e}")

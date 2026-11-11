@@ -57,6 +57,13 @@ class User(db.Model):
     # False → registered with a personal email (community member)
     is_verified_student = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
 
+    # .edu ownership proven by a 6-digit emailed code
+    edu_email            = db.Column(db.String(255), index=True)
+    edu_verified         = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
+    edu_code_hash        = db.Column(db.String(255))
+    edu_code_expiry      = db.Column(db.DateTime)
+    edu_code_attempts    = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+
     # Photo verification (selfie with pose, reviewed by an admin)
     is_photo_verified   = db.Column(db.Boolean, nullable=False, default=False, server_default="0")
     photo_verified_at   = db.Column(db.DateTime)
@@ -115,4 +122,5 @@ class User(db.Model):
             "email_verified":        bool(self.email_verified),
             "is_verified_student":   bool(self.is_verified_student),
             "is_photo_verified":     bool(self.is_photo_verified),
+            "edu_verified":          bool(self.edu_verified),
         }

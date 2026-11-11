@@ -40,3 +40,38 @@ def unsubscribe():
         db.session.delete(sub)
         db.session.commit()
     return jsonify({"ok": True}), 200
+
+
+# ── Native app device tokens ─────────────────────────────────────────────────
+
+@push_bp.route("/device", methods=["POST"])
+@jwt_required()
+def register_device():
+    from room8_models.device_token import DeviceToken
+    user_id = int(get_jwt_identity())
+    data = request.get_json(silent=True) or {}
+    token = (data.get("token") or "").strip()
+    platform = data.get("platform")
+    if not token or platform not in ("ios", "android") or len(token) > 512:
+        return jsonify({"error": "token and platform (ios|android) required"}), 400
+    row = DeviceToken.query.filter_by(token=token).first()
+    if row:
+        row.user_id, row.platform = user_id, platform   # device switched accounts
+    else:
+        db.session.add(DeviceToken(user_id=user_id, token=token, platform=platform))
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@push_bp.route("/device", methods=["DELETE"])
+@jwt_required()
+def unregister_device():
+    from room8_models.device_token import DeviceToken
+    user_id = int(get_jwt_identity())
+    token = ((request.get_json(silent=True) or {}).get("token") or "").strip()
+    q = DeviceToken.query.filter_by(user_id=user_id)
+    if token:
+        q = q.filter_by(token=token)
+    q.delete(synchronize_session=False)
+    db.session.commit()
+    return jsonify({"ok": True})

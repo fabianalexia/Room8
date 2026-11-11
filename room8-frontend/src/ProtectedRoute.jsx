@@ -26,6 +26,7 @@ export default function ProtectedRoute({ children, requireComplete = false }) {
         setCurrentUser(data.user);
         setUser(data.user);
         setStatus("ok");
+        import("./push").then(({ registerNativePush }) => registerNativePush((url) => { window.location.hash = ""; window.history.pushState({}, "", url); window.dispatchEvent(new PopStateEvent("popstate")); }));
       })
       .catch((err) => {
         console.error("[ProtectedRoute] /me error:", err.message);

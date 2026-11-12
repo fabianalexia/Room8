@@ -2,326 +2,123 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 import { getCurrentUser, getMatches, getProfile, getNotifications, markNotificationRead, markMessagesRead, getToken, API_URL } from "./api";
-import { ProfileModal } from "./components/SwipeDeck";
+import { motion, AnimatePresence } from "framer-motion";
+import ProfileModal from "./components/ProfileSheet";
 import Chat from "./components/Chat";
 import { sendNotification } from "./notifications";
-
-const NAVY   = "#0F2D5E";
-const GOLD   = "#F59E0B";
-const DARK   = "#050D1F";
-const DARKER = "#030914";
-const WHITE  = "#FFFFFF";
-const MUTED  = "rgba(255,255,255,0.45)";
-const BORDER = "rgba(255,255,255,0.08)";
-const SURFACE = "rgba(255,255,255,0.04)";
+import Icon from "./ui/Icon";
+import { Mark } from "./ui/Logo";
+import { Avatar, EmptyState, TopBar } from "./ui/kit";
 
 function relTime(iso) {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)  return "now";
+  if (m < 1) return "now";
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
   return `${Math.floor(h / 24)}d`;
 }
 
-function Avatar({ src, name, size = 56, ring = false, onClick }) {
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        width: size, height: size, borderRadius: "50%", flexShrink: 0,
-        background: src ? `url(${src}) center/cover` : NAVY,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: WHITE, fontWeight: 700, fontSize: size * 0.35,
-        cursor: onClick ? "pointer" : "default",
-        border: ring ? `2.5px solid ${GOLD}` : `2px solid rgba(255,255,255,0.12)`,
-        boxShadow: ring ? `0 0 12px rgba(245,158,11,0.4)` : "none",
-        transition: "transform 0.15s",
-      }}
-      onMouseEnter={(e) => { if (onClick) e.currentTarget.style.transform = "scale(1.05)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
-    >
-      {!src && (name?.[0]?.toUpperCase() || "?")}
-    </div>
-  );
-}
-
-function NoMatchesEmpty() {
-  const navigate = useNavigate();
-  return (
-    <div style={{ textAlign: "center", padding: "52px 28px" }}>
-      <div style={{
-        width: 80, height: 80, margin: "0 auto 20px",
-        borderRadius: "50%",
-        background: "rgba(245,158,11,0.1)",
-        border: `1px solid rgba(245,158,11,0.25)`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "2rem",
-      }}>💬</div>
-      <p style={{ color: WHITE, fontWeight: 700, fontSize: "1.05rem", margin: "0 0 8px" }}>
-        No matches yet
-      </p>
-      <p style={{ color: MUTED, fontSize: "0.85rem", lineHeight: 1.6, margin: "0 0 24px", maxWidth: 200, marginLeft: "auto", marginRight: "auto" }}>
-        Start swiping to find your perfect Room8. Matches appear here.
-      </p>
-      <button
-        onClick={() => navigate("/app")}
-        style={{
-          background: GOLD, color: DARK, border: "none",
-          padding: "11px 24px", borderRadius: 8,
-          fontWeight: 700, fontSize: "0.9rem",
-          cursor: "pointer",
-          boxShadow: "0 4px 20px rgba(245,158,11,0.35)",
-        }}
-      >
-        Start Swiping
-      </button>
-    </div>
-  );
-}
+const first = (n) => (n || "").split(" ")[0] || n || "";
 
 function NotificationBell({ notifications, onDismiss }) {
   const [open, setOpen] = useState(false);
   const unread = notifications.filter((n) => !n.read).length;
-
   if (notifications.length === 0) return null;
-
   const LABEL = {
-    roommate_request:   "wants to confirm you as roommates",
-    roommate_confirmed: "You're confirmed roommates!",
+    roommate_request: "wants to confirm you as roommates",
+    roommate_confirmed: "confirmed you as roommates",
   };
-
   return (
     <div style={{ position: "relative" }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          position: "relative",
-          background: open ? "rgba(255,255,255,0.1)" : "none",
-          border: "none",
-          color: open ? "#F59E0B" : "rgba(255,255,255,0.6)",
-          width: 36, height: 36, borderRadius: "50%",
-          cursor: "pointer", fontSize: "1.1rem",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "background 0.15s",
-        }}
-        title="Notifications"
-      >
-        🔔
-        {unread > 0 && (
-          <span style={{
-            position: "absolute", top: 4, right: 4,
-            width: 10, height: 10, borderRadius: "50%",
-            background: "#F59E0B",
-            border: "2px solid #030914",
-          }} />
-        )}
+      <button className="r8-icon-btn r8-icon-btn--round" onClick={() => setOpen((v) => !v)} aria-label="Notifications" aria-expanded={open}>
+        <Icon name="bell" size={21} />
+        {unread > 0 && <span style={{ position: "absolute", top: 8, right: 9, width: 9, height: 9, borderRadius: "50%", background: "var(--pink)", border: "2px solid var(--bg)" }} />}
       </button>
-      {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 6px)", right: 0,
-          background: "#0E1F3D",
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: 10, overflow: "hidden",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
-          minWidth: 260, maxWidth: 320, zIndex: 300,
-        }}>
-          <div style={{
-            padding: "10px 14px 8px",
-            fontSize: "0.7rem", fontWeight: 700,
-            color: "rgba(245,158,11,0.8)",
-            textTransform: "uppercase", letterSpacing: 1,
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-          }}>
-            Notifications
-          </div>
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 14px",
-                background: n.read ? "transparent" : "rgba(245,158,11,0.06)",
-                borderBottom: "1px solid rgba(255,255,255,0.05)",
-              }}
-            >
-              <div style={{
-                width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
-                background: n.from_photo ? `url(${n.from_photo}) center/cover` : "#0F2D5E",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#fff", fontWeight: 700, fontSize: "0.85rem",
-              }}>
-                {!n.from_photo && (n.from_name?.[0]?.toUpperCase() || "?")}
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}
+            className="r8-card" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 300, zIndex: 300, padding: 8, borderRadius: 20, boxShadow: "var(--shadow-2)" }}>
+            <p className="r8-eyebrow" style={{ padding: "8px 10px 6px" }}>Notifications</p>
+            {notifications.map((n) => (
+              <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 14, background: n.read ? "transparent" : "var(--glass)" }}>
+                <Avatar src={n.from_photo} name={n.from_name} size={36} />
+                <p style={{ flex: 1, fontSize: 14, lineHeight: 1.4 }}><b>{n.from_name}</b> {LABEL[n.type] || n.type}</p>
+                {!n.read && <button className="r8-btn r8-btn--ghost r8-btn--sm" style={{ height: 30, padding: "0 10px" }} onClick={() => onDismiss(n.id)} aria-label="Dismiss"><Icon name="x" size={16} /></button>}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, color: "#fff", fontSize: "0.82rem", fontWeight: 600, lineHeight: 1.4 }}>
-                  {n.type === "roommate_confirmed" ? "🎉 " : "🏠 "}
-                  <span style={{ color: "#F59E0B" }}>{n.from_name}</span>{" "}
-                  {LABEL[n.type] || n.type}
-                </p>
-              </div>
-              {!n.read && (
-                <button
-                  onClick={() => onDismiss(n.id)}
-                  style={{
-                    background: "none", border: "none",
-                    color: "rgba(255,255,255,0.35)",
-                    cursor: "pointer", fontSize: "0.75rem", flexShrink: 0,
-                  }}
-                  title="Dismiss"
-                >✕</button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// Receives matches + loading from parent so unmatch/block updates reflect immediately
 function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifications, onDismissNotification, onViewProfile }) {
+  const navigate = useNavigate();
   const newMatches = matches.filter((m) => !m.last_message);
-  const messaged   = matches.filter((m) =>  m.last_message);
-
+  const messaged = matches.filter((m) => m.last_message);
   return (
-    <div style={{
-      display: "flex", flexDirection: "column", height: "100%",
-      background: DARK,
-      borderRight: isMobile ? "none" : `1px solid ${BORDER}`,
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: "18px 20px 14px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        borderBottom: `1px solid ${BORDER}`,
-        flexShrink: 0,
-        background: "rgba(3,9,20,0.6)",
-        backdropFilter: "blur(12px)",
-      }}>
-        <h1 style={{
-          margin: 0, fontSize: "1.3rem", fontWeight: 800,
-          color: WHITE, letterSpacing: "-0.025em",
-          fontFamily: "'Outfit', sans-serif",
-        }}>
-          Messages
-        </h1>
-        <NotificationBell notifications={notifications} onDismiss={onDismissNotification} />
-      </div>
-
-      {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, borderRight: isMobile ? "none" : "1px solid var(--line)", background: "var(--bg)" }}>
+      <TopBar title="Chats" right={<NotificationBell notifications={notifications} onDismiss={onDismissNotification} />} />
+      <div className="r8-noscroll" style={{ flex: 1, overflowY: "auto", paddingBottom: isMobile ? "calc(var(--nav-h) + var(--safe-b) + 24px)" : 24 }}>
         {loading && (
-          <div style={{ textAlign: "center", padding: 40, color: MUTED, fontSize: "0.9rem" }}>Loading…</div>
-        )}
-
-        {!loading && matches.length === 0 && <NoMatchesEmpty />}
-
-        {/* New Matches row */}
-        {newMatches.length > 0 && (
-          <div style={{ paddingTop: 16 }}>
-            <p style={{
-              margin: "0 20px 10px",
-              fontSize: "0.7rem", fontWeight: 700, color: "rgba(245,158,11,0.7)",
-              textTransform: "uppercase", letterSpacing: 1.2,
-            }}>
-              New Matches
-            </p>
-            <div style={{
-              display: "flex", gap: 12, overflowX: "auto",
-              padding: "0 20px 16px", scrollbarWidth: "none",
-            }}>
-              {newMatches.map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => onSelect(m)}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: "pointer", minWidth: 56 }}
-                >
-                  <Avatar src={m.photo} name={m.name} size={56} ring onClick={() => onViewProfile?.(m)} />
-                  <span style={{
-                    color: WHITE, fontSize: "0.68rem", fontWeight: 600,
-                    maxWidth: 56, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>
-                    {m.name?.split(" ")[0]}
-                  </span>
-                </div>
-              ))}
-            </div>
+          <div style={{ padding: "8px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+            {[0, 1, 2, 3].map((i) => <div key={i} style={{ display: "flex", gap: 12, alignItems: "center" }}><div className="r8-skel" style={{ width: 56, height: 56, borderRadius: "50%" }} /><div style={{ flex: 1 }}><div className="r8-skel" style={{ height: 14, width: "40%", marginBottom: 8 }} /><div className="r8-skel" style={{ height: 12, width: "70%" }} /></div></div>)}
           </div>
         )}
+        {!loading && matches.length === 0 && (
+          <EmptyState icon="chat" title="No chats yet" body="When you and someone both like each other, your conversation starts here."
+            action={<button className="r8-btn r8-btn--primary" onClick={() => navigate("/app")}><Icon name="flame" size={20} />Find roommates</button>} />
+        )}
 
-        {/* Messages list */}
+        {newMatches.length > 0 && (
+          <section style={{ padding: "4px 0 10px" }}>
+            <p className="r8-eyebrow" style={{ margin: "0 20px 12px" }}>New matches</p>
+            <div className="r8-noscroll" style={{ display: "flex", gap: 16, overflowX: "auto", padding: "0 20px 6px" }}>
+              {newMatches.map((m) => (
+                <motion.button key={m.id} whileTap={{ scale: 0.94 }} onClick={() => onSelect(m)}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, width: 70, flexShrink: 0 }}>
+                  <Avatar src={m.photo} name={m.name} size={66} ring />
+                  <span style={{ fontSize: 13, fontWeight: 500, maxWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{first(m.name)}</span>
+                </motion.button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {messaged.length > 0 && (
-          <div style={{ borderTop: newMatches.length > 0 ? `1px solid ${BORDER}` : "none", paddingTop: 4 }}>
-            <p style={{
-              margin: "12px 20px 4px",
-              fontSize: "0.7rem", fontWeight: 700, color: MUTED,
-              textTransform: "uppercase", letterSpacing: 1.2,
-            }}>
-              Conversations
-            </p>
+          <section style={{ paddingTop: 6 }}>
+            <p className="r8-eyebrow" style={{ margin: "8px 20px 6px" }}>Messages</p>
             {messaged.map((m) => {
-              const active    = m.id === selectedId;
-              const hasUnread = !active && !!m.has_unread;
-              const preview   = m.last_message_mine ? `You: ${m.last_message}` : m.last_message;
+              const active = m.id === selectedId;
+              const unread = !active && !!m.has_unread;
               return (
-                <div
-                  key={m.id}
-                  onClick={() => onSelect(m)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "12px 20px", cursor: "pointer",
-                    background: active ? "rgba(245,158,11,0.1)" : "transparent",
-                    borderLeft: `3px solid ${active ? GOLD : hasUnread ? "rgba(245,158,11,0.5)" : "transparent"}`,
-                    transition: "background 0.15s",
-                  }}
-                  onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = SURFACE; }}
-                  onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
-                >
-                  {/* Avatar with unread dot overlay */}
-                  <div style={{ position: "relative", flexShrink: 0 }}>
-                    <Avatar src={m.photo} name={m.name} size={48} onClick={(e) => { e.stopPropagation(); onViewProfile?.(m); }} />
-                    {hasUnread && (
-                      <span style={{
-                        position: "absolute", bottom: 1, right: 1,
-                        width: 11, height: 11, borderRadius: "50%",
-                        background: GOLD,
-                        border: "2px solid #050D1F",
-                      }} />
-                    )}
-                  </div>
+                <div key={m.id} role="button" tabIndex={0} onClick={() => onSelect(m)} onKeyDown={(e) => { if (e.key === "Enter") onSelect(m); }}
+                  style={{ display: "flex", alignItems: "center", gap: 14, margin: "2px 10px", padding: "10px 10px", borderRadius: 20, cursor: "pointer", background: active ? "var(--glass-2)" : "transparent", transition: "background .2s" }}
+                  onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--glass)"; }}
+                  onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}>
+                  <button onClick={(e) => { e.stopPropagation(); onViewProfile?.(m); }} aria-label={`View ${first(m.name)}'s profile`} style={{ position: "relative", borderRadius: "50%", flexShrink: 0 }}>
+                    <Avatar src={m.photo} name={m.name} size={56} ring={unread} />
+                  </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{
-                        color: active ? GOLD : hasUnread ? WHITE : "rgba(255,255,255,0.85)",
-                        fontWeight: hasUnread ? 800 : 600,
-                        fontSize: "0.9rem",
-                      }}>
-                        {m.name?.split(" ")[0]}
-                      </span>
-                      <span style={{
-                        color: hasUnread ? "rgba(245,158,11,0.8)" : MUTED,
-                        fontSize: "0.68rem", flexShrink: 0, marginLeft: 6,
-                        fontWeight: hasUnread ? 700 : 400,
-                      }}>
-                        {relTime(m.last_message_at)}
-                      </span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                      <span style={{ fontWeight: unread ? 700 : 600, fontSize: 16 }}>{first(m.name)}</span>
+                      <span style={{ fontSize: 12.5, color: unread ? "var(--text)" : "var(--text-3)", fontWeight: unread ? 600 : 400, flexShrink: 0 }}>{relTime(m.last_message_at)}</span>
                     </div>
-                    <div style={{
-                      color: hasUnread ? "rgba(255,255,255,0.75)" : MUTED,
-                      fontWeight: hasUnread ? 600 : 400,
-                      fontSize: "0.82rem", marginTop: 2,
-                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                    }}>
-                      {preview}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                      <span style={{ flex: 1, fontSize: 14.5, color: unread ? "var(--text)" : "var(--text-2)", fontWeight: unread ? 500 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {m.last_message_mine ? "You: " : ""}{m.last_message}
+                      </span>
+                      {unread && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--iri)", flexShrink: 0 }} />}
                     </div>
                   </div>
                 </div>
               );
             })}
-          </div>
+          </section>
         )}
       </div>
     </div>
@@ -330,45 +127,17 @@ function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifi
 
 function EmptyChat() {
   return (
-    <div style={{
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center",
-      height: "100%", gap: 0, padding: 40, textAlign: "center",
-      background: `linear-gradient(180deg, ${DARKER} 0%, #071020 100%)`,
-    }}>
-      <div style={{ display: "flex", marginBottom: 24, position: "relative", width: 100, height: 56 }}>
-        {[NAVY, "#1a4a8a", "#2563EB"].map((c, i) => (
-          <div key={i} style={{
-            position: "absolute", left: i * 28,
-            width: 52, height: 52, borderRadius: "50%",
-            background: c,
-            border: `2.5px solid ${DARK}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "1.3rem",
-          }}>
-            {["👋", "💬", "✓"][i]}
-          </div>
-        ))}
-      </div>
-      <h3 style={{ color: WHITE, margin: "0 0 10px", fontWeight: 800, fontSize: "1.1rem" }}>
-        Select a conversation
-      </h3>
-      <p style={{ color: MUTED, maxWidth: 240, fontSize: "0.88rem", lineHeight: 1.6, margin: "0 0 28px" }}>
-        Choose a match from the left to start chatting.
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 280 }}>
-        <p style={{ color: "rgba(245,158,11,0.6)", fontSize: "0.7rem", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", margin: "0 0 4px" }}>
-          Conversation starters
-        </p>
-        {["What's your sleep schedule like?", "What's your major?", "Are you neat or more relaxed?"].map((p) => (
-          <div key={p} style={{
-            background: SURFACE, border: `1px solid ${BORDER}`,
-            borderRadius: 8, padding: "10px 14px",
-            color: MUTED, fontSize: "0.85rem", textAlign: "left",
-          }}>
-            {p}
-          </div>
-        ))}
+    <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+      <div aria-hidden="true" className="r8-aura r8-aura--a" style={{ width: 360, height: 360, top: "10%", right: "10%" }} />
+      <div style={{ position: "relative", textAlign: "center", maxWidth: 340, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+        <Mark size={64} />
+        <h3 style={{ fontSize: 24 }}>Pick a conversation</h3>
+        <p className="r8-muted" style={{ fontSize: 15 }}>Not sure what to say? Try one of these.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", marginTop: 4 }}>
+          {["what's your sleep schedule like?", "are you neat or more relaxed?", "how do you feel about guests?"].map((t) => (
+            <span key={t} className="r8-chip" style={{ height: 44, justifyContent: "center", fontSize: 15 }}>{t}</span>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -496,7 +265,8 @@ export default function MessagesPage() {
   // Fetch matches + notifications; detect new matches and new messages for push notifications.
   const refreshData = useCallback((isInitial = false, openUserId = null) => {
     if (!user) return;
-    const matchPromise = getMatches(user.id).then((data) => {
+    const matchPromise = getMatches(user.id).then((raw) => {
+      const data = Array.isArray(raw) ? raw : [];
       setMatches(data);
 
       if (isInitial) {
@@ -539,7 +309,7 @@ export default function MessagesPage() {
       }
     });
 
-    const notifPromise = getNotifications().then(setNotifications);
+    const notifPromise = getNotifications().then((n) => setNotifications(Array.isArray(n) ? n : [])).catch(() => {});
     return Promise.all([matchPromise, notifPromise]);
   }, []); // eslint-disable-line
 
@@ -598,38 +368,38 @@ export default function MessagesPage() {
 
   if (isMobile) {
     return (
-      <div style={{ height: "calc(100vh - 64px)", background: DARK, overflow: "hidden" }}>
-        {mobileView === "list" ? (
-          <MatchesPanel
-            matches={matches} loading={matchesLoading}
-            onSelect={handleSelect} selectedId={selected?.id} isMobile
-            notifications={notifications} onDismissNotification={handleDismissNotification}
-            onViewProfile={handleViewProfile}
-          />
-        ) : (
-          <Chat {...chatProps} onBack={handleBack} />
-        )}
+      <div style={{ height: "100dvh", background: "var(--bg)", overflow: "hidden" }}>
+        <MatchesPanel
+          matches={matches} loading={matchesLoading}
+          onSelect={handleSelect} selectedId={selected?.id} isMobile
+          notifications={notifications} onDismissNotification={handleDismissNotification}
+          onViewProfile={handleViewProfile}
+        />
+        <AnimatePresence>
+          {mobileView === "chat" && chatProps && (
+            <motion.div key="chat" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 380, damping: 38 }}
+              style={{ position: "fixed", inset: 0, zIndex: 700, background: "var(--bg)" }}>
+              <Chat {...chatProps} onBack={handleBack} onViewProfile={() => handleViewProfile(selected)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {profileView && <ProfileModal person={profileView} onClose={() => setProfileView(null)} />}
       </div>
     );
   }
 
   return (
-    <div style={{
-      display: "grid", gridTemplateColumns: "340px 1fr",
-      height: "calc(100vh - 64px)", background: DARK, overflow: "hidden",
-    }}>
+    <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", height: "100dvh", paddingBottom: "calc(var(--nav-h) + var(--safe-b) + 10px)", background: "var(--bg)", overflow: "hidden" }}>
       <MatchesPanel
         matches={matches} loading={matchesLoading}
         onSelect={handleSelect} selectedId={selected?.id} isMobile={false}
         notifications={notifications} onDismissNotification={handleDismissNotification}
         onViewProfile={handleViewProfile}
       />
-      <div style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
         {selected
-          ? <Chat {...chatProps} onBack={() => setSelected(null)} />
-          : <EmptyChat />
-        }
+          ? <Chat {...chatProps} onBack={() => setSelected(null)} onViewProfile={() => handleViewProfile(selected)} />
+          : <EmptyChat />}
       </div>
       {profileView && <ProfileModal person={profileView} onClose={() => setProfileView(null)} />}
     </div>

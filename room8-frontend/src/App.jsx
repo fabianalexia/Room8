@@ -42,9 +42,9 @@ const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/set
 function AppShell() {
   return (
     <div style={{
-      height: "100vh",
+      minHeight: "100dvh",
       overflow: "hidden",
-      backgroundColor: "#03040b",
+      background: "var(--bg)",
       display: "flex",
       alignItems: "stretch",
       position: "relative",

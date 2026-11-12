@@ -1,151 +1,91 @@
+// Floating glass tab bar for the signed-in app
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import { getCurrentUser, getNotifications } from "../api";
-
-const GOLD    = "#F59E0B";
-const DARK    = "#050D1F";
-const INACTIVE = "rgba(255,255,255,0.35)";
-
-const FlameIcon = ({ active }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? GOLD : INACTIVE}>
-    <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/>
-  </svg>
-);
-
-const CompatIcon = ({ active }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? GOLD : INACTIVE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/>
-    <path d="M12 8v4l3 3"/>
-    <path d="M8 12h.01M12 7h.01M16 12h.01M12 17h.01"/>
-  </svg>
-);
-
-const HeartIcon = ({ active }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? GOLD : INACTIVE}>
-    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-  </svg>
-);
-
-const ChatIcon = ({ active }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? GOLD : INACTIVE}>
-    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-  </svg>
-);
-
-const PersonIcon = ({ active }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? GOLD : INACTIVE}>
-    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-  </svg>
-);
+import { haptic } from "../native";
+import Icon from "../ui/Icon";
 
 const TABS = [
-  { label: "Swipe",    Icon: FlameIcon,  path: "/app"      },
-  { label: "Compatibility", Icon: CompatIcon, path: "/discover" },
-  { label: "Likes",    Icon: HeartIcon,  path: "/likes"    },
-  { label: "Messages", Icon: ChatIcon,   path: "/messages" },
-  { label: "Profile",  Icon: PersonIcon, path: "/profile"  },
+  { label: "Discover", icon: "flame",   path: "/app" },
+  { label: "Matches",  icon: "compass", path: "/discover" },
+  { label: "Likes",    icon: "heart",   path: "/likes" },
+  { label: "Chats",    icon: "chat",    path: "/messages" },
+  { label: "Profile",  icon: "user",    path: "/profile" },
 ];
 
 export default function BottomNav() {
-  const navigate     = useNavigate();
+  const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    const user = getCurrentUser();
-    if (!user) return;
-
+    if (!getCurrentUser()) return;
     const fetchUnread = () => {
       getNotifications()
-        .then((notifs) => {
-          setUnreadCount(Array.isArray(notifs) ? notifs.filter((n) => !n.read).length : 0);
-        })
+        .then((n) => setUnread(Array.isArray(n) ? n.filter((x) => !x.read).length : 0))
         .catch(() => {});
     };
-
     fetchUnread();
     const id = setInterval(fetchUnread, 30_000);
     return () => clearInterval(id);
   }, []);
 
+  // Onboarding screens get no tab bar
+  if (["/setup", "/onboarding", "/profile/setup", "/verify", "/admin"].some((p) => pathname.startsWith(p))) return null;
+
   return (
-    <nav style={{
-      position: "fixed", bottom: 0, left: 0, right: 0,
-      height: "calc(64px + env(safe-area-inset-bottom, 0px))",
-      background: DARK,
-      borderTop: "1px solid rgba(255,255,255,0.08)",
-      display: "flex",
-      alignItems: "stretch",
-      zIndex: 500,
-      paddingBottom: "env(safe-area-inset-bottom, 0px)",
+    <nav aria-label="Main" style={{
+      position: "fixed", left: 12, right: 12, bottom: "calc(10px + var(--safe-b))", zIndex: 500,
+      maxWidth: 520, margin: "0 auto",
     }}>
-      {TABS.map(({ label, Icon, path }) => {
-        const active = !!path && (pathname === path || pathname.startsWith(path + "/"));
-        return (
-          <button
-            key={label}
-            onClick={() => navigate(path)}
-            style={{
-              flex: 1,
-              background: "none",
-              border: "none",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              cursor: "pointer",
-              position: "relative",
-              WebkitTapHighlightColor: "transparent",
-              transition: "opacity 0.1s",
-            }}
-          >
-            {/* Active indicator */}
-            {active && (
-              <div style={{
-                position: "absolute",
-                top: 0, left: "20%", right: "20%",
-                height: 2,
-                background: GOLD,
-                borderRadius: "0 0 2px 2px",
-                boxShadow: `0 0 8px ${GOLD}`,
-              }} />
-            )}
-
-            <div style={{ position: "relative", display: "inline-flex" }}>
-              <Icon active={active} />
-              {label === "Messages" && unreadCount > 0 && (
-                <span style={{
-                  position: "absolute", top: -4, right: -6,
-                  background: "#EF4444",
-                  color: "#fff",
-                  fontSize: "0.55rem",
-                  fontWeight: 800,
-                  minWidth: 16, height: 16,
-                  borderRadius: 8,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  padding: "0 3px",
-                  border: `2px solid ${DARK}`,
-                  lineHeight: 1,
-                }}>
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
+      <div className="r8-glass" style={{
+        height: 66, borderRadius: 24, display: "flex", alignItems: "stretch", padding: 6,
+        background: "var(--glass-strong)", boxShadow: "var(--shadow-2)",
+      }}>
+        {TABS.map(({ label, icon, path }) => {
+          const active = pathname === path || pathname.startsWith(path + "/");
+          return (
+            <button
+              key={path}
+              onClick={() => { if (!active) { haptic("light"); navigate(path); } }}
+              aria-current={active ? "page" : undefined}
+              style={{
+                flex: 1, position: "relative", borderRadius: 18,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+                color: active ? "var(--text)" : "var(--text-3)",
+                transition: "color .25s",
+              }}
+            >
+              {active && (
+                <motion.span
+                  layoutId="r8-tab-pill"
+                  transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                  style={{ position: "absolute", inset: 0, borderRadius: 18, background: "var(--glass-2)", border: "1px solid var(--line)" }}
+                />
               )}
-            </div>
-
-            <span style={{
-              fontSize: "0.6rem",
-              fontWeight: active ? 700 : 500,
-              letterSpacing: 0.3,
-              color: active ? GOLD : INACTIVE,
-              textTransform: "uppercase",
-              lineHeight: 1,
-            }}>
-              {label}
-            </span>
-          </button>
-        );
-      })}
+              <span style={{ position: "relative", display: "inline-flex" }}>
+                {active ? (
+                  <span style={{ display: "inline-flex", filter: "drop-shadow(0 4px 10px rgba(140,158,255,.45))" }}>
+                    <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
+                      <linearGradient id="r8-tab-grad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stopColor="#45D9FF" /><stop offset=".45" stopColor="#8C9EFF" /><stop offset="1" stopColor="#FF5FA0" />
+                      </linearGradient>
+                    </svg>
+                    <Icon name={icon} size={23} stroke={2} color="url(#r8-tab-grad)" />
+                  </span>
+                ) : (
+                  <Icon name={icon} size={23} />
+                )}
+                {label === "Chats" && unread > 0 && (
+                  <span className="r8-dot" style={{ position: "absolute", top: -6, right: -10 }}>{unread > 9 ? "9+" : unread}</span>
+                )}
+              </span>
+              <span style={{ position: "relative", fontSize: 11, fontWeight: active ? 600 : 500, letterSpacing: "0.01em" }}>{label}</span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }

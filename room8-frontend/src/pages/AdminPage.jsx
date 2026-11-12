@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getAdminMe, adminListVerifications, adminReviewVerification,
-  adminListSchools, adminUpdateSchool, adminListReports,
+  adminListSchools, adminUpdateSchool, adminListReports, adminBanUser,
 } from "../api";
 
 const GOLD = "var(--accent)";
@@ -163,6 +163,14 @@ function Schools() {
 function Reports() {
   const [rows, setRows] = useState(null);
   const [err, setErr] = useState("");
+  const toggleBan = async (r) => {
+    const banned = !r.reported.is_banned;
+    if (banned && !window.confirm(`Ban ${r.reported.name || r.reported.email}? They'll be logged out and hidden from everyone.`)) return;
+    try {
+      await adminBanUser(r.reported.id, banned);
+      setRows((rows) => rows.map((x) => (x.reported.id === r.reported.id ? { ...x, reported: { ...x.reported, is_banned: banned } } : x)));
+    } catch (e) { setErr(e.message); }
+  };
   useEffect(() => { adminListReports().then(setRows).catch((e) => setErr(e.message)); }, []);
   if (err) return <p style={{ color: "var(--danger)" }}>{err}</p>;
   if (!rows) return <p style={muted}>Loading</p>;
@@ -174,6 +182,9 @@ function Reports() {
           <div style={{ fontWeight: 800 }}>{r.reported.name || r.reported.email || `User ${r.reported.id}`}</div>
           <div style={{ ...muted, fontSize: 12 }}>Reported by {r.reporter.email} , {new Date(r.created_at).toLocaleString()}</div>
           <div style={{ marginTop: 6, fontSize: 14 }}><b>{r.reason}</b>{r.notes ? `: ${r.notes}` : ""}</div>
+          <button style={{ ...btn(r.reported.is_banned ? "ghost" : "red"), marginTop: 10 }} onClick={() => toggleBan(r)}>
+            {r.reported.is_banned ? "Unban" : "Ban user"}
+          </button>
         </div>
       ))}
     </div>

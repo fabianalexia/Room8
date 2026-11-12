@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { register, login, setCurrentUser, setToken } from "../api";
 import { startOAuth } from "../oauth";
 import AuthShell, { OAuthButtons, OrDivider, PasswordInput } from "../components/AuthShell";
+import AppleSignInButton from "../components/AppleSignInButton";
 import Icon from "../ui/Icon";
 
 function isSchoolEmail(email) {
@@ -44,6 +45,7 @@ export default function RegisterPage() {
         last_name:  form.last_name,
         email:      form.email,
         password:   form.password,
+        agreed_to_terms: agreedToTerms,
       });
       // JWT is in an httpOnly cookie set by the server — only store display info locally
       setCurrentUser(res.user);
@@ -86,6 +88,7 @@ export default function RegisterPage() {
   return (
     <AuthShell title="Create your account" sub="Free for students. Takes about two minutes."
       footer={<>Already have an account? <Link to="/login" style={{ color: "var(--text)", fontWeight: 600 }}>Log in</Link></>}>
+      <div style={{ marginBottom: 10 }}><AppleSignInButton onError={setErr} /></div>
       <OAuthButtons onGoogle={() => startOAuth("google")} onLinkedIn={() => startOAuth("linkedin")} />
       <OrDivider />
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>

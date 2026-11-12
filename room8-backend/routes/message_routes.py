@@ -31,6 +31,9 @@ def send_message(peer_id):
         return jsonify({"error": f"Message too long (max {MAX_MESSAGE_LEN} characters)"}), 400
 
     text = sanitize(text)
+    from moderation import is_objectionable, BLOCKED_MESSAGE
+    if is_objectionable(text):
+        return jsonify({"error": BLOCKED_MESSAGE}), 400
 
     msg = Message(sender_id=user_id, recipient_id=peer_id, text=text)
     db.session.add(msg)

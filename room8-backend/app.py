@@ -1,3 +1,4 @@
+import re
 import os
 import sys
 sys.stdout.reconfigure(line_buffering=True)
@@ -76,7 +77,9 @@ def create_app():
         if not user_id:
             return True
         user = db.session.get(_User, int(user_id))
-        if not user or not user.token_valid_after:
+        if not user or user.is_banned:
+            return True
+        if not user.token_valid_after:
             return False  # no invalidation timestamp set — token is valid
         return jwt_data.get("iat", 0) < user.token_valid_after.timestamp()
 
@@ -118,6 +121,8 @@ def create_app():
     # Native app origins (Capacitor iOS + Android webviews) are always allowed
     raw_origins += ",capacitor://localhost,https://localhost,http://localhost"
     allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+    # Netlify deploy previews of this site only (deploy-preview-<n>--findroom8.netlify.app)
+    allowed_origins.append(re.compile(r"^https://deploy-preview-\d+--findroom8\.netlify\.app$"))
 
     CORS(
         app,
@@ -156,6 +161,7 @@ def create_app():
     from room8_models.school import School                               # noqa: F401
     from room8_models.photo_verification import PhotoVerification        # noqa: F401
     from room8_models.oauth_exchange import OAuthExchange                # noqa: F401
+    from room8_models.device_token import DeviceToken                    # noqa: F401
 
     with app.app_context():
         db.create_all()
@@ -185,6 +191,9 @@ def create_app():
             ("users", "verification_token_expiry",  "TIMESTAMP"),
             ("users", "is_verified_student",         "BOOLEAN DEFAULT FALSE"),
             ("users", "is_photo_verified",           "BOOLEAN DEFAULT FALSE"),
+            ("users", "terms_accepted_at",           "TIMESTAMP"),
+            ("users", "apple_sub",                   "VARCHAR(255)"),
+            ("users", "is_banned",                   "BOOLEAN DEFAULT FALSE"),
             ("users", "edu_email",                   "VARCHAR(255)"),
             ("users", "edu_verified",                "BOOLEAN DEFAULT FALSE"),
             ("users", "edu_code_hash",               "VARCHAR(255)"),

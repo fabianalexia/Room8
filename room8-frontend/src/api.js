@@ -49,6 +49,9 @@ export function setCurrentUser(u) {
 }
 
 export function logout() {
+  // Native app: stop pushes to this phone (fire-and-forget, needs the token, so before removing it)
+  const jwtForPush = getToken();
+  import("./push").then(({ unregisterNativePush }) => unregisterNativePush(jwtForPush)).catch(() => {});
   removeToken();
   localStorage.removeItem(LS_KEY);
   // Fire-and-forget: invalidate the token server-side
@@ -113,11 +116,11 @@ export function getMe() {
 }
 
 // ---------------- Auth ----------------
-export async function register({ first_name, last_name, email, password }) {
+export async function register({ first_name, last_name, email, password, agreed_to_terms }) {
   const data = await doFetch(`${API_URL}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ first_name, last_name, email, password }),
+    body: JSON.stringify({ first_name, last_name, email, password, agreed_to_terms }),
   });
   if (data?.access_token) setToken(data.access_token);
   return data;
@@ -423,5 +426,17 @@ export function confirmEduCode(code) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code }),
+  });
+}
+
+export function acceptTerms() {
+  return doFetch(`${API_URL}/api/auth/accept-terms`, { method: "POST" });
+}
+
+export function adminBanUser(userId, banned = true) {
+  return doFetch(`${API_URL}/api/admin/users/${userId}/ban`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ banned }),
   });
 }

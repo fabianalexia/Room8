@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { login as apiLogin, setCurrentUser, setToken } from "../api";
 import { startOAuth } from "../oauth";
 import AuthShell, { OAuthButtons, OrDivider, PasswordInput } from "../components/AuthShell";
+import AppleSignInButton from "../components/AppleSignInButton";
 import Icon from "../ui/Icon";
 
 export default function LoginPage() {
@@ -71,6 +72,7 @@ export default function LoginPage() {
     <AuthShell title="Welcome back" sub="Log in to see who's looking for a roommate."
       banner={verified ? <div className="r8-success" style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}><Icon name="check" size={18} stroke={2.4} />Email verified. You can log in now.</div> : null}
       footer={<>New here? <Link to="/register" style={{ color: "var(--text)", fontWeight: 600 }}>Create an account</Link></>}>
+      <div style={{ marginBottom: 10 }}><AppleSignInButton onError={setErr} /></div>
       <OAuthButtons onGoogle={() => startOAuth("google")} onLinkedIn={() => startOAuth("linkedin")} />
       <OrDivider />
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>

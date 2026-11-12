@@ -91,6 +91,18 @@ def _issue_tokens(user):
     return jsonify({"ok": True, "user": user.public(), "access_token": access_token, "refresh_token": refresh_token})
 
 
+@auth_bp.route("/accept-terms", methods=["POST"])
+@jwt_required()
+def accept_terms():
+    user = db.session.get(User, int(get_jwt_identity()))
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    if not user.terms_accepted_at:
+        user.terms_accepted_at = datetime.utcnow()
+        db.session.commit()
+    return jsonify({"ok": True, "user": user.public()})
+
+
 # ── register ──────────────────────────────────────────────────────────────────
 
 @auth_bp.route("/register", methods=["POST"])
@@ -116,6 +128,7 @@ def register():
         first_name=first_name,
         last_name=last_name,
         is_verified_student=is_student,
+        terms_accepted_at=datetime.utcnow() if data.get("agreed_to_terms") else None,
     )
     db.session.add(new_user)
     db.session.commit()
@@ -143,6 +156,8 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password_hash, password):
+        if user.is_banned:
+            return jsonify({"error": "This account has been suspended for breaking Room8's community rules."}), 403
         return _issue_tokens(user), 200
 
     return jsonify({"error": "Invalid email or password"}), 401
@@ -378,6 +393,10 @@ def delete_account():
     from room8_models.oauth_exchange import OAuthExchange
     OAuthExchange.query.filter_by(user_id=user_id).delete(synchronize_session=False)
 
+    # 8a3. Native app push tokens
+    from room8_models.device_token import DeviceToken
+    DeviceToken.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+
     # 8b. Push subscriptions (FK → users.id, must be removed before deleting user)
     from room8_models.push_subscription import PushSubscription
     PushSubscription.query.filter_by(user_id=user_id).delete(synchronize_session=False)
@@ -458,6 +477,72 @@ def app_exchange():
     user = db.session.get(User, row.user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
+    if user.is_banned:
+        return jsonify({"error": "This account has been suspended."}), 403
+    return _issue_tokens(user)
+
+
+# ── Sign in with Apple (native iOS) ───────────────────────────────────────────
+
+APPLE_ISSUER   = "https://appleid.apple.com"
+APPLE_KEYS_URL = "https://appleid.apple.com/auth/keys"
+
+
+def _apple_audiences():
+    raw = os.environ.get("APPLE_CLIENT_IDS", "com.swiperoom8.app")
+    return [a.strip() for a in raw.split(",") if a.strip()]
+
+
+def _verify_apple_token(identity_token):
+    """Verify Apple's identity token signature and claims. Returns the claims dict."""
+    import jwt
+    from jwt import PyJWKClient
+    signing_key = PyJWKClient(APPLE_KEYS_URL, cache_keys=True).get_signing_key_from_jwt(identity_token)
+    return jwt.decode(
+        identity_token,
+        signing_key.key,
+        algorithms=["RS256"],
+        audience=_apple_audiences(),
+        issuer=APPLE_ISSUER,
+    )
+
+
+@auth_bp.route("/apple", methods=["POST"])
+@limiter.limit("30 per hour")
+def apple_sign_in():
+    data = request.get_json(silent=True) or {}
+    identity_token = data.get("identity_token") or ""
+    if not identity_token:
+        return jsonify({"error": "identity_token required"}), 400
+    try:
+        claims = _verify_apple_token(identity_token)
+    except Exception as e:
+        print(f"[apple] token rejected: {e}")
+        return jsonify({"error": "Apple sign-in failed. Please try again."}), 401
+
+    apple_sub = claims.get("sub")
+    email = (claims.get("email") or "").strip().lower()
+    user = User.query.filter_by(apple_sub=apple_sub).first() if apple_sub else None
+    if not user and email:
+        user = User.query.filter_by(email=email).first()
+    if not user:
+        if not email:
+            return jsonify({"error": "Apple didn't share an email. Please try again or use another sign-in option."}), 400
+        user = User(
+            email=email,
+            password_hash=generate_password_hash(secrets.token_hex(32)),
+            # Apple only sends the name on the very first sign-in
+            first_name=sanitize((data.get("first_name") or "").strip()) or None,
+            last_name=sanitize((data.get("last_name") or "").strip()) or None,
+            email_verified=True,
+            is_verified_student=email.endswith(".edu"),
+        )
+        db.session.add(user)
+    if apple_sub and not user.apple_sub:
+        user.apple_sub = apple_sub
+    db.session.commit()
+    if user.is_banned:
+        return jsonify({"error": "This account has been suspended."}), 403
     return _issue_tokens(user)
 
 

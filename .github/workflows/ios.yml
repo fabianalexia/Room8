@@ -1,0 +1,55 @@
+name: iOS build
+
+# Compiles the iOS app for the simulator (no signing) to catch build errors
+# without needing a Mac. Signed TestFlight builds come later, once the Apple
+# Developer account and certificates exist.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "room8-frontend/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "room8-frontend/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: room8-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: room8-frontend/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build web app
+        run: npm run build
+        env:
+          VITE_API_URL: https://room8-4dq7.onrender.com
+
+      - name: Copy web app into iOS project
+        run: npx cap sync ios
+
+      - name: Build for iOS Simulator
+        working-directory: room8-frontend/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
+          exit ${PIPESTATUS[0]}

@@ -68,6 +68,13 @@ def send_push_notification(user_id: int, title: str, body: str, url: str = "/") 
     VAPID env vars required:
       VAPID_PRIVATE_KEY — full PEM block (literal newlines or \\n-escaped both accepted)
     """
+    # Native app installs (iOS/Android) first; never let it break the web push below
+    try:
+        from native_push import send_native_push
+        send_native_push(user_id, title, body, url)
+    except Exception as exc:
+        print(f"[push] native push failed for user {user_id}: {exc}")
+
     from pywebpush import webpush, WebPushException
 
     # Accept both literal newlines and the \n-escaped form Render stores in env vars

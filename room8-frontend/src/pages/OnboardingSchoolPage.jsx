@@ -1,29 +1,23 @@
-// src/pages/OnboardingSchoolPage.jsx  —  Step 2 of 3
+// src/pages/OnboardingSchoolPage.jsx: onboarding step 2 of 3 (also used to change school later)
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, setCurrentUser, updateProfile } from "../api";
-import { SCHOOLS } from "../data/schools";
-import { StepIndicator } from "./ProfileSetupPage";
-
-const NAVY = "#0F2D5E";
-const BLUE = "#2563EB";
-const BORDER = "#E5E7EB";
-const SURFACE = "#F8F9FA";
-const MUTED = "#6B7280";
-const TEXT = "#0A0A0A";
+import OnboardShell from "../components/OnboardShell";
+import { SchoolPicker } from "./SetupPage";
+import Icon from "../ui/Icon";
+import { OptionTile, Field } from "../ui/kit";
 
 const HOUSING_OPTIONS = [
-  { value: "on_campus",  emoji: "🏫", label: "On Campus",  sub: "Dorms & residence halls" },
-  { value: "off_campus", emoji: "🏠", label: "Off Campus", sub: "Apartments & houses" },
-  { value: "either",     emoji: "✓",  label: "Either",     sub: "Open to both" },
+  { value: "on_campus", icon: "school", label: "On campus", sub: "Dorms and residence halls" },
+  { value: "off_campus", icon: "home", label: "Off campus", sub: "Apartments and houses" },
+  { value: "either", icon: "compass", label: "Either", sub: "Open to both" },
 ];
-
 const ROOM_OPTIONS = [
-  { value: "double",    emoji: "🛏️", label: "Double",    sub: "Shared room" },
-  { value: "single",    emoji: "👤", label: "Single",    sub: "Private room" },
-  { value: "suite",     emoji: "🏠", label: "Suite",     sub: "Shared suite" },
-  { value: "apartment", emoji: "🏙️", label: "Apartment", sub: "Apt-style" },
-  { value: "any",       emoji: "✓",  label: "Any",       sub: "No preference" },
+  { value: "double", icon: "users", label: "Double", sub: "Shared room" },
+  { value: "single", icon: "user", label: "Single", sub: "Private room" },
+  { value: "suite", icon: "door", label: "Suite", sub: "Shared suite" },
+  { value: "apartment", icon: "home", label: "Apartment", sub: "Apartment style" },
+  { value: "any", icon: "sparkle", label: "Any", sub: "No preference" },
 ];
 
 export default function OnboardingSchoolPage() {
@@ -32,33 +26,11 @@ export default function OnboardingSchoolPage() {
 
   const [school,      setSchool]      = useState("");
   const [schoolInput, setSchoolInput] = useState("");
-  const [customSchool, setCustomSchool] = useState(false);
-  const [customInput,  setCustomInput]  = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [housing,     setHousing]     = useState("");
   const [roomType,    setRoomType]    = useState("");
   const [budget,      setBudget]      = useState("");
   const [loading,     setLoading]     = useState(false);
   const [err,         setErr]         = useState("");
-
-  const schoolSuggestions = schoolInput.length > 1
-    ? SCHOOLS.filter((s) => s.toLowerCase().includes(schoolInput.toLowerCase())).slice(0, 8)
-    : [];
-
-  const selectSchool = (s) => { setSchool(s); setSchoolInput(s); setShowSuggestions(false); };
-
-  const enterCustomMode = () => {
-    setCustomSchool(true);
-    setSchoolInput("");
-    setSchool("");
-    setShowSuggestions(false);
-  };
-
-  const backToList = () => {
-    setCustomSchool(false);
-    setCustomInput("");
-    setSchool("");
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,200 +47,30 @@ export default function OnboardingSchoolPage() {
       setCurrentUser({ ...user, ...res.user });
       navigate("/onboarding/lifestyle", { replace: true });
     } catch {
-      setErr("Could not save. Please try again.");
+      setErr("Couldn't save that. Try again in a sec.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: SURFACE }}>
-      <div style={{ maxWidth: 560, margin: "0 auto", padding: "48px 20px" }}>
-
-        <StepIndicator step={2} />
-
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <h2 style={{ fontWeight: 800, fontSize: "1.7rem", color: NAVY, marginBottom: 8, letterSpacing: "-0.025em" }}>
-            School & Housing
-          </h2>
-          <p style={{ color: MUTED, margin: 0 }}>Connect with students at your college.</p>
-        </div>
-
-        {err && (
-          <div style={{
-            background: "#FEF2F2", border: "1px solid #FECACA",
-            borderRadius: 8, padding: "10px 14px",
-            color: "#DC2626", fontSize: "0.88rem", marginBottom: 16,
-          }}>{err}</div>
-        )}
-
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-
-          {/* School search */}
-          <div>
-            <SectionLabel text="Your College or University" required />
-            {customSchool ? (
-              <div>
-                <input
-                  type="text"
-                  placeholder="Type your school name…"
-                  value={customInput}
-                  onChange={(e) => { setCustomInput(e.target.value); setSchool(e.target.value); }}
-                  style={inputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = BLUE)}
-                  onBlur={(e) => (e.target.style.borderColor = BORDER)}
-                  autoFocus
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={backToList}
-                  style={{
-                    background: "none", border: "none", padding: "6px 0 0",
-                    color: BLUE, fontSize: "0.82rem", cursor: "pointer",
-                    textDecoration: "underline", fontFamily: "inherit",
-                  }}
-                >
-                  ← Back to list
-                </button>
-              </div>
-            ) : (
-              <div style={{ position: "relative" }}>
-                <input
-                  type="text"
-                  placeholder="Search for your school…"
-                  value={schoolInput}
-                  onChange={(e) => { setSchoolInput(e.target.value); setSchool(""); setShowSuggestions(true); }}
-                  style={inputStyle}
-                  onFocus={(e) => { e.target.style.borderColor = BLUE; setShowSuggestions(true); }}
-                  onBlur={(e) => { e.target.style.borderColor = BORDER; setTimeout(() => setShowSuggestions(false), 150); }}
-                  required={!customSchool}
-                />
-                {showSuggestions && (schoolSuggestions.length > 0 || schoolInput.length > 1) && (
-                  <ul style={{
-                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
-                    background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 8,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.08)", margin: "4px 0 0", padding: 0,
-                    listStyle: "none", maxHeight: 240, overflowY: "auto",
-                  }}>
-                    {schoolSuggestions.map((s) => (
-                      <li key={s} onMouseDown={() => selectSchool(s)} style={{
-                        padding: "11px 14px", cursor: "pointer", fontSize: "0.92rem",
-                        borderBottom: `1px solid ${BORDER}`, color: TEXT,
-                        transition: "background 0.1s",
-                      }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = SURFACE)}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-                      >
-                        {s}
-                      </li>
-                    ))}
-                    <li
-                      onMouseDown={enterCustomMode}
-                      style={{
-                        padding: "11px 14px", cursor: "pointer", fontSize: "0.92rem",
-                        color: BLUE, fontWeight: 600,
-                        borderTop: schoolSuggestions.length > 0 ? `1px solid ${BORDER}` : "none",
-                        transition: "background 0.1s",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = SURFACE)}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-                    >
-                      My school isn't listed
-                    </li>
-                  </ul>
-                )}
-              </div>
-            )}
-            {school && (
-              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ color: "#15803d", fontSize: "0.85rem" }}>✓</span>
-                <span style={{ color: "#15803d", fontWeight: 600, fontSize: "0.85rem" }}>{school}</span>
-              </div>
-            )}
+    <OnboardShell step={2} title="School and housing" sub="You'll only see students from your own campus." onBack={() => navigate(-1)} onSkip={() => navigate("/onboarding/lifestyle")} error={err}
+      cta={<button type="submit" form="r8-os" className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block" disabled={loading || !(school || schoolInput)}>{loading ? "Saving..." : "Continue"}{!loading && <Icon name="arrowRight" size={20} />}</button>}>
+      <form id="r8-os" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <Field label="College or university"><SchoolPicker value={school} onChange={(s) => { setSchool(s); setSchoolInput(s); }} /></Field>
+        <Field label="Where do you want to live?">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+            {HOUSING_OPTIONS.map((o) => <OptionTile key={o.value} {...o} selected={housing === o.value} onClick={() => setHousing(o.value)} />)}
           </div>
-
-          {/* Housing type */}
-          <div>
-            <SectionLabel text="Where are you looking to live?" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-              {HOUSING_OPTIONS.map((opt) => (
-                <OptionCard key={opt.value} opt={opt} selected={housing === opt.value} onClick={() => setHousing(opt.value)} />
-              ))}
-            </div>
+        </Field>
+        <Field label="Room type">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))", gap: 8 }}>
+            {ROOM_OPTIONS.map((o) => <OptionTile key={o.value} {...o} selected={roomType === o.value} onClick={() => setRoomType(o.value)} />)}
           </div>
-
-          {/* Room type */}
-          <div>
-            <SectionLabel text="Room type preference?" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-              {ROOM_OPTIONS.map((opt) => (
-                <OptionCard key={opt.value} opt={opt} selected={roomType === opt.value} onClick={() => setRoomType(opt.value)} compact />
-              ))}
-            </div>
-          </div>
-
-          {/* Budget */}
-          <div>
-            <label style={labelStyle}>
-              Monthly Housing Budget <span style={{ color: MUTED, fontWeight: 400 }}>(optional)</span>
-            </label>
-            <input type="text" placeholder="e.g. $900/mo" value={budget}
-              onChange={(e) => setBudget(e.target.value)} style={inputStyle}
-              onFocus={(e) => (e.target.style.borderColor = BLUE)}
-              onBlur={(e) => (e.target.style.borderColor = BORDER)}
-            />
-          </div>
-
-          <button type="submit" disabled={loading} style={{
-            width: "100%", padding: "13px",
-            background: loading ? "#93A9C9" : NAVY,
-            color: "#fff", border: "none",
-            borderRadius: 8, fontWeight: 700, fontSize: "0.95rem",
-            cursor: loading ? "default" : "pointer",
-          }}>
-            {loading ? "Saving…" : "Continue"}
-          </button>
-
-          <button type="button" onClick={() => navigate("/onboarding/lifestyle")}
-            style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: "0.88rem", textAlign: "center" }}>
-            Skip for now
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ── Shared sub-components ──────────────────────────────────────────────────
-
-export function SectionLabel({ text, required }) {
-  return (
-    <p style={{ fontWeight: 700, color: TEXT, marginBottom: 10, fontSize: "0.88rem", margin: "0 0 10px" }}>
-      {text}{required && <span style={{ color: "#EF4444", marginLeft: 4 }}>*</span>}
-    </p>
-  );
-}
-
-export function OptionCard({ opt, selected, onClick, compact }) {
-  return (
-    <button type="button" onClick={onClick} style={{
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      padding: compact ? "10px 4px" : "14px 8px",
-      borderRadius: 10,
-      border: `1.5px solid ${selected ? BLUE : BORDER}`,
-      background: selected ? "#EFF6FF" : "#fff",
-      cursor: "pointer", gap: 4,
-      transition: "all 0.15s",
-    }}>
-      <span style={{ fontSize: compact ? "1.1rem" : "1.5rem" }}>{opt.emoji}</span>
-      <span style={{ fontSize: compact ? "0.7rem" : "0.8rem", fontWeight: 700, color: selected ? NAVY : TEXT, textAlign: "center" }}>
-        {opt.label}
-      </span>
-      {!compact && opt.sub && (
-        <span style={{ fontSize: "0.68rem", color: MUTED, textAlign: "center" }}>{opt.sub}</span>
-      )}
-    </button>
+        </Field>
+        <Field label="Monthly budget (optional)" htmlFor="os-budget"><input id="os-budget" className="r8-input" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="e.g. $900/mo" /></Field>
+      </form>
+    </OnboardShell>
   );
 }
 
@@ -280,16 +82,6 @@ function buildFormData(fields) {
   return fd;
 }
 
-const labelStyle = {
-  display: "block", marginBottom: 6,
-  fontSize: "0.83rem", fontWeight: 600, color: "#374151",
-};
-
-const inputStyle = {
-  width: "100%", padding: "11px 13px",
-  border: `1.5px solid #E5E7EB`, borderRadius: 8,
-  fontSize: "0.92rem", outline: "none",
-  fontFamily: "inherit", background: "#fff",
-  boxSizing: "border-box", transition: "border-color 0.2s",
-  color: "#0A0A0A",
-};
+// Kept for older imports
+export function SectionLabel({ text }) { return <p className="r8-label" style={{ marginBottom: 10 }}>{text}</p>; }
+export function OptionCard({ opt, selected, onClick }) { return <OptionTile label={opt.label} sub={opt.sub} selected={selected} onClick={onClick} />; }

@@ -1,23 +1,14 @@
-// Photo verification: consent -> random pose -> selfie -> pending manual review.
+// Photo verification: consent, random pose, selfie, then manual review.
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   getCurrentUser, setCurrentUser, getPhotoVerificationStatus,
   startPhotoVerification, submitPhotoVerification,
 } from "../api";
-import { PhotoVerifiedCheck } from "../components/VerifiedBadge";
-
-const GOLD = "#f5a623";
-const GOLD2 = "#f5c842";
-const DARK = "#03040b";
-const WHITE = "#ffffff";
-const MUTED = "rgba(255,255,255,0.55)";
-const BLUE = "#1D9BF0";
-const JAKARTA = "'Plus Jakarta Sans', 'Inter', sans-serif";
-
-const POSE_EMOJI = {
-  peace_sign: "✌️", thumbs_up: "👍", three_fingers: "3️⃣", hand_on_head: "🙋", point_up: "☝️", wave: "👋",
-};
+import OnboardShell from "../components/OnboardShell";
+import Icon from "../ui/Icon";
+import { EmptyState } from "../ui/kit";
 
 export default function PhotoVerifyPage() {
   const navigate = useNavigate();
@@ -76,95 +67,64 @@ export default function PhotoVerifyPage() {
   const status = state?.status;
 
   return (
-    <div style={{ minHeight: "100dvh", background: DARK, color: WHITE, fontFamily: JAKARTA, padding: "calc(env(safe-area-inset-top,0px) + 20px) 20px calc(env(safe-area-inset-bottom,0px) + 110px)", boxSizing: "border-box" }}>
-      <div style={{ maxWidth: 440, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-        <button onClick={() => navigate(-1)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: MUTED, fontSize: 14, cursor: "pointer", padding: 0 }}>← Back</button>
+    <OnboardShell label="Photo verification" onBack={() => navigate(-1)} title="Prove it's really you" sub="Get the verified check on your profile so people know you're real." error={err}>
+      {!state && !err && <div className="r8-skel" style={{ height: 260, borderRadius: 28 }} />}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <PhotoVerifiedCheck verified size={30} />
-          <h1 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 800 }}>Photo verification</h1>
+      {(status === "approved" || state?.is_photo_verified) && (
+        <div className="r8-card">
+          <EmptyState icon="verified" title="You're verified" body="Your check now shows on your profile and your swipe card."
+            action={<button className="r8-btn r8-btn--primary" onClick={() => navigate("/profile")}>Back to profile</button>} />
         </div>
+      )}
 
-        {err && <div style={errBox}>{err}</div>}
+      {status === "pending" && (
+        <div className="r8-card">
+          <EmptyState icon="clock" title="Under review" body="A real person on our team is comparing your selfie to your photos. Usually less than a day. We'll notify you."
+            action={<button className="r8-btn r8-btn--glass" onClick={refresh}><Icon name="refresh" size={17} />Check status</button>} />
+        </div>
+      )}
 
-        {!state && !err && <p style={muted}>Loading…</p>}
+      {(status === "none" || status === "rejected") && !state?.is_photo_verified && (
+        <div className="r8-card" style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16 }}>
+          {status === "rejected" && <div className="r8-error">Not approved: {state.reject_reason || "the photo didn't match"}. You can try again.</div>}
+          <div style={{ display: "flex", gap: 14 }}>
+            {[["camera", "Take a selfie", "copy a pose we give you"], ["users", "We check it", "a person compares it to your photos"], ["verified", "Get the check", "it shows on your profile"]].map(([ic, t, d], i) => (
+              <div key={t} style={{ flex: 1, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 48, height: 48, borderRadius: 16, background: i === 2 ? "var(--iri)" : "var(--glass-2)", color: i === 2 ? "#0E0F12" : "var(--text)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name={ic} size={22} /></span>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{t}</span>
+                <span className="r8-faint" style={{ fontSize: 12.5, lineHeight: 1.35 }}>{d}</span>
+              </div>
+            ))}
+          </div>
+          {!user?.photo && <div className="r8-error" style={{ color: "var(--warn)", background: "rgba(255,200,96,.10)", borderColor: "rgba(255,200,96,.3)" }}>Add a profile photo first so we have something to compare to.</div>}
+          <label style={{ display: "flex", gap: 12, alignItems: "flex-start", fontSize: 14, color: "var(--text-2)", lineHeight: 1.5, cursor: "pointer", padding: 14, borderRadius: 16, background: "var(--glass)", border: "1px solid var(--line)" }}>
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2, width: 20, height: 20, flexShrink: 0, accentColor: "#8C9EFF" }} />
+            <span>I agree Room8 can collect a selfie to confirm who I am. A person reviews it, it's only used for verification, it's never shown on my profile, and it's deleted as soon as the review is done. <a href="/privacy" style={{ color: "var(--peri)", fontWeight: 600 }}>Privacy policy</a></span>
+          </label>
+          <button className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block" disabled={!consent || !user?.photo || busy} onClick={begin}>{busy ? "Starting..." : "Start verification"}</button>
+        </div>
+      )}
 
-        {(status === "approved" || state?.is_photo_verified) && (
-          <Card>
-            <h2 style={h2}>You're verified</h2>
-            <p style={muted}>Your blue check now shows on your profile and swipe card.</p>
-            <button style={primaryBtn} onClick={() => navigate("/profile")}>Back to profile</button>
-          </Card>
-        )}
-
-        {status === "pending" && (
-          <Card>
-            <h2 style={h2}>Under review</h2>
-            <p style={muted}>We're checking your selfie against your profile photos. This usually takes less than a day. We'll notify you when it's done.</p>
-            <button style={ghostBtn} onClick={refresh}>Check status</button>
-          </Card>
-        )}
-
-        {(status === "none" || status === "rejected") && !state?.is_photo_verified && (
-          <Card>
-            {status === "rejected" && (
-              <div style={errBox}>Not approved: {state.reject_reason || "photo did not match"}. You can try again.</div>
-            )}
-            <h2 style={h2}>Show it's really you</h2>
-            <p style={muted}>
-              Take a quick selfie copying a pose we give you. A Room8 team member compares it to your profile photos, then you get a blue check.
-            </p>
-            {!user?.photo && (
-              <p style={{ ...muted, color: "#fcd34d" }}>Add a profile photo first so we have something to compare to.</p>
-            )}
-            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, color: MUTED, lineHeight: 1.5, cursor: "pointer" }}>
-              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }} />
-              <span>
-                I agree that Room8 may collect a selfie to confirm my identity. It is reviewed by a person, used only for verification,
-                never shown on my profile, and deleted as soon as the review is finished. See the <a href="/privacy" style={{ color: GOLD }}>Privacy Policy</a>.
-              </span>
-            </label>
-            <button style={{ ...primaryBtn, opacity: consent && user?.photo && !busy ? 1 : 0.5 }} disabled={!consent || !user?.photo || busy} onClick={begin}>
-              {busy ? "Starting…" : "Start verification"}
-            </button>
-          </Card>
-        )}
-
-        {status === "awaiting_selfie" && (
-          <Card>
-            <p style={{ ...muted, textTransform: "uppercase", letterSpacing: "0.1em", fontSize: 11 }}>Your pose</p>
-            <div style={{ fontSize: 64, lineHeight: 1 }}>{POSE_EMOJI[state.pose_code] || "📸"}</div>
-            <h2 style={{ ...h2, textAlign: "center" }}>{state.pose}</h2>
-            <p style={muted}>Use your front camera, good lighting, and keep your whole face in frame. No filters or sunglasses.</p>
-
-            {preview && <img src={preview} alt="Your selfie preview" style={{ width: "100%", borderRadius: 16, objectFit: "cover", maxHeight: 420 }} />}
-
-            <input ref={fileRef} type="file" accept="image/*" capture="user" onChange={pick} style={{ display: "none" }} />
-            {!preview ? (
-              <button style={primaryBtn} onClick={() => fileRef.current?.click()}>Take selfie</button>
-            ) : (
-              <>
-                <button style={{ ...primaryBtn, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={submit}>{busy ? "Uploading…" : "Submit for review"}</button>
-                <button style={ghostBtn} disabled={busy} onClick={() => fileRef.current?.click()}>Retake</button>
-              </>
-            )}
-          </Card>
-        )}
-      </div>
-    </div>
+      {status === "awaiting_selfie" && (
+        <div className="r8-card" style={{ padding: 22, display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
+          <p className="r8-eyebrow">Your pose</p>
+          <motion.div initial={{ scale: 0.6, rotate: -12 }} animate={{ scale: 1, rotate: -4 }} transition={{ type: "spring", stiffness: 400, damping: 14 }}
+            className="r8-sticker" style={{ padding: "14px 22px", fontSize: 24, fontWeight: 800, fontFamily: "var(--display)", letterSpacing: "-0.02em", flexDirection: "row", gap: 10 }}>
+            <Icon name="camera" size={24} stroke={2.2} />{state.pose}
+          </motion.div>
+          <p className="r8-muted" style={{ fontSize: 15 }}>Front camera, good light, whole face in frame. No filters or sunglasses.</p>
+          {preview && <img src={preview} alt="Your selfie preview" style={{ width: "100%", borderRadius: 24, objectFit: "cover", maxHeight: 440, border: "1px solid var(--line)" }} />}
+          <input ref={fileRef} type="file" accept="image/*" capture="user" onChange={pick} style={{ display: "none" }} />
+          {!preview ? (
+            <button className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block" onClick={() => fileRef.current?.click()}><Icon name="camera" size={20} />Take selfie</button>
+          ) : (
+            <>
+              <button className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block" disabled={busy} onClick={submit}>{busy ? "Uploading..." : "Submit for review"}</button>
+              <button className="r8-btn r8-btn--glass r8-btn--block" disabled={busy} onClick={() => fileRef.current?.click()}>Retake</button>
+            </>
+          )}
+        </div>
+      )}
+    </OnboardShell>
   );
 }
-
-function Card({ children }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "24px 20px", borderRadius: 24, background: "linear-gradient(160deg,#0d1e3e,#08142a 45%,#050c1a)", border: "1px solid rgba(255,255,255,.08)", textAlign: "center" }}>
-      {children}
-    </div>
-  );
-}
-
-const h2 = { margin: 0, fontSize: "1.2rem", fontWeight: 800, color: WHITE };
-const muted = { margin: 0, color: MUTED, fontSize: 14, lineHeight: 1.55 };
-const errBox = { width: "100%", boxSizing: "border-box", background: "rgba(239,68,68,.12)", border: "1px solid rgba(239,68,68,.35)", color: "#fca5a5", borderRadius: 12, padding: "10px 14px", fontSize: 13 };
-const primaryBtn = { width: "100%", background: `linear-gradient(135deg,${GOLD},${GOLD2})`, color: DARK, border: "none", padding: "14px 20px", borderRadius: 12, fontWeight: 800, fontSize: "1rem", cursor: "pointer", fontFamily: JAKARTA };
-const ghostBtn = { width: "100%", background: "transparent", color: "#7cc4f7", border: `1px solid ${BLUE}66`, padding: "12px 20px", borderRadius: 12, fontWeight: 700, fontSize: "0.92rem", cursor: "pointer", fontFamily: JAKARTA };

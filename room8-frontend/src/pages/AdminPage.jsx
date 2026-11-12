@@ -7,13 +7,13 @@ import {
   adminListSchools, adminUpdateSchool, adminListReports,
 } from "../api";
 
-const GOLD = "#f5a623";
-const DARK = "#03040b";
-const WHITE = "#ffffff";
-const MUTED = "rgba(255,255,255,0.55)";
-const CARD = "#0b1630";
-const BORDER = "rgba(255,255,255,0.09)";
-const JAKARTA = "'Plus Jakarta Sans', 'Inter', sans-serif";
+const GOLD = "var(--accent)";
+const DARK = "var(--bg)";
+const WHITE = "var(--text)";
+const MUTED = "var(--text-2)";
+const CARD = "var(--glass)";
+const BORDER = "var(--line)";
+const JAKARTA = "var(--font)";
 
 const REJECT_REASONS = [
   "Pose not shown",
@@ -31,7 +31,7 @@ export default function AdminPage() {
     getAdminMe().then((r) => setAllowed(!!r.is_admin)).catch(() => setAllowed(false));
   }, []);
 
-  if (allowed === null) return <Page><p style={muted}>Loading…</p></Page>;
+  if (allowed === null) return <Page><p style={muted}>Loading</p></Page>;
   if (!allowed) return <Page><p style={muted}>Not authorized.</p><button style={btn()} onClick={() => navigate("/app")}>Back</button></Page>;
 
   return (
@@ -66,8 +66,8 @@ function Verifications() {
     finally { setBusyId(null); }
   };
 
-  if (err) return <p style={{ color: "#fca5a5" }}>{err}</p>;
-  if (!rows) return <p style={muted}>Loading…</p>;
+  if (err) return <p style={{ color: "var(--danger)" }}>{err}</p>;
+  if (!rows) return <p style={muted}>Loading</p>;
   if (!rows.length) return <p style={muted}>No verifications waiting. <button style={linkBtn} onClick={load}>Refresh</button></p>;
 
   return (
@@ -78,7 +78,7 @@ function Verifications() {
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
             <div>
               <div style={{ fontWeight: 800 }}>{v.user.name}</div>
-              <div style={{ ...muted, fontSize: 12 }}>{v.user.email} · {v.user.school || "No school"}</div>
+              <div style={{ ...muted, fontSize: 12 }}>{v.user.email} , {v.user.school || "No school"}</div>
             </div>
             <div style={{ color: GOLD, fontWeight: 700, fontSize: 13 }}>Pose: {v.pose}</div>
           </div>
@@ -122,8 +122,8 @@ function Schools() {
     } catch (e) { setErr(e.message); }
   };
 
-  if (err) return <p style={{ color: "#fca5a5" }}>{err}</p>;
-  if (!rows) return <p style={muted}>Loading…</p>;
+  if (err) return <p style={{ color: "var(--danger)" }}>{err}</p>;
+  if (!rows) return <p style={muted}>Loading</p>;
   if (!rows.length) return <p style={muted}>No schools yet. Schools appear once a student picks one.</p>;
 
   return (
@@ -135,11 +135,11 @@ function Schools() {
           <div key={s.id} style={card}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <div style={{ fontWeight: 800 }}>{s.name}</div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: s.is_unlocked ? "#86efac" : "#fcd34d" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: s.is_unlocked ? "var(--success)" : "var(--warn)" }}>
                 {s.is_unlocked ? `Live (${s.unlocked_by})` : "Waitlist"}
               </span>
             </div>
-            <div style={{ height: 8, borderRadius: 99, background: "rgba(255,255,255,.08)", margin: "10px 0 6px", overflow: "hidden" }}>
+            <div style={{ height: 8, borderRadius: 99, background: "var(--line)", margin: "10px 0 6px", overflow: "hidden" }}>
               <div style={{ width: `${pct}%`, height: "100%", background: GOLD }} />
             </div>
             <div style={{ ...muted, fontSize: 13 }}>{s.verified_count} of {s.unlock_threshold} verified students</div>
@@ -164,15 +164,15 @@ function Reports() {
   const [rows, setRows] = useState(null);
   const [err, setErr] = useState("");
   useEffect(() => { adminListReports().then(setRows).catch((e) => setErr(e.message)); }, []);
-  if (err) return <p style={{ color: "#fca5a5" }}>{err}</p>;
-  if (!rows) return <p style={muted}>Loading…</p>;
+  if (err) return <p style={{ color: "var(--danger)" }}>{err}</p>;
+  if (!rows) return <p style={muted}>Loading</p>;
   if (!rows.length) return <p style={muted}>No reports.</p>;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {rows.map((r) => (
         <div key={r.id} style={card}>
           <div style={{ fontWeight: 800 }}>{r.reported.name || r.reported.email || `User ${r.reported.id}`}</div>
-          <div style={{ ...muted, fontSize: 12 }}>Reported by {r.reporter.email} · {new Date(r.created_at).toLocaleString()}</div>
+          <div style={{ ...muted, fontSize: 12 }}>Reported by {r.reporter.email} , {new Date(r.created_at).toLocaleString()}</div>
           <div style={{ marginTop: 6, fontSize: 14 }}><b>{r.reason}</b>{r.notes ? `: ${r.notes}` : ""}</div>
         </div>
       ))}
@@ -191,15 +191,15 @@ function Page({ children }) {
 const muted = { margin: 0, color: MUTED, fontSize: 14, lineHeight: 1.5 };
 const card = { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 16, padding: 14 };
 const fig = { margin: 0 };
-const img = { width: "100%", aspectRatio: "3/4", objectFit: "cover", borderRadius: 10, background: "#111" };
+const img = { width: "100%", aspectRatio: "3/4", objectFit: "cover", borderRadius: 10, background: "var(--glass-2)" };
 const cap = { fontSize: 11, color: MUTED, marginTop: 4, textAlign: "center" };
 const linkBtn = { background: "none", border: "none", color: GOLD, cursor: "pointer", textDecoration: "underline", fontSize: 14 };
 function btn(kind = "ghost") {
   const map = {
-    gold: { background: GOLD, color: DARK, border: "none" },
+    gold: { background: "var(--iri)", color: "var(--on-iri)", border: "none" },
     ghost: { background: "transparent", color: WHITE, border: `1px solid ${BORDER}` },
-    green: { background: "rgba(34,197,94,.15)", color: "#86efac", border: "1px solid rgba(34,197,94,.4)" },
-    red: { background: "rgba(239,68,68,.1)", color: "#fca5a5", border: "1px solid rgba(239,68,68,.35)" },
+    green: { background: "rgba(34,197,94,.15)", color: "var(--success)", border: "1px solid rgba(34,197,94,.4)" },
+    red: { background: "rgba(239,68,68,.1)", color: "var(--danger)", border: "1px solid rgba(239,68,68,.35)" },
   };
   return { ...map[kind], padding: "8px 14px", borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: JAKARTA };
 }

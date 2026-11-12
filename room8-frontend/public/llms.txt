@@ -16,6 +16,6 @@ Status (November 2026): early access is open on the web at swiperoom8.com and wo
 
 ## How verification works
 
-- Students register with their school .edu email and confirm a link sent to it. Those accounts are marked as verified students.
+- Students register with their school .edu email and confirm it with the link or 6 digit code we send. Those accounts are marked as verified students.
 - Optional photo verification: the student takes a selfie in a requested pose and the Room8 team reviews it by hand. Approved profiles get a verified badge.
 - Students can report and block other users.

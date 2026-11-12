@@ -1,447 +1,201 @@
-// src/pages/SetupPage.jsx — unified 4-step profile setup
+// src/pages/SetupPage.jsx: 5-step profile setup with smooth step transitions
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { getCurrentUser, setCurrentUser, updateProfile, markProfileComplete } from "../api";
 import { SCHOOLS } from "../data/schools";
-
-const NAVY   = "#0F2D5E";
-const GOLD   = "#F59E0B";
-const DARK   = "#050D1F";
-const DARKER = "#030914";
-const WHITE  = "#FFFFFF";
-const MUTED  = "rgba(255,255,255,0.45)";
-const BORDER = "rgba(255,255,255,0.1)";
-const SURFACE = "rgba(255,255,255,0.05)";
-const HF = "'Outfit', sans-serif";
-const BF = "'Inter', sans-serif";
+import Icon from "../ui/Icon";
+import { Mark } from "../ui/Logo";
+import { OptionTile, Field } from "../ui/kit";
 
 const TOTAL_STEPS = 5;
-
+const STEP_LABELS = ["Basics", "School", "About you", "Lifestyle", "Photo"];
 const CLASS_YEARS = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate Student", "Other"];
 
 const HOUSING_OPTIONS = [
-  { value: "on_campus",  emoji: "🏫", label: "On Campus",  sub: "Dorms & residence halls" },
-  { value: "off_campus", emoji: "🏠", label: "Off Campus", sub: "Apartments & houses" },
-  { value: "either",     emoji: "✓",  label: "Either",     sub: "Open to both" },
+  { value: "on_campus", icon: "school", label: "On campus", sub: "Dorms and residence halls" },
+  { value: "off_campus", icon: "home", label: "Off campus", sub: "Apartments and houses" },
+  { value: "either", icon: "compass", label: "Either", sub: "Open to both" },
 ];
-
 const ROOM_OPTIONS = [
-  { value: "double",    emoji: "🛏️", label: "Double",    sub: "Shared room" },
-  { value: "single",    emoji: "👤", label: "Single",    sub: "Private room" },
-  { value: "suite",     emoji: "🏠", label: "Suite",     sub: "Suite-style" },
-  { value: "apartment", emoji: "🏙️", label: "Apartment", sub: "Apt-style" },
-  { value: "any",       emoji: "✓",  label: "Any",       sub: "No preference" },
+  { value: "double", icon: "users", label: "Double", sub: "Shared room" },
+  { value: "single", icon: "user", label: "Single", sub: "Private room" },
+  { value: "suite", icon: "door", label: "Suite", sub: "Suite style" },
+  { value: "apartment", icon: "home", label: "Apartment", sub: "Apartment style" },
+  { value: "any", icon: "sparkle", label: "Any", sub: "No preference" },
 ];
 
-// ── Progress bar ──────────────────────────────────────────────────────────────
-function ProgressBar({ step }) {
+export const LIFESTYLE_QUESTIONS = [
+  { key: "sleep_schedule", icon: "moon", label: "When do you sleep?", options: [
+    { value: "early_bird", icon: "sun", label: "Early bird", sub: "Up by 7am" },
+    { value: "night_owl", icon: "moon", label: "Night owl", sub: "Up past midnight" },
+    { value: "flexible", icon: "clock", label: "Flexible", sub: "Depends on the day" } ] },
+  { key: "cleanliness", icon: "sparkle", label: "How clean are you?", options: [
+    { value: "very_clean", icon: "sparkle", label: "Spotless", sub: "Clean every day" },
+    { value: "clean", icon: "sparkle", label: "Tidy", sub: "Clean weekly" },
+    { value: "relaxed", icon: "broom", label: "Relaxed", sub: "A little mess is fine" },
+    { value: "messy", icon: "broom", label: "Not fussy", sub: "Cleaning isn't a priority" } ] },
+  { key: "study_habits", icon: "book", label: "Where do you study?", options: [
+    { value: "library", icon: "book", label: "Library", sub: "Out of the room" },
+    { value: "in_room", icon: "book", label: "In my room", sub: "At my desk" },
+    { value: "anywhere", icon: "compass", label: "Anywhere", sub: "Wherever I land" },
+    { value: "rarely", icon: "party", label: "Rarely", sub: "We're here for fun" } ] },
+  { key: "guests", icon: "door", label: "Guests over?", options: [
+    { value: "never", icon: "door", label: "Never", sub: "My room is my sanctuary" },
+    { value: "occasionally", icon: "users", label: "Sometimes", sub: "Friends now and then" },
+    { value: "often", icon: "party", label: "Often", sub: "Love having people over" } ] },
+  { key: "noise", icon: "volume", label: "Noise level", options: [
+    { value: "silent", icon: "quiet", label: "Silent", sub: "Library quiet" },
+    { value: "quiet", icon: "quiet", label: "Quiet", sub: "Low background is ok" },
+    { value: "moderate", icon: "music", label: "Moderate", sub: "Music and TV are fine" },
+    { value: "lively", icon: "volume", label: "Lively", sub: "Bring the noise" } ] },
+  { key: "social", icon: "users", label: "Social vibe", options: [
+    { value: "very_social", icon: "party", label: "Very social", sub: "Hang out every day" },
+    { value: "social", icon: "users", label: "Social", sub: "Friendly, like my space" },
+    { value: "private", icon: "coffee", label: "Private", sub: "Respect my alone time" },
+    { value: "very_private", icon: "door", label: "Solo", sub: "Keep to myself" } ] },
+  { key: "partying", icon: "party", label: "Partying", options: [
+    { value: "never", icon: "coffee", label: "Not for me", sub: "Party-free zone" },
+    { value: "sometimes", icon: "party", label: "Sometimes", sub: "Weekends maybe" },
+    { value: "often", icon: "party", label: "Often", sub: "I like to have fun" } ] },
+  { key: "smoking", icon: "leaf", label: "Smoking", options: [
+    { value: "no", icon: "leaf", label: "Smoke-free", sub: "No smoking please" },
+    { value: "outside_only", icon: "smoke", label: "Outside only", sub: "Keep it outside" },
+    { value: "yes", icon: "smoke", label: "Smoker", sub: "I smoke" } ] },
+];
+
+function Heading({ title, sub }) {
   return (
-    <div style={{ marginBottom: 36 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-        {["Basic Info", "Housing", "About You", "Lifestyle", "Photo"].map((label, i) => {
-          const n = i + 1;
-          const done    = n < step;
-          const current = n === step;
-          return (
-            <div key={n} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: "50%",
-                background: done ? GOLD : current ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.07)",
-                border: current ? `2px solid ${GOLD}` : done ? `2px solid ${GOLD}` : `2px solid rgba(255,255,255,0.12)`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "0.72rem", fontWeight: 700,
-                color: done ? DARK : current ? GOLD : MUTED,
-                transition: "all 0.3s",
-              }}>
-                {done ? "✓" : n}
-              </div>
-              <span style={{
-                fontSize: "0.65rem", fontWeight: current ? 700 : 400,
-                color: current ? GOLD : done ? "rgba(245,158,11,0.6)" : MUTED,
-                fontFamily: BF, letterSpacing: 0.3,
-              }}>
-                {label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      {/* Track */}
-      <div style={{ height: 3, background: "rgba(255,255,255,0.07)", borderRadius: 2, position: "relative" }}>
-        <div style={{
-          position: "absolute", left: 0, top: 0, height: "100%",
-          width: `${((step - 1) / (TOTAL_STEPS - 1)) * 100}%`,
-          background: `linear-gradient(90deg, ${GOLD}, rgba(245,158,11,0.6))`,
-          borderRadius: 2, transition: "width 0.4s ease",
-        }} />
-      </div>
+    <div style={{ marginBottom: 22 }}>
+      <h1 style={{ fontSize: "clamp(30px, 8vw, 38px)", marginBottom: 8 }}>{title}</h1>
+      <p className="r8-muted" style={{ fontSize: 16 }}>{sub}</p>
     </div>
   );
 }
 
-// ── Reusable option card ──────────────────────────────────────────────────────
-function OptionCard({ opt, selected, onClick, compact }) {
-  return (
-    <button type="button" onClick={onClick} style={{
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      padding: compact ? "10px 6px" : "14px 8px",
-      borderRadius: 10,
-      border: `1.5px solid ${selected ? GOLD : BORDER}`,
-      background: selected ? "rgba(245,158,11,0.1)" : SURFACE,
-      cursor: "pointer", gap: 4,
-      transition: "all 0.15s",
-    }}>
-      <span style={{ fontSize: compact ? "1.1rem" : "1.4rem" }}>{opt.emoji}</span>
-      <span style={{
-        fontSize: compact ? "0.68rem" : "0.78rem", fontWeight: 700,
-        color: selected ? GOLD : WHITE, textAlign: "center", fontFamily: BF,
-      }}>
-        {opt.label}
-      </span>
-      {!compact && opt.sub && (
-        <span style={{ fontSize: "0.65rem", color: MUTED, textAlign: "center", fontFamily: BF }}>{opt.sub}</span>
-      )}
-    </button>
-  );
-}
-
-// ── Step 1: Basic Info ────────────────────────────────────────────────────────
 function Step1({ data, update }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <StepHeading
-        title="Tell us about yourself"
-        sub="Help future roommates get to know you."
-      />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <Field label="First name">
-          <Input name="first_name" value={data.first_name} onChange={update} placeholder="Emma" />
-        </Field>
-        <Field label="Last name">
-          <Input name="last_name" value={data.last_name} onChange={update} placeholder="Chen" />
-        </Field>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <Heading title="First, the basics" sub="So future roommates know who they're talking to." />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+        <Field label="First name" htmlFor="s-first"><input id="s-first" className="r8-input" name="first_name" value={data.first_name} onChange={update} placeholder="Emma" autoComplete="given-name" /></Field>
+        <Field label="Last name" htmlFor="s-last"><input id="s-last" className="r8-input" name="last_name" value={data.last_name} onChange={update} placeholder="Chen" autoComplete="family-name" /></Field>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <Field label="Age">
-          <Input type="number" name="age" value={data.age} onChange={update} placeholder="20" min="16" max="35" />
-        </Field>
-        <Field label="Year in school">
-          <select
-            name="class_year" value={data.class_year} onChange={update}
-            style={inputStyle}
-          >
-            <option value="" style={{ color: "#111", background: "#fff" }}>Select…</option>
-            {CLASS_YEARS.map((y) => <option key={y} value={y} style={{ color: "#111", background: "#fff" }}>{y}</option>)}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+        <Field label="Age" htmlFor="s-age"><input id="s-age" className="r8-input" type="number" name="age" value={data.age} onChange={update} placeholder="20" min="16" max="35" inputMode="numeric" /></Field>
+        <Field label="Year" htmlFor="s-year">
+          <select id="s-year" className="r8-select" name="class_year" value={data.class_year} onChange={update}>
+            <option value="">Select</option>
+            {CLASS_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </Field>
       </div>
-      <Field label="Major / Field of study">
-        <Input name="major" value={data.major} onChange={update} placeholder="e.g. Computer Science, Nursing, Business" />
-      </Field>
+      <Field label="Major" htmlFor="s-major"><input id="s-major" className="r8-input" name="major" value={data.major} onChange={update} placeholder="Computer science, nursing, business..." /></Field>
     </div>
   );
 }
 
-// ── Step 2: Housing Prefs ─────────────────────────────────────────────────────
+export function SchoolPicker({ value, onChange }) {
+  const [q, setQ] = useState(value || "");
+  const [open, setOpen] = useState(false);
+  const [custom, setCustom] = useState(false);
+  const suggestions = q.length > 1 ? SCHOOLS.filter((s) => s.toLowerCase().includes(q.toLowerCase())).slice(0, 8) : [];
+  if (custom) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <input className="r8-input" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Type your school's full name" autoFocus aria-label="School name" />
+        <button type="button" className="r8-btn r8-btn--ghost r8-btn--sm" style={{ alignSelf: "flex-start", padding: 0 }} onClick={() => { setCustom(false); onChange(""); }}><Icon name="back" size={16} />Back to the list</button>
+      </div>
+    );
+  }
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ position: "relative" }}>
+        <Icon name="school" size={19} color="var(--text-3)" style={{ position: "absolute", left: 16, top: 16 }} />
+        <input className="r8-input" value={q} style={{ paddingLeft: 46 }} aria-label="Search for your school" autoComplete="off"
+          onChange={(e) => { setQ(e.target.value); onChange(""); setOpen(true); }}
+          onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)} placeholder="Search for your school" />
+      </div>
+      <AnimatePresence>
+        {open && q.length > 1 && (
+          <motion.ul initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
+            className="r8-card" style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 50, listStyle: "none", margin: 0, padding: 6, maxHeight: 260, overflowY: "auto", borderRadius: 18, boxShadow: "var(--shadow-2)" }}>
+            {suggestions.map((s) => (
+              <li key={s} onMouseDown={() => { setQ(s); onChange(s); setOpen(false); }} style={{ padding: "12px 12px", borderRadius: 12, cursor: "pointer", fontSize: 15 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--glass-2)")} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>{s}</li>
+            ))}
+            <li onMouseDown={() => { setCustom(true); onChange(""); setOpen(false); }} style={{ padding: "12px 12px", borderRadius: 12, cursor: "pointer", fontSize: 15, color: "var(--peri)", fontWeight: 600 }}>My school isn't listed</li>
+          </motion.ul>
+        )}
+      </AnimatePresence>
+      {value && <p style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 14, color: "var(--success)" }}><Icon name="check" size={16} stroke={2.4} />{value}</p>}
+    </div>
+  );
+}
+
 function Step2({ data, update, setData }) {
-  const [schoolInput, setSchoolInput] = useState(data.school || "");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [customSchool, setCustomSchool] = useState(false);
-  const [customInput, setCustomInput] = useState("");
-
-  const suggestions = schoolInput.length > 1
-    ? SCHOOLS.filter((s) => s.toLowerCase().includes(schoolInput.toLowerCase())).slice(0, 8)
-    : [];
-
-  const selectSchool = (s) => {
-    setSchoolInput(s);
-    setData((prev) => ({ ...prev, school: s }));
-    setShowSuggestions(false);
-  };
-
-  const enterCustomMode = () => {
-    setCustomSchool(true);
-    setSchoolInput("");
-    setData((prev) => ({ ...prev, school: "" }));
-    setShowSuggestions(false);
-  };
-
-  const backToList = () => {
-    setCustomSchool(false);
-    setCustomInput("");
-    setData((prev) => ({ ...prev, school: "" }));
-  };
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-      <StepHeading
-        title="School & housing"
-        sub="Connect with students at your campus."
-      />
-
-      {/* School search */}
-      <Field label="Your college or university" required>
-        {customSchool ? (
-          <div>
-            <Input
-              value={customInput}
-              onChange={(e) => {
-                setCustomInput(e.target.value);
-                setData((prev) => ({ ...prev, school: e.target.value }));
-              }}
-              placeholder="Type your school name…"
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={backToList}
-              style={{
-                background: "none", border: "none", padding: "6px 0 0",
-                color: "rgba(245,158,11,0.8)", fontSize: "0.82rem", fontFamily: BF,
-                cursor: "pointer", textDecoration: "underline",
-              }}
-            >
-              ← Back to list
-            </button>
-          </div>
-        ) : (
-          <div style={{ position: "relative" }}>
-            <Input
-              value={schoolInput}
-              onChange={(e) => {
-                setSchoolInput(e.target.value);
-                setData((prev) => ({ ...prev, school: "" }));
-                setShowSuggestions(true);
-              }}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              placeholder="Search for your school…"
-            />
-            {showSuggestions && (suggestions.length > 0 || schoolInput.length > 1) && (
-              <ul style={{
-                position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 50,
-                background: "#0E1F3D", border: `1px solid rgba(245,158,11,0.2)`,
-                borderRadius: 10, boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
-                listStyle: "none", margin: 0, padding: "4px 0",
-                maxHeight: 220, overflowY: "auto",
-              }}>
-                {suggestions.map((s) => (
-                  <li key={s} onMouseDown={() => selectSchool(s)} style={{
-                    padding: "10px 16px", cursor: "pointer",
-                    fontSize: "0.9rem", color: WHITE, fontFamily: BF,
-                    transition: "background 0.1s",
-                  }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245,158,11,0.08)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  >
-                    {s}
-                  </li>
-                ))}
-                <li
-                  onMouseDown={enterCustomMode}
-                  style={{
-                    padding: "10px 16px", cursor: "pointer",
-                    fontSize: "0.9rem", color: "rgba(245,158,11,0.8)", fontFamily: BF,
-                    borderTop: suggestions.length > 0 ? "1px solid rgba(245,158,11,0.1)" : "none",
-                    transition: "background 0.1s",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245,158,11,0.08)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                >
-                  My school isn't listed
-                </li>
-              </ul>
-            )}
-          </div>
-        )}
-        {data.school && (
-          <p style={{ margin: "6px 0 0", fontSize: "0.8rem", color: "#86efac", fontFamily: BF }}>
-            ✓ {data.school}
-          </p>
-        )}
-      </Field>
-
-      {/* Housing type */}
-      <Field label="Where are you looking to live?">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          {HOUSING_OPTIONS.map((opt) => (
-            <OptionCard key={opt.value} opt={opt}
-              selected={data.housing_type === opt.value}
-              onClick={() => setData((prev) => ({ ...prev, housing_type: opt.value }))}
-            />
-          ))}
+      <Heading title="Your school" sub="You'll only match with students from your campus." />
+      <Field label="College or university"><SchoolPicker value={data.school} onChange={(s) => setData((p) => ({ ...p, school: s }))} /></Field>
+      <Field label="Where do you want to live?">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+          {HOUSING_OPTIONS.map((o) => <OptionTile key={o.value} {...o} selected={data.housing_type === o.value} onClick={() => setData((p) => ({ ...p, housing_type: o.value }))} />)}
         </div>
       </Field>
-
-      {/* Room type */}
-      <Field label="Room type preference?">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-          {ROOM_OPTIONS.map((opt) => (
-            <OptionCard key={opt.value} opt={opt} compact
-              selected={data.room_type === opt.value}
-              onClick={() => setData((prev) => ({ ...prev, room_type: opt.value }))}
-            />
-          ))}
+      <Field label="Room type">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))", gap: 8 }}>
+          {ROOM_OPTIONS.map((o) => <OptionTile key={o.value} {...o} selected={data.room_type === o.value} onClick={() => setData((p) => ({ ...p, room_type: o.value }))} />)}
         </div>
       </Field>
-
-      {/* Budget */}
-      <Field label={<>Monthly budget <span style={{ color: MUTED, fontWeight: 400 }}>(optional)</span></>}>
-        <Input name="budget" value={data.budget} onChange={update} placeholder="e.g. $900/mo" />
-      </Field>
+      <Field label="Monthly budget (optional)" htmlFor="s-budget"><input id="s-budget" className="r8-input" name="budget" value={data.budget} onChange={update} placeholder="e.g. $900/mo" /></Field>
     </div>
   );
 }
 
-// ── Step 3: Bio ───────────────────────────────────────────────────────────────
 function Step3({ data, update }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <StepHeading
-        title="About you"
-        sub="Let potential roommates know your vibe."
-      />
-      <Field label="Bio">
-        <textarea
-          name="bio" value={data.bio} onChange={update} rows={4}
-          placeholder="Describe your lifestyle — sleep schedule, hobbies, what you're like to live with…"
-          style={{ ...inputStyle, resize: "vertical" }}
-          onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.5)")}
-          onBlur={(e) => (e.target.style.borderColor = BORDER)}
-        />
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      <Heading title="Your vibe" sub="A couple lines go a long way. Be yourself." />
+      <Field label="Bio" htmlFor="s-bio" help={`${(data.bio || "").length}/300`}>
+        <textarea id="s-bio" className="r8-textarea" name="bio" value={data.bio} onChange={update} rows={4} maxLength={300} placeholder="cs major, gym in the morning, will absolutely make you pasta at 1am." />
       </Field>
-      <Field label="What are you looking for in a roommate?">
-        <textarea
-          name="looking_for" value={data.looking_for} onChange={update} rows={3}
-          placeholder="Describe your ideal living situation and what matters most to you…"
-          style={{ ...inputStyle, resize: "vertical" }}
-          onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.5)")}
-          onBlur={(e) => (e.target.style.borderColor = BORDER)}
-        />
+      <Field label="What you're looking for in a roommate" htmlFor="s-look">
+        <textarea id="s-look" className="r8-textarea" name="looking_for" value={data.looking_for} onChange={update} rows={3} placeholder="someone tidy who's down for a movie night but respects quiet hours." />
       </Field>
     </div>
   );
 }
 
-// ── Step 4: Lifestyle Preferences ────────────────────────────────────────────
-const LIFESTYLE_QUESTIONS = [
-  {
-    key: "sleep_schedule", icon: "😴", label: "Sleep Schedule",
-    options: [
-      { value: "early_bird", label: "Early Bird — up by 7am" },
-      { value: "night_owl",  label: "Night Owl — up past midnight" },
-      { value: "flexible",   label: "Flexible" },
-    ],
-  },
-  {
-    key: "cleanliness", icon: "🧹", label: "Cleanliness",
-    options: [
-      { value: "very_clean", label: "Spotless — clean every day" },
-      { value: "clean",      label: "Clean — tidy weekly" },
-      { value: "relaxed",    label: "Relaxed — a little mess is fine" },
-      { value: "messy",      label: "Not fussy" },
-    ],
-  },
-  {
-    key: "study_habits", icon: "📚", label: "Study Habits",
-    options: [
-      { value: "library",  label: "Library — I study out of the room" },
-      { value: "in_room",  label: "In Room — at my desk" },
-      { value: "anywhere", label: "Anywhere — wherever I land" },
-      { value: "rarely",   label: "Rarely — we're here for fun" },
-    ],
-  },
-  {
-    key: "guests", icon: "👥", label: "Guests",
-    options: [
-      { value: "never",        label: "Never — my room is my sanctuary" },
-      { value: "occasionally", label: "Occasionally — friends sometimes" },
-      { value: "often",        label: "Often — love having people over" },
-    ],
-  },
-  {
-    key: "noise", icon: "🔊", label: "Noise Level",
-    options: [
-      { value: "silent",   label: "Silent — library quiet please" },
-      { value: "quiet",    label: "Quiet — low background ok" },
-      { value: "moderate", label: "Moderate — music & TV fine" },
-      { value: "lively",   label: "Lively — bring the noise" },
-    ],
-  },
-  {
-    key: "social", icon: "😊", label: "Social Vibe",
-    options: [
-      { value: "very_social",  label: "Very Social — hangout every day" },
-      { value: "social",       label: "Social — friendly, like my space" },
-      { value: "private",      label: "Private — respect my alone time" },
-      { value: "very_private", label: "Solo — keep to myself" },
-    ],
-  },
-  {
-    key: "partying", icon: "🎉", label: "Partying",
-    options: [
-      { value: "never",     label: "Not for me" },
-      { value: "sometimes", label: "Sometimes — weekends maybe" },
-      { value: "often",     label: "Often — I like to have fun" },
-    ],
-  },
-  {
-    key: "smoking", icon: "🚬", label: "Smoking",
-    options: [
-      { value: "no",           label: "Non-smoker — no smoking please" },
-      { value: "outside_only", label: "Outside only" },
-      { value: "yes",          label: "Smoker" },
-    ],
-  },
-];
-
-function Step4({ data, setData }) {
-  const prefs = data.dorm_prefs || {};
-  const setPref = (key, value) => setData((prev) => ({
-    ...prev,
-    dorm_prefs: { ...prev.dorm_prefs, [key]: value },
-  }));
-
+export function LifestyleQuestions({ prefs, setPref }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <StepHeading
-        title="Your lifestyle"
-        sub="Help us find roommates who actually match how you live."
-      />
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {LIFESTYLE_QUESTIONS.map((q) => (
         <div key={q.key}>
-          <label style={{
-            display: "block", marginBottom: 6,
-            fontSize: "0.78rem", fontWeight: 600,
-            color: "rgba(255,255,255,0.55)", fontFamily: BF, letterSpacing: "0.04em",
-          }}>
-            {q.icon} {q.label}
-          </label>
-          <select
-            value={prefs[q.key] || ""}
-            onChange={(e) => setPref(q.key, e.target.value)}
-            style={{
-              ...inputStyle,
-              color: prefs[q.key] ? WHITE : "rgba(255,255,255,0.35)",
-            }}
-          >
-            <option value="">Select…</option>
-            {q.options.map((o) => (
-              <option key={o.value} value={o.value} style={{ color: "#111", background: "#fff" }}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <p style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 16, marginBottom: 10 }}><Icon name={q.icon} size={18} />{q.label}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
+            {q.options.map((o) => <OptionTile key={o.value} {...o} selected={prefs[q.key] === o.value} onClick={() => setPref(q.key, o.value)} />)}
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-// ── Step 5: Photo ─────────────────────────────────────────────────────────────
+function Step4({ data, setData }) {
+  const prefs = data.dorm_prefs || {};
+  const answered = Object.values(prefs).filter(Boolean).length;
+  return (
+    <div>
+      <Heading title="How you live" sub="This is how we find people you'd actually get along with." />
+      <div className="r8-badge r8-badge--iri" style={{ marginBottom: 20 }}>{answered} of {LIFESTYLE_QUESTIONS.length} answered</div>
+      <LifestyleQuestions prefs={prefs} setPref={(k, v) => setData((p) => ({ ...p, dorm_prefs: { ...p.dorm_prefs, [k]: v } }))} />
+    </div>
+  );
+}
+
 function Step5({ data, setData }) {
   const fileRef = useRef(null);
-
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -450,150 +204,47 @@ function Step5({ data, setData }) {
       return { ...prev, photoFile: file, photoPreview: URL.createObjectURL(file) };
     });
   };
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, alignItems: "center" }}>
-      <StepHeading
-        title="Add a profile photo"
-        sub="Profiles with photos get 3× more connections."
-        center
-      />
-
-      {/* Avatar preview */}
-      <div
-        onClick={() => fileRef.current?.click()}
-        style={{
-          width: 140, height: 140, borderRadius: "50%", cursor: "pointer",
-          background: data.photoPreview
-            ? `url(${data.photoPreview}) center/cover`
-            : "rgba(15,45,94,0.6)",
-          border: data.photoPreview
-            ? `3px solid ${GOLD}`
-            : `2px dashed rgba(245,158,11,0.4)`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "opacity 0.2s",
-          boxShadow: data.photoPreview ? `0 0 28px rgba(245,158,11,0.25)` : "none",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-      >
-        {!data.photoPreview && (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: 4 }}>📷</div>
-            <div style={{ fontSize: "0.72rem", color: MUTED, fontFamily: BF }}>Tap to upload</div>
-          </div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+      <Heading title="Show your face" sub="Profiles with a real photo get way more matches." />
+      <motion.button type="button" whileTap={{ scale: 0.97 }} onClick={() => fileRef.current?.click()} aria-label="Choose a profile photo"
+        style={{ width: 220, aspectRatio: "3 / 4", borderRadius: 32, overflow: "hidden", position: "relative", background: data.photoPreview ? "var(--elev)" : "var(--glass)", border: data.photoPreview ? "3px solid transparent" : "2px dashed var(--line-2)", boxShadow: data.photoPreview ? "var(--shadow-2)" : "none" }}>
+        {data.photoPreview ? (
+          <img src={data.photoPreview} alt="Your photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <span style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, color: "var(--text-2)" }}>
+            <span style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--iri)", color: "#0E0F12", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "var(--glow)" }}><Icon name="camera" size={28} stroke={2} /></span>
+            <span style={{ fontWeight: 600, fontSize: 15 }}>Tap to add a photo</span>
+          </span>
         )}
-      </div>
-
+      </motion.button>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
-
-      <button type="button" onClick={() => fileRef.current?.click()} style={{
-        background: "none", border: `1px solid rgba(245,158,11,0.3)`,
-        color: GOLD, padding: "9px 22px", borderRadius: 8,
-        fontWeight: 600, fontSize: "0.88rem", cursor: "pointer", fontFamily: BF,
-        transition: "all 0.15s",
-      }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245,158,11,0.08)")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-      >
-        {data.photoPreview ? "Change photo" : "Choose photo"}
-      </button>
-
-      <p style={{ color: MUTED, fontSize: "0.8rem", fontFamily: BF, margin: 0 }}>
-        You can always update this later in your profile.
-      </p>
+      {data.photoPreview && <button type="button" className="r8-btn r8-btn--glass r8-btn--sm" style={{ marginTop: 16 }} onClick={() => fileRef.current?.click()}><Icon name="refresh" size={16} />Change photo</button>}
+      <p className="r8-faint" style={{ fontSize: 13.5, marginTop: 16 }}>You can add more photos from your profile anytime.</p>
     </div>
   );
 }
 
-// ── Shared sub-components ─────────────────────────────────────────────────────
-function StepHeading({ title, sub, center }) {
-  return (
-    <div style={{ textAlign: center ? "center" : "left", marginBottom: 4 }}>
-      <h2 style={{
-        fontFamily: HF, fontWeight: 800, fontSize: "1.45rem",
-        color: WHITE, margin: "0 0 6px", letterSpacing: "-0.02em",
-      }}>
-        {title}
-      </h2>
-      <p style={{ color: MUTED, margin: 0, fontSize: "0.88rem", fontFamily: BF }}>{sub}</p>
-    </div>
-  );
-}
-
-function Field({ label, children, required }) {
-  return (
-    <div>
-      <label style={{
-        display: "block", marginBottom: 7,
-        fontSize: "0.78rem", fontWeight: 600,
-        color: "rgba(255,255,255,0.55)", fontFamily: BF, letterSpacing: "0.04em",
-      }}>
-        {label}
-        {required && <span style={{ color: GOLD, marginLeft: 4 }}>*</span>}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-function Input({ onChange, ...props }) {
-  return (
-    <input
-      {...props}
-      onChange={onChange}
-      style={inputStyle}
-      onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.5)")}
-      onBlur={(e) => (e.target.style.borderColor = BORDER)}
-    />
-  );
-}
-
-const inputStyle = {
-  width: "100%", padding: "11px 14px",
-  border: `1.5px solid ${BORDER}`,
-  borderRadius: 10, fontSize: "0.92rem", outline: "none",
-  fontFamily: BF, background: "rgba(255,255,255,0.05)",
-  boxSizing: "border-box", transition: "border-color 0.2s",
-  color: WHITE,
-};
-
-// ── Main page ─────────────────────────────────────────────────────────────────
 export default function SetupPage() {
   const navigate = useNavigate();
-  const user     = getCurrentUser();
-
+  const user = getCurrentUser();
   const [step, setStep] = useState(1);
+  const [dir, setDir] = useState(1);
   const [data, setData] = useState({
-    first_name:   user?.first_name || "",
-    last_name:    user?.last_name  || "",
-    age:          "",
-    class_year:   "",
-    major:        "",
-    school:       "",
-    housing_type: "",
-    room_type:    "",
-    budget:       "",
-    bio:          "",
-    looking_for:  "",
-    dorm_prefs:   {},
-    photoFile:    null,
-    photoPreview: null,
+    first_name: user?.first_name || "", last_name: user?.last_name || "", age: "", class_year: "", major: "",
+    school: "", housing_type: "", room_type: "", budget: "", bio: "", looking_for: "",
+    dorm_prefs: {}, photoFile: null, photoPreview: null,
   });
   const [loading, setLoading] = useState(false);
-  const [err, setErr]         = useState("");
+  const [err, setErr] = useState("");
+  const scrollRef = useRef(null);
 
-  // Revoke object URL on unmount to prevent memory leak
-  useEffect(() => {
-    return () => {
-      if (data.photoPreview) URL.revokeObjectURL(data.photoPreview);
-    };
-  }, []); // eslint-disable-line
+  useEffect(() => () => { if (data.photoPreview) URL.revokeObjectURL(data.photoPreview); }, []); // eslint-disable-line
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, [step]);
 
   const update = (e) => setData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const next = () => { setErr(""); setStep((s) => Math.min(s + 1, TOTAL_STEPS)); };
-  const back = () => { setErr(""); setStep((s) => Math.max(s - 1, 1)); };
+  const next = () => { setErr(""); setDir(1); setStep((s) => Math.min(s + 1, TOTAL_STEPS)); };
+  const back = () => { setErr(""); setDir(-1); setStep((s) => Math.max(s - 1, 1)); };
 
   const handleFinish = async () => {
     if (!user) { navigate("/login"); return; }
@@ -601,31 +252,22 @@ export default function SetupPage() {
     setLoading(true);
     try {
       const fd = new FormData();
-      const fields = ["first_name", "last_name", "age", "class_year", "major",
-                      "school", "housing_type", "room_type", "budget", "bio", "looking_for"];
-      fields.forEach((f) => { if (data[f]) fd.append(f, data[f]); });
-      if (data.dorm_prefs && Object.keys(data.dorm_prefs).length > 0) {
-        fd.append("dorm_prefs", JSON.stringify(data.dorm_prefs));
-      }
+      ["first_name", "last_name", "age", "class_year", "major", "school", "housing_type", "room_type", "budget", "bio", "looking_for"]
+        .forEach((f) => { if (data[f]) fd.append(f, data[f]); });
+      if (data.dorm_prefs && Object.keys(data.dorm_prefs).length > 0) fd.append("dorm_prefs", JSON.stringify(data.dorm_prefs));
       if (data.photoFile) fd.append("photo", data.photoFile);
-
       let updatedUser = user;
       try {
         const res = await updateProfile(user.id, fd);
         if (res?.user) updatedUser = res.user;
       } catch (e) {
-        // If only the photo failed, still mark complete and proceed
-        const photoOnly = e?.message?.toLowerCase().includes("photo") ||
-                          e?.message?.toLowerCase().includes("cloudinary") ||
-                          e?.message?.toLowerCase().includes("upload");
+        const m = e?.message?.toLowerCase() || "";
+        const photoOnly = m.includes("photo") || m.includes("cloudinary") || m.includes("upload");
         if (!photoOnly) { setErr(e?.message || "Something went wrong."); setLoading(false); return; }
-        setErr("Profile saved! Photo upload failed — you can add one from your profile later.");
+        setErr("Profile saved. The photo didn't upload, so add one from your profile later.");
       }
-
       await markProfileComplete(user.id);
       setCurrentUser({ ...user, ...updatedUser, profile_complete: true });
-      // Hard redirect so ProtectedRoute picks up the committed DB state on a
-      // fresh page load rather than racing against a stale getMe() response.
       window.location.href = "/app";
     } catch (e) {
       setErr(e?.message || "Something went wrong. Please try again.");
@@ -635,150 +277,61 @@ export default function SetupPage() {
 
   const handleSkip = async () => {
     if (!user) { navigate("/login"); return; }
-    try {
-      await markProfileComplete(user.id);
-      setCurrentUser({ ...user, profile_complete: true });
-    } catch { /* best-effort */ }
+    try { await markProfileComplete(user.id); setCurrentUser({ ...user, profile_complete: true }); } catch { /* best effort */ }
     window.location.href = "/app";
   };
 
-  const stepComponent = [
+  const steps = [
     <Step1 key={1} data={data} update={update} />,
     <Step2 key={2} data={data} update={update} setData={setData} />,
     <Step3 key={3} data={data} update={update} />,
     <Step4 key={4} data={data} setData={setData} />,
     <Step5 key={5} data={data} setData={setData} />,
-  ][step - 1];
+  ];
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: `linear-gradient(160deg, ${DARKER} 0%, #071020 55%, ${NAVY} 100%)`,
-      display: "flex", alignItems: "flex-start", justifyContent: "center",
-      padding: "48px 20px 60px",
-    }}>
-      {/* Background glow */}
-      <div style={{
-        position: "fixed", width: 500, height: 500, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(245,158,11,0.05) 0%, transparent 70%)",
-        top: "40%", left: "50%", transform: "translate(-50%,-50%)",
-        pointerEvents: "none",
-      }} />
+    <div ref={scrollRef} className="r8-page" style={{ position: "relative", overflow: "hidden" }}>
+      <div aria-hidden="true" className="r8-aura r8-aura--a" style={{ position: "fixed", width: 460, height: 460, top: -220, right: -200 }} />
+      <div aria-hidden="true" className="r8-aura r8-aura--b" style={{ position: "fixed", width: 380, height: 380, bottom: -160, left: -200 }} />
 
-      <div style={{
-        width: "100%", maxWidth: 520, position: "relative",
-      }}>
-        {/* Logo / Brand */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{
-            display: "inline-block",
-            fontFamily: HF, fontWeight: 800, fontSize: "1.3rem",
-            color: WHITE, letterSpacing: "-0.02em",
-          }}>
-            room<span style={{ color: GOLD }}>8</span>
+      <header style={{ position: "sticky", top: 0, zIndex: 20, padding: "calc(var(--safe-t) + 12px) 20px 12px", background: "color-mix(in srgb, var(--bg) 80%, transparent)", WebkitBackdropFilter: "var(--blur)", backdropFilter: "var(--blur)" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            {step > 1
+              ? <button className="r8-icon-btn r8-icon-btn--round" onClick={back} aria-label="Back"><Icon name="back" size={22} /></button>
+              : <Mark size={36} />}
+            <span className="r8-eyebrow">{STEP_LABELS[step - 1]}</span>
+            <button className="r8-btn r8-btn--ghost r8-btn--sm" onClick={handleSkip}>Skip</button>
           </div>
-          <p style={{ color: MUTED, fontSize: "0.8rem", marginTop: 4, fontFamily: BF }}>
-            Let's set up your profile
-          </p>
+          <div style={{ display: "flex", gap: 6 }} aria-label={`Step ${step} of ${TOTAL_STEPS}`}>
+            {STEP_LABELS.map((_, i) => (
+              <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: "var(--line-2)", overflow: "hidden" }}>
+                <motion.div initial={false} animate={{ width: i < step ? "100%" : "0%" }} transition={{ type: "spring", stiffness: 200, damping: 30 }} style={{ height: "100%", background: "var(--iri)" }} />
+              </div>
+            ))}
+          </div>
         </div>
+      </header>
 
-        {/* Card */}
-        <div style={{
-          background: "rgba(255,255,255,0.04)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderRadius: 20,
-          padding: "36px 36px 32px",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.4)",
-        }}>
-          <ProgressBar step={step} />
+      <main style={{ position: "relative", maxWidth: 560, margin: "0 auto", padding: "20px 20px 140px" }}>
+        <AnimatePresence mode="wait" custom={dir} initial={false}>
+          <motion.div key={step} custom={dir}
+            initial={{ opacity: 0, x: dir * 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: dir * -40 }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}>
+            {steps[step - 1]}
+          </motion.div>
+        </AnimatePresence>
+        {err && <div className="r8-error" style={{ marginTop: 18 }}>{err}</div>}
+      </main>
 
-          {/* Step content */}
-          {stepComponent}
-
-          {/* Error */}
-          {err && (
-            <div style={{
-              marginTop: 16,
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid rgba(239,68,68,0.3)",
-              borderRadius: 8, padding: "10px 14px",
-              color: "#F87171", fontSize: "0.85rem", fontFamily: BF,
-            }}>
-              {err}
-            </div>
+      <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 20, padding: "16px 20px calc(var(--safe-b) + 18px)", background: "linear-gradient(180deg, transparent, var(--bg) 38%)" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto" }}>
+          {step < TOTAL_STEPS ? (
+            <button className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block" onClick={next}>Continue<Icon name="arrowRight" size={20} /></button>
+          ) : (
+            <button className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block" onClick={handleFinish} disabled={loading}>{loading ? "Saving..." : "Find my roommate"}{!loading && <Icon name="sparkle" size={20} />}</button>
           )}
-
-          {/* Nav buttons */}
-          <div style={{ display: "flex", gap: 10, marginTop: 28 }}>
-            {step > 1 && (
-              <button type="button" onClick={back} style={{
-                flex: "0 0 auto", padding: "13px 20px",
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 10, color: MUTED,
-                fontWeight: 600, fontSize: "0.9rem", cursor: "pointer",
-                fontFamily: BF, transition: "all 0.15s",
-              }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-              >
-                ← Back
-              </button>
-            )}
-
-            {step < TOTAL_STEPS ? (
-              <button type="button" onClick={next} style={{
-                flex: 1, padding: "13px",
-                background: GOLD, color: DARK,
-                border: "none", borderRadius: 10,
-                fontWeight: 800, fontSize: "0.95rem", cursor: "pointer",
-                fontFamily: HF, boxShadow: "0 4px 20px rgba(245,158,11,0.35)",
-                transition: "all 0.15s",
-              }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "none")}
-              >
-                Continue →
-              </button>
-            ) : (
-              <button type="button" onClick={handleFinish} disabled={loading} style={{
-                flex: 1, padding: "13px",
-                background: loading ? "rgba(245,158,11,0.5)" : GOLD,
-                color: loading ? "rgba(5,13,31,0.5)" : DARK,
-                border: "none", borderRadius: 10,
-                fontWeight: 800, fontSize: "0.95rem",
-                cursor: loading ? "default" : "pointer",
-                fontFamily: HF,
-                boxShadow: loading ? "none" : "0 4px 20px rgba(245,158,11,0.35)",
-                transition: "all 0.15s",
-              }}
-                onMouseEnter={(e) => { if (!loading) e.currentTarget.style.transform = "translateY(-1px)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
-              >
-                {loading ? "Saving…" : "Find My Room8 →"}
-              </button>
-            )}
-          </div>
-
-          {/* Skip */}
-          <button type="button" onClick={handleSkip} style={{
-            display: "block", width: "100%", marginTop: 14,
-            background: "none", border: "none",
-            color: MUTED, fontSize: "0.82rem", cursor: "pointer",
-            fontFamily: BF, textAlign: "center",
-          }}>
-            Skip setup, I'll do this later
-          </button>
         </div>
-
-        <p style={{
-          textAlign: "center", marginTop: 20,
-          fontSize: "0.72rem", color: "rgba(255,255,255,0.18)", fontFamily: BF,
-        }}>
-          Step {step} of {TOTAL_STEPS} — you can update everything from your profile
-        </p>
       </div>
     </div>
   );

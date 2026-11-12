@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion"
 import { getCurrentUser, API_URL } from "./api";
 import { FOUNDERS, TESTIMONIALS, TESTIMONIALS_MIN_TO_SHOW, COUNTER_MIN_TO_SHOW } from "./siteContent";
 import Icon from "./ui/Icon";
-import { Mark } from "./ui/Logo";
+import MatchBadge from "./ui/MatchBadge";
 import { Avatar } from "./ui/kit";
 
 const STEPS = [
@@ -27,67 +27,51 @@ const FAQS = [
 
 const reveal = { initial: { opacity: 0.35, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-60px" }, transition: { type: "spring", stiffness: 160, damping: 24 } };
 
-const DEMO = [
-  { name: "Maya", age: 19, school: "Junior, CS", pct: 94, tags: [["moon", "Night owl"], ["sparkle", "Neat"]], a: "#45D9FF", b: "#8C9EFF" },
-  { name: "Jordan", age: 20, school: "Sophomore, Business", pct: 88, tags: [["sun", "Early bird"], ["coffee", "Private"]], a: "#D98BFF", b: "#FF5FA0" },
-  { name: "Priya", age: 21, school: "Senior, Psychology", pct: 91, tags: [["quiet", "Likes it quiet"], ["book", "Library"]], a: "#8C9EFF", b: "#45D9FF" },
-];
-
 function HeroPhone() {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((n) => n + 1), 2600);
-    return () => clearInterval(t);
-  }, []);
-  const dir = i % 3 === 1 ? -1 : 1;
-  const card = (k) => DEMO[k % DEMO.length];
   return (
-    <div style={{ position: "relative", width: 300, height: 610, borderRadius: 52, padding: 12, background: "linear-gradient(160deg, #2A2C33, #121318)", boxShadow: "0 50px 100px rgba(0,0,0,.45), inset 0 0 0 1.5px rgba(255,255,255,.12)", flexShrink: 0 }}>
-      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 42, overflow: "hidden", background: "#0E0F12" }}>
-        <div style={{ position: "absolute", top: 10, left: "50%", marginLeft: -48, width: 96, height: 28, borderRadius: 20, background: "#000", zIndex: 5 }} />
-        <div style={{ position: "absolute", top: 50, left: 16, right: 16, display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 4 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Mark size={26} surface="#0E0F12" people="#F2F2F5" /><span style={{ fontFamily: "var(--brand)", fontWeight: 600, fontSize: 18, color: "#F2F2F5" }}>room<span className="r8-iri-text" style={{ background: "var(--iri-v)", WebkitBackgroundClip: "text", backgroundClip: "text" }}>8</span></span></span>
-          <span style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--iri)" }} />
+    <div style={{ position: "relative", width: 312, height: 640, borderRadius: 56, padding: 11, background: "linear-gradient(145deg, #E9E9EC, #B9BAC0 40%, #F4F4F6 60%, #A8A9AF)", boxShadow: "0 60px 120px rgba(17,17,18,.28), 0 0 0 1px rgba(17,17,18,.08)", flexShrink: 0 }}>
+      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 46, overflow: "hidden", background: "#F6F6F4", color: "#111112" }}>
+        <div style={{ position: "absolute", top: 11, left: "50%", marginLeft: -50, width: 100, height: 30, borderRadius: 20, background: "#000", zIndex: 5 }} />
+        <div style={{ position: "absolute", top: 58, left: 18, right: 18, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 23, letterSpacing: "-0.045em" }}>Room8</span>
+          <Icon name="sliders" size={18} />
         </div>
-        <div style={{ position: "absolute", top: 92, left: 12, right: 12, bottom: 96 }}>
-          <MiniCard c={card(i + 1)} back />
-          <AnimatePresence initial={false} custom={dir}>
-            <motion.div key={i} custom={dir} style={{ position: "absolute", inset: 0 }}
-              initial={{ scale: 0.95, y: 10, opacity: 0.6 }} animate={{ scale: 1, y: 0, opacity: 1, x: 0, rotate: 0 }}
-              exit={(d) => ({ x: d * 340, rotate: d * 18, opacity: 0, transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] } })}
-              transition={{ type: "spring", stiffness: 260, damping: 26 }}>
-              <MiniCard c={card(i)} />
-            </motion.div>
-          </AnimatePresence>
+        <div style={{ position: "absolute", top: 96, left: 14, right: 14, display: "flex", background: "#EDEDEA", borderRadius: 999, padding: 3, fontSize: 11.5, fontWeight: 600 }}>
+          {["Match", "Browse", "For You"].map((t, i) => <span key={t} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: 999, background: i === 0 ? "#111112" : "transparent", color: i === 0 ? "#fff" : "rgba(17,17,18,.6)" }}>{t}</span>)}
         </div>
-        <div style={{ position: "absolute", bottom: 26, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 16 }}>
-          <span style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.14)", display: "flex", alignItems: "center", justifyContent: "center", color: "#F2F2F5" }}><Icon name="x" size={20} stroke={2.4} /></span>
-          <span style={{ width: 58, height: 58, borderRadius: "50%", background: "var(--iri)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 26px rgba(217,139,255,.45)" }}><Icon name="heart" size={26} fill="#0E0F12" color="#0E0F12" /></span>
+        <div style={{ position: "absolute", top: 136, left: 10, right: 10, bottom: 64, borderRadius: 24, overflow: "hidden", background: "#2a2a2c" }}>
+          <img src="/brand/riley.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "80px 14px 14px", background: "linear-gradient(180deg, transparent, rgba(17,17,18,.6) 35%, rgba(17,17,18,.92))", color: "#fff" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
+              <div>
+                <p style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 25, letterSpacing: "-0.04em", lineHeight: 1 }}>Riley, 20</p>
+                <p style={{ fontSize: 11.5, opacity: .85, marginTop: 4 }}>Portland State University</p>
+              </div>
+              <MatchBadge pct={96} size={50} />
+            </div>
+            <div style={{ display: "flex", gap: 5, marginTop: 10 }}>
+              {["Clean", "Active", "Early riser"].map((t) => <span key={t} className="r8-photo-tag" style={{ height: 26, padding: "0 10px", fontSize: 11 }}>{t}</span>)}
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 12 }}>
+              <span className="r8-card-btn" style={{ width: 42, height: 42 }}><Icon name="x" size={18} stroke={2.2} /></span>
+              <span className="r8-card-btn" style={{ width: 42, height: 42 }}><Icon name="arrowUp" size={17} stroke={2.2} /></span>
+              <span className="r8-card-btn r8-card-btn--like" style={{ width: 42, height: 42 }}><Icon name="heart" size={20} stroke={0} fill="#B48CF5" /></span>
+            </div>
+          </div>
+        </div>
+        <div style={{ position: "absolute", bottom: 20, left: 0, right: 0, display: "flex", justifyContent: "space-around", color: "#111112" }}>
+          <Icon name="home" size={21} fill="#111112" /><Icon name="chat" size={21} color="rgba(17,17,18,.4)" /><Icon name="user" size={21} color="rgba(17,17,18,.4)" />
         </div>
       </div>
     </div>
   );
 }
 
-function MiniCard({ c, back }) {
-  return (
-    <div style={{ position: "absolute", inset: 0, borderRadius: 26, overflow: "hidden", background: "#17181D", border: "1px solid rgba(255,255,255,.1)", transform: back ? "scale(.95) translateY(10px)" : "none", opacity: back ? 0.6 : 1 }}>
-      <div style={{ position: "absolute", width: 260, height: 260, borderRadius: "50%", background: c.a, filter: "blur(60px)", opacity: 0.55, top: 10, left: -50 }} />
-      <div style={{ position: "absolute", width: 220, height: 220, borderRadius: "50%", background: c.b, filter: "blur(60px)", opacity: 0.5, top: 120, right: -70 }} />
-      <svg viewBox="0 0 100 120" style={{ position: "absolute", left: "50%", top: 60, width: 150, marginLeft: -75, opacity: 0.32 }} aria-hidden="true">
-        <circle cx="50" cy="38" r="22" fill="#fff" /><path d="M10 120c4-30 20-44 40-44s36 14 40 44z" fill="#fff" />
-      </svg>
-      <div className="r8-sticker" style={{ position: "absolute", top: 14, right: 14, padding: "6px 10px 5px" }}><b style={{ fontSize: 19 }}>{c.pct}%</b><small style={{ fontSize: 8.5 }}>MATCH</small></div>
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "60px 14px 14px", background: "linear-gradient(180deg, transparent, rgba(14,15,18,.92))", color: "#fff" }}>
-        <p style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.03em" }}>{c.name}, <span style={{ fontWeight: 500, opacity: .85 }}>{c.age}</span></p>
-        <p style={{ fontSize: 12, opacity: .75, marginBottom: 8 }}>{c.school}</p>
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-          {c.tags.map(([ic, t]) => <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 24, padding: "0 9px", borderRadius: 999, background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.2)", fontSize: 11 }}><Icon name={ic} size={12} />{t}</span>)}
-        </div>
-      </div>
-    </div>
-  );
-}
+const FEATURES = [
+  { icon: "sliders", title: "Better matches", body: "Go beyond interests. Match on real lifestyle, habits and housing preferences." },
+  { icon: "shield", title: "Built for college", body: "Verified students, safer connections, and a community that just makes sense." },
+  { icon: "bolt", title: "Find your fit, faster", body: "Swipe, match and chat with people who are actually compatible." },
+];
 
 function SignupCounter() {
   const [stats, setStats] = useState(null);
@@ -135,34 +119,38 @@ export default function Home() {
   return (
     <div style={{ position: "relative", overflow: "hidden" }}>
       {/* Hero */}
-      <section style={{ position: "relative", minHeight: "100dvh", display: "flex", alignItems: "center", padding: "calc(var(--safe-t) + 120px) 20px 80px" }}>
-        <div aria-hidden="true" className="r8-aura r8-aura--a" style={{ width: 700, height: 700, top: -260, right: -220, opacity: .6 }} />
-        <div aria-hidden="true" className="r8-aura r8-aura--b" style={{ width: 560, height: 560, bottom: -200, left: -240, opacity: .5 }} />
-        <div className="r8-hero" style={{ position: "relative", maxWidth: 1120, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "minmax(0, 1fr)", alignItems: "center", gap: 56 }}>
+      <section style={{ position: "relative", padding: "calc(var(--safe-t) + 120px) 20px 40px" }}>
+        <div className="r8-hero" style={{ position: "relative", maxWidth: 1200, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "minmax(0, 1fr)", alignItems: "center", gap: 56 }}>
           <div>
-            <motion.span initial={{ opacity: 0, y: 10, rotate: -6 }} animate={{ opacity: 1, y: 0, rotate: -3 }} transition={{ type: "spring", stiffness: 300, damping: 18 }}
-              className="r8-sticker r8-sticker--pill" style={{ fontSize: 13.5, marginBottom: 26 }}>
-              <Icon name="sparkle" size={14} stroke={2.2} />Early access is open. Free for students.
-            </motion.span>
-            <h1 style={{ fontSize: "clamp(56px, 11vw, 112px)", lineHeight: 0.92, letterSpacing: "-0.055em", fontWeight: 800 }}>
-              <motion.span initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 20, delay: 0.05 }} style={{ display: "block" }}>Find your </motion.span>
-              <motion.span initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 20, delay: 0.15 }} className="r8-iri-text" style={{ display: "block", paddingBottom: "0.06em" }}>people.</motion.span>
+            <h1 style={{ fontSize: "clamp(48px, 7.2vw, 88px)", lineHeight: 0.98, letterSpacing: "-0.05em", fontWeight: 800 }}>
+              <motion.span initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 20, delay: 0.05 }} style={{ display: "block" }}>Find a roommate</motion.span>
+              <motion.span initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 20, delay: 0.15 }} style={{ display: "block", paddingBottom: "0.06em" }}>who just gets it.</motion.span>
             </h1>
-            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="r8-muted" style={{ fontSize: "clamp(18px, 2.4vw, 21px)", lineHeight: 1.5, maxWidth: 520, marginTop: 24 }}>
-              The roommate matching app built for college students. Verified profiles, lifestyle compatibility, and real campus community.
+            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="r8-muted" style={{ fontSize: "clamp(18px, 2.2vw, 21px)", lineHeight: 1.5, maxWidth: 500, marginTop: 26 }}>
+              The roommate matching app for college students. Meet compatible people, find your place, and build a better college year together.
             </motion.p>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 34 }}>
-              <button className="r8-btn r8-btn--primary r8-btn--lg" onClick={start}>Get started free<Icon name="arrowRight" size={20} /></button>
-              <a href="#how-it-works" className="r8-btn r8-btn--glass r8-btn--lg">See how it works</a>
+              <button className="r8-btn r8-btn--primary r8-btn--lg" onClick={start}>{user ? "Open the App" : "Get the App"}</button>
+              <a href="#how-it-works" className="r8-btn r8-btn--lg" style={{ border: "1.5px solid var(--line-2)", color: "var(--text)" }}>How It Works</a>
             </motion.div>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="r8-faint" style={{ fontSize: 14.5, marginTop: 20, lineHeight: 1.5 }}>
-              <Icon name="lock" size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />We never sell your data or share it with advertisers. <Link to="/privacy" style={{ textDecoration: "underline", color: "var(--text-2)" }}>Privacy policy</Link>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="r8-faint" style={{ fontSize: 14, marginTop: 22, lineHeight: 1.5 }}>
+              Free for students. We never sell your data. <Link to="/privacy" style={{ textDecoration: "underline", color: "var(--text-2)" }}>Privacy policy</Link>
             </motion.p>
             <SignupCounter />
           </div>
-          <motion.div style={{ y: phoneY, display: "flex", justifyContent: "center" }} initial={{ opacity: 0, rotate: 4 }} animate={{ opacity: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 90, damping: 18, delay: 0.2 }}>
-            <div aria-hidden="true" style={{ transform: "rotate(-3deg)" }}><HeroPhone /></div>
+          <motion.div style={{ y: phoneY, display: "flex", justifyContent: "center", position: "relative" }} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 90, damping: 18, delay: 0.2 }}>
+            <div aria-hidden="true" style={{ position: "absolute", inset: "-15% -25%", background: "radial-gradient(35% 30% at 35% 45%, rgba(219,140,242,.28), transparent 70%), radial-gradient(30% 30% at 70% 60%, rgba(95,227,244,.24), transparent 70%), radial-gradient(30% 25% at 55% 85%, rgba(245,138,196,.18), transparent 70%)", pointerEvents: "none" }} />
+            <div aria-hidden="true" style={{ position: "relative", transform: "rotate(8deg)" }}><HeroPhone /></div>
           </motion.div>
+        </div>
+        <div style={{ maxWidth: 1200, margin: "64px auto 0", borderTop: "1px solid var(--line)", paddingTop: 36, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 28 }}>
+          {FEATURES.map((f) => (
+            <motion.div key={f.title} {...reveal}>
+              <Icon name={f.icon} size={26} />
+              <h3 style={{ fontSize: 19, fontWeight: 700, margin: "12px 0 6px" }}>{f.title}</h3>
+              <p className="r8-muted" style={{ fontSize: 15, lineHeight: 1.5, maxWidth: 300 }}>{f.body}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -196,7 +184,7 @@ export default function Home() {
               <span className="r8-badge r8-badge--iri" style={{ marginBottom: 18 }}><Icon name="school" size={14} />Campus only</span>
               <h3 style={{ fontSize: 28, marginBottom: 12 }}>School verified</h3>
               <p className="r8-muted" style={{ fontSize: 16, lineHeight: 1.55 }}>Verify with your .edu email. We send a quick confirmation and you're in. No student ID uploads, no paperwork.</p>
-              <a href="#faq-verification" onClick={() => setOpenFaq("faq-verification")} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, fontWeight: 600, color: "var(--peri)" }}>How verification works<Icon name="arrowRight" size={16} /></a>
+              <a href="#faq-verification" onClick={() => setOpenFaq("faq-verification")} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, fontWeight: 600, color: "var(--text)", textDecoration: "underline" }}>How verification works<Icon name="arrowRight" size={16} /></a>
             </motion.article>
             <motion.article {...reveal} transition={{ ...reveal.transition, delay: 0.06 }} className="r8-card" style={{ padding: 30, borderRadius: 32 }}>
               <span className="r8-badge r8-badge--iri" style={{ marginBottom: 18 }}><Icon name="sliders" size={14} />Real compatibility</span>
@@ -265,7 +253,7 @@ export default function Home() {
       {/* For universities */}
       <section style={{ padding: "0 20px 110px" }}>
         <motion.div {...reveal} style={{ maxWidth: 1120, margin: "0 auto", borderRadius: 40, padding: "clamp(32px, 6vw, 64px)", position: "relative", overflow: "hidden", background: "#0E0F12", color: "#F2F2F5", border: "1px solid rgba(255,255,255,.1)" }}>
-          <div aria-hidden="true" style={{ position: "absolute", width: 520, height: 520, borderRadius: "50%", background: "conic-gradient(from 90deg, #45D9FF, #8C9EFF, #D98BFF, #FF5FA0, #45D9FF)", filter: "blur(100px)", opacity: .45, right: -160, top: -200 }} />
+          <div aria-hidden="true" style={{ position: "absolute", width: 520, height: 520, borderRadius: "50%", background: "conic-gradient(from 90deg, #5FE3F4, #9DB1FF, #DB8CF2, #F58AC4, #5FE3F4)", filter: "blur(100px)", opacity: .45, right: -160, top: -200 }} />
           <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 40, alignItems: "center" }}>
             <div>
               <p className="r8-eyebrow" style={{ color: "rgba(242,242,245,.55)", marginBottom: 14 }}>For universities</p>
@@ -303,7 +291,7 @@ export default function Home() {
                   {f.story && <p style={{ fontSize: 15, lineHeight: 1.55, marginTop: 12 }}>{f.story}</p>}
                   {f.links.filter((l) => l.href).length > 0 && (
                     <div style={{ display: "flex", gap: 14, marginTop: 12 }}>
-                      {f.links.filter((l) => l.href).map((l) => <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14.5, fontWeight: 600, color: "var(--peri)", display: "inline-flex", alignItems: "center", gap: 4 }}>{l.label}<Icon name="arrowRight" size={14} /></a>)}
+                      {f.links.filter((l) => l.href).map((l) => <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text)", textDecoration: "underline", display: "inline-flex", alignItems: "center", gap: 4 }}>{l.label}<Icon name="arrowRight" size={14} /></a>)}
                     </div>
                   )}
                 </div>
@@ -345,12 +333,11 @@ export default function Home() {
 
       {/* Final CTA */}
       <section style={{ position: "relative", padding: "80px 20px 140px", textAlign: "center", overflow: "hidden" }}>
-        <div aria-hidden="true" style={{ position: "absolute", width: 640, height: 640, left: "50%", top: "50%", marginLeft: -320, marginTop: -320, borderRadius: "50%", background: "conic-gradient(from 0deg, #45D9FF, #8C9EFF, #D98BFF, #FF5FA0, #45D9FF)", filter: "blur(120px)", opacity: .28 }} />
+        <div aria-hidden="true" style={{ position: "absolute", width: 640, height: 640, left: "50%", top: "50%", marginLeft: -320, marginTop: -320, borderRadius: "50%", background: "conic-gradient(from 0deg, #5FE3F4, #9DB1FF, #DB8CF2, #F58AC4, #5FE3F4)", filter: "blur(120px)", opacity: .16 }} />
         <motion.div {...reveal} style={{ position: "relative", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <Mark size={72} />
-          <h2 style={{ fontSize: "clamp(40px, 7vw, 72px)", lineHeight: 1, letterSpacing: "-0.045em", marginTop: 24 }}>Stop leaving it <span className="r8-iri-text">to chance.</span></h2>
+          <h2 style={{ fontSize: "clamp(40px, 7vw, 72px)", lineHeight: 1, letterSpacing: "-0.045em" }}>Stop leaving it <span className="r8-iri-text">to chance.</span></h2>
           <p className="r8-muted" style={{ fontSize: 18, marginTop: 18, maxWidth: 520 }}>Be one of the first students to use Room8 at your school. Free early access, open now.</p>
-          <button className="r8-btn r8-btn--primary r8-btn--lg" onClick={start} style={{ marginTop: 32 }}>Get early access<Icon name="arrowRight" size={20} /></button>
+          <button className="r8-btn r8-btn--primary r8-btn--lg" onClick={start} style={{ marginTop: 32 }}>{user ? "Open the App" : "Get the App"}</button>
           {!user && <Link to="/login" className="r8-btn r8-btn--ghost" style={{ marginTop: 10 }}>I already have an account</Link>}
         </motion.div>
       </section>

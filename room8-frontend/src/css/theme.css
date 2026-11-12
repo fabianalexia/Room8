@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Room8 design system: Graphite + Iridescent
+   Room8 design system: calm neutral + one iridescent accent
    Dark is the default. Light follows the phone setting.
    ========================================================================== */
 
@@ -11,27 +11,29 @@
   --peri:   #8C9EFF;
   --lilac:  #D98BFF;
   --pink:   #FF5FA0;
-  --iri:    linear-gradient(135deg, #45D9FF 0%, #8C9EFF 38%, #D98BFF 68%, #FF5FA0 100%);
+  --iri:    linear-gradient(100deg, #5FE3F4 0%, #9DB1FF 42%, #DB8CF2 76%, #F58AC4 100%);
   --iri-soft: linear-gradient(135deg, rgba(69,217,255,.22), rgba(140,158,255,.22) 40%, rgba(217,139,255,.22) 70%, rgba(255,95,160,.22));
-  --iri-v:  linear-gradient(180deg, #45D9FF 0%, #8C9EFF 38%, #D98BFF 68%, #FF5FA0 100%);
+  --iri-v:  linear-gradient(180deg, #5FE3F4 0%, #9DB1FF 42%, #DB8CF2 76%, #F58AC4 100%);
 
   /* Surfaces (dark) */
-  --bg:        #0E0F12;
-  --bg-2:      #121318;
-  --elev:      #17181D;
-  --elev-2:    #1E2027;
+  --bg:        #0C0C0D;
+  --bg-2:      #121213;
+  --elev:      #18181A;
+  --elev-2:    #222224;
   --glass:     rgba(255,255,255,0.06);
   --glass-2:   rgba(255,255,255,0.10);
-  --glass-strong: rgba(23,24,29,0.72);
+  --glass-strong: rgba(24,24,26,0.78);
   --line:      rgba(255,255,255,0.10);
   --line-2:    rgba(255,255,255,0.16);
-  --scrim:     rgba(14,15,18,0.92);
+  --scrim:     rgba(12,12,13,0.92);
 
   /* Text */
-  --text:   #F2F2F5;
-  --text-2: rgba(242,242,245,0.68);
-  --text-3: rgba(242,242,245,0.46);
-  --on-iri: #0E0F12;
+  --text:   #F5F5F4;
+  --text-2: rgba(245,245,244,0.66);
+  --text-3: rgba(245,245,244,0.44);
+  --on-iri: #111112;
+
+  --accent: var(--text);
 
   /* Status */
   --like:    #FF5FA0;
@@ -48,9 +50,9 @@
   --r-xl: 36px;
   --r-pill: 999px;
 
-  --shadow-1: 0 1px 0 rgba(255,255,255,0.06) inset, 0 8px 24px rgba(0,0,0,0.28);
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.22);
   --shadow-2: 0 1px 0 rgba(255,255,255,0.08) inset, 0 24px 60px rgba(0,0,0,0.45);
-  --glow:     0 14px 40px rgba(140,158,255,0.35);
+  --glow:     0 10px 30px rgba(157,177,255,0.30);
   --blur:     saturate(160%) blur(24px);
 
   /* Type */
@@ -65,33 +67,33 @@
   --dur-2: 280ms;
   --dur-3: 480ms;
 
-  --nav-h: 76px;
+  --nav-h: 64px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg:        #F2F2F5;
-    --bg-2:      #EBEBF0;
+    --bg:        #F6F6F4;
+    --bg-2:      #EFEFEC;
     --elev:      #FFFFFF;
-    --elev-2:    #F7F7FA;
-    --glass:     rgba(255,255,255,0.66);
-    --glass-2:   rgba(255,255,255,0.86);
+    --elev-2:    #EDEDEA;
+    --glass:     rgba(17,17,18,0.05);
+    --glass-2:   rgba(17,17,18,0.08);
     --glass-strong: rgba(255,255,255,0.78);
     --line:      rgba(14,15,18,0.08);
     --line-2:    rgba(14,15,18,0.14);
     --scrim:     rgba(14,15,18,0.86);
 
-    --text:   #0E0F12;
-    --text-2: rgba(14,15,18,0.66);
-    --text-3: rgba(14,15,18,0.48);
-    --on-iri: #0E0F12;
+    --text:   #111112;
+    --text-2: rgba(17,17,18,0.62);
+    --text-3: rgba(17,17,18,0.44);
+    --on-iri: #111112;
 
-    --pass:   #0E0F12;
-    --shadow-1: 0 1px 2px rgba(14,15,18,0.06), 0 8px 24px rgba(14,15,18,0.06);
+    --pass:   #111112;
+    --shadow-1: 0 1px 2px rgba(17,17,18,0.04), 0 10px 30px rgba(17,17,18,0.05);
     --shadow-2: 0 2px 6px rgba(14,15,18,0.06), 0 24px 60px rgba(14,15,18,0.12);
-    --glow:     0 14px 36px rgba(140,158,255,0.40);
+    --glow:     0 10px 28px rgba(157,177,255,0.38);
   }
 }
 
@@ -225,14 +227,13 @@ input, textarea, select { font: inherit; color: inherit; }
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 8px 12px 7px; border-radius: 16px;
   background: var(--iri); color: var(--on-iri);
-  border: 2.5px solid #fff;
-  box-shadow: 0 10px 24px rgba(0,0,0,.30), inset 0 2px 0 rgba(255,255,255,.55);
-  transform: rotate(6deg);
+  border: 0;
+  box-shadow: 0 8px 22px rgba(157,177,255,.30), inset 0 1px 0 rgba(255,255,255,.5);
   line-height: 1;
 }
 .r8-sticker b { font-family: var(--display); font-weight: 800; font-size: 24px; letter-spacing: -0.03em; }
 .r8-sticker small { font-size: 10px; font-weight: 700; letter-spacing: .08em; margin-top: 3px; }
-.r8-sticker--pill { flex-direction: row; gap: 6px; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; transform: rotate(-4deg); }
+.r8-sticker--pill { flex-direction: row; gap: 6px; padding: 6px 12px; border-radius: 999px; font-weight: 600; font-size: 13px; }
 
 .r8-badge {
   display: inline-flex; align-items: center; gap: 5px;
@@ -318,3 +319,21 @@ input, textarea, select { font: inherit; color: inherit; }
 .r8-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .r8-avatar--ring { padding: 2px; background: var(--iri); border: 0; }
 .r8-avatar--ring > span, .r8-avatar--ring > img { border-radius: 50%; width: 100%; height: 100%; background: var(--elev-2); display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg); object-fit: cover; }
+
+
+/* ---------- Calm pass (matches the approved mockups) ---------- */
+/* Gradient lives on the logo 8, match pills, the heart and the main CTA only. */
+.r8-iri-text { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: inherit; }
+.r8-iri-8 { background: var(--iri); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.r8-aura { display: none; }
+.r8-sticker--pill { background: var(--glass-2); color: var(--text); box-shadow: none; border: 1px solid var(--line); font-weight: 600; }
+.r8-btn--dark { color: var(--bg); background: var(--text); }
+.r8-btn--soft { color: var(--text); background: var(--elev-2); }
+.r8-btn--glass { background: var(--elev-2); border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.r8-chip--select[aria-pressed="true"] { background: var(--text); color: var(--bg); box-shadow: none; }
+.r8-avatar--ring { background: var(--line-2); }
+.r8-match-pill { display: inline-flex; align-items: center; height: 40px; padding: 0 18px; border-radius: 999px; background: var(--iri); color: #111112; font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; box-shadow: 0 8px 22px rgba(157,177,255,.35), inset 0 1px 0 rgba(255,255,255,.55); white-space: nowrap; }
+.r8-photo-tag { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 999px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.14); color: #fff; font-size: 14px; font-weight: 500; -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); white-space: nowrap; }
+.r8-card-btn { width: 62px; height: 62px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.16); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); transition: transform .16s var(--ease); }
+.r8-card-btn:active { transform: scale(.9); }
+.r8-card-btn--like { background: #fff; border-color: #fff; box-shadow: 0 10px 28px rgba(157,177,255,.45); }

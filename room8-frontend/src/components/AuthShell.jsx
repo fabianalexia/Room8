@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mark, Wordmark } from "../ui/Logo";
+import { Wordmark } from "../ui/Logo";
 import Icon from "../ui/Icon";
 
 export default function AuthShell({ title, sub, children, footer, banner }) {
@@ -11,31 +11,17 @@ export default function AuthShell({ title, sub, children, footer, banner }) {
       <style>{`
         @media (min-width: 960px) { .r8-auth { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) !important; } .r8-auth__brand { display: flex !important; } .r8-auth__mlogo { display: none !important; } }
       `}</style>
-      <aside className="r8-auth__brand" aria-hidden="true" style={{ display: "none", position: "relative", overflow: "hidden", padding: 48, flexDirection: "column", justifyContent: "space-between", background: "#0E0F12", color: "#F2F2F5" }}>
-        <div className="r8-aura r8-aura--a" style={{ width: 560, height: 560, top: -160, right: -200, opacity: .55 }} />
-        <div className="r8-aura r8-aura--b" style={{ width: 460, height: 460, bottom: -120, left: -160, opacity: .5 }} />
-        <Link to="/" style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 10 }}>
-          <Mark size={40} surface="#0E0F12" people="#F2F2F5" /><Wordmark size={28} color="#F2F2F5" />
-        </Link>
-        <div style={{ position: "relative", height: 380 }}>
-          {[{ r: -9, x: 30, y: 40, c: "#45D9FF" }, { r: 7, x: 200, y: 10, c: "#D98BFF" }, { r: -2, x: 112, y: 70, c: "#8C9EFF" }].map((card, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 40, rotate: card.r * 2 }} animate={{ opacity: 1, y: [card.y, card.y - 10, card.y], rotate: card.r }}
-              transition={{ opacity: { delay: 0.1 + i * 0.12 }, y: { duration: 6 + i, repeat: Infinity, ease: "easeInOut" }, rotate: { type: "spring", stiffness: 120, damping: 14, delay: 0.1 + i * 0.12 } }}
-              style={{ position: "absolute", left: card.x, top: 0, width: 210, height: 290, borderRadius: 30, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 30px 60px rgba(0,0,0,.45)", overflow: "hidden" }}>
-              <div style={{ position: "absolute", width: 200, height: 200, borderRadius: "50%", background: card.c, filter: "blur(60px)", opacity: .55, top: 20, left: 10 }} />
-              <div style={{ position: "absolute", left: 18, right: 18, bottom: 18 }}>
-                <div style={{ width: "60%", height: 12, borderRadius: 6, background: "rgba(255,255,255,.75)", marginBottom: 8 }} />
-                <div style={{ width: "40%", height: 9, borderRadius: 5, background: "rgba(255,255,255,.35)" }} />
-              </div>
-              {i === 2 && <div className="r8-sticker" style={{ position: "absolute", top: 18, right: 16 }}><b>94%</b><small>MATCH</small></div>}
-            </motion.div>
-          ))}
-        </div>
+      <aside className="r8-auth__brand" aria-hidden="true" style={{ display: "none", position: "relative", overflow: "hidden", padding: 44, flexDirection: "column", justifyContent: "space-between", color: "#fff", background: "#1a1a1c" }}>
+        <img src="/brand/duo.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "45% 30%" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(17,17,18,.35), rgba(17,17,18,.05) 30%, rgba(17,17,18,.75))" }} />
+        <Link to="/" style={{ position: "relative" }}><Wordmark size={30} color="#fff" /></Link>
         <div style={{ position: "relative" }}>
-          <p style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 40, lineHeight: 1.05, letterSpacing: "-0.035em", maxWidth: 440 }}>
-            Find the roommate who <span className="r8-iri-text">actually gets you.</span>
-          </p>
-          <p style={{ marginTop: 14, color: "rgba(242,242,245,.65)", fontSize: 16, maxWidth: 400 }}>Verified students from your campus, matched on how you really live.</p>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 14, padding: "14px 18px", borderRadius: 24, marginBottom: 24, background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.22)", WebkitBackdropFilter: "blur(24px) saturate(160%)", backdropFilter: "blur(24px) saturate(160%)" }}>
+            <span className="r8-match-pill" style={{ height: 38, fontSize: 18 }}>98%</span>
+            <span style={{ fontSize: 15, fontWeight: 500 }}>Similar schedules, clean, social balance</span>
+          </div>
+          <p style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 46, lineHeight: 1, letterSpacing: "-0.045em", maxWidth: 460 }}>Find a roommate who just gets it.</p>
+          <p style={{ marginTop: 14, color: "rgba(255,255,255,.8)", fontSize: 16, maxWidth: 400 }}>Verified students from your campus, matched on how you really live.</p>
         </div>
       </aside>
 
@@ -43,7 +29,7 @@ export default function AuthShell({ title, sub, children, footer, banner }) {
         <div aria-hidden="true" className="r8-aura r8-aura--a" style={{ width: 380, height: 380, top: -200, right: -180 }} />
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 260, damping: 28 }} style={{ position: "relative", width: "100%", maxWidth: 420 }}>
           <Link to="/" aria-label="Room8 home" className="r8-auth__mlogo" style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 28 }}>
-            <Mark size={36} /><Wordmark size={24} />
+            <Wordmark size={30} />
           </Link>
           {banner}
           <h1 style={{ fontSize: "clamp(32px, 8vw, 40px)", marginBottom: 8 }}>{title}</h1>

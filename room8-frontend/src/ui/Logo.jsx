@@ -39,16 +39,16 @@ export function Mark({ size = 32, surface = "var(--bg)", people = "var(--text)",
 
 export function Wordmark({ size = 24, color = "var(--text)", style }) {
   return (
-    <span style={{ fontFamily: "var(--brand)", fontWeight: 600, fontSize: size, lineHeight: 1, letterSpacing: "-0.01em", color, ...style }}>
-      room<span className="r8-iri-text" style={{ background: "var(--iri-v)", WebkitBackgroundClip: "text", backgroundClip: "text" }}>8</span>
+    <span style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: size * 1.08, lineHeight: 1, letterSpacing: "-0.045em", color, ...style }}>
+      Room8
     </span>
   );
 }
 
-export default function Logo({ size = 28, surface, people, gap, style, wordmark = true }) {
+export default function Logo({ size = 28, surface, people, gap, style, wordmark = true, mark = false }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: gap ?? Math.round(size * 0.28), ...style }} aria-label="Room8">
-      <Mark size={Math.round(size * 1.35)} surface={surface} people={people} title={wordmark ? "" : "Room8"} />
+      {(mark || !wordmark) && <Mark size={Math.round(size * 1.35)} surface={surface} people={people} title={wordmark ? "" : "Room8"} />}
       {wordmark && <Wordmark size={size} />}
     </span>
   );

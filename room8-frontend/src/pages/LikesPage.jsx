@@ -9,7 +9,8 @@ import { PhotoVerifiedCheck } from "../components/VerifiedBadge";
 import ProfileSheet, { NoPhoto } from "../components/ProfileSheet";
 import MatchMoment from "../components/MatchMoment";
 import Icon, { traitsFor } from "../ui/Icon";
-import { Avatar, EmptyState, TopBar } from "../ui/kit";
+import { Avatar, EmptyState } from "../ui/kit";
+import AppHeader from "../components/AppHeader";
 
 const first = (n) => (n || "").split(" ")[0] || n || "";
 
@@ -90,7 +91,8 @@ export default function LikesPage() {
   return (
     <div className="r8-app-page" style={{ position: "relative", overflow: "hidden" }}>
       <div aria-hidden="true" className="r8-aura r8-aura--a" style={{ width: 380, height: 380, top: -200, right: -160 }} />
-      <TopBar title="Likes" sub={loading ? " " : fans.length ? `${fans.length} ${fans.length === 1 ? "person wants" : "people want"} to live with you` : "Your likes show up here"} />
+      <AppHeader />
+      <p className="r8-muted" style={{ padding: "0 20px 6px", fontSize: 15 }}>{loading ? " " : fans.length ? `${fans.length} ${fans.length === 1 ? "person wants" : "people want"} to live with you` : "People who like you show up here"}</p>
 
       <div style={{ position: "relative", maxWidth: 760, margin: "0 auto", padding: "4px 16px 0" }}>
         {/* Matches row */}

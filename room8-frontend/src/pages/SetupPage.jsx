@@ -124,7 +124,7 @@ export function SchoolPicker({ value, onChange }) {
               <li key={s} onMouseDown={() => { setQ(s); onChange(s); setOpen(false); }} style={{ padding: "12px 12px", borderRadius: 12, cursor: "pointer", fontSize: 15 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--glass-2)")} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>{s}</li>
             ))}
-            <li onMouseDown={() => { setCustom(true); onChange(""); setOpen(false); }} style={{ padding: "12px 12px", borderRadius: 12, cursor: "pointer", fontSize: 15, color: "var(--peri)", fontWeight: 600 }}>My school isn't listed</li>
+            <li onMouseDown={() => { setCustom(true); onChange(""); setOpen(false); }} style={{ padding: "12px 12px", borderRadius: 12, cursor: "pointer", fontSize: 15, color: "var(--text)", textDecoration: "underline", fontWeight: 600 }}>My school isn't listed</li>
           </motion.ul>
         )}
       </AnimatePresence>

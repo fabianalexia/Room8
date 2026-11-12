@@ -3,13 +3,13 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getCurrentUser, logout as apiLogout } from "../api";
-import { Mark, Wordmark } from "../ui/Logo";
+import { Wordmark } from "../ui/Logo";
 import Icon from "../ui/Icon";
 
 const PUBLIC_LINKS = [
-  { to: "/#how-it-works", label: "How it works" },
-  { to: "/schools", label: "For schools" },
-  { to: "/#faq", label: "FAQ" },
+  { to: "/#how-it-works", label: "Features" },
+  { to: "/#safety", label: "Safety" },
+  { to: "/schools", label: "For Colleges" },
 ];
 const APP_LINKS = [
   { to: "/app", label: "Discover" },
@@ -42,24 +42,22 @@ export default function Header() {
 
   return (
     <>
-      <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 900, padding: "calc(var(--safe-t) + 12px) 16px 0", pointerEvents: "none" }}>
-        <nav aria-label="Main" className="r8-glass" style={{
-          pointerEvents: "auto", maxWidth: 1120, margin: "0 auto", height: 60, borderRadius: 22,
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 10px 0 16px",
-          background: scrolled ? "var(--glass-strong)" : "color-mix(in srgb, var(--bg) 35%, transparent)",
-          borderColor: scrolled ? "var(--line)" : "transparent",
-          boxShadow: scrolled ? "var(--shadow-1)" : "none",
-          transition: "background .3s, border-color .3s, box-shadow .3s",
+      <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 900, paddingTop: "var(--safe-t)",
+        background: "color-mix(in srgb, var(--bg) 90%, transparent)", WebkitBackdropFilter: "blur(20px) saturate(160%)", backdropFilter: "blur(20px) saturate(160%)",
+        boxShadow: scrolled ? "0 1px 0 var(--line)" : "none", transition: "box-shadow .3s" }}>
+        <nav aria-label="Main" style={{
+          maxWidth: 1200, margin: "0 auto", height: 72,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 20px",
         }}>
-          <Link to="/" aria-label="Room8 home" style={{ display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <Mark size={34} /><Wordmark size={23} />
+          <Link to="/" aria-label="Room8 home" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+            <Wordmark size={27} />
           </Link>
 
           <div className="r8-hdr-links" style={{ display: "flex", alignItems: "center", gap: 2 }}>
             {links.map((l) => {
               const active = !l.to.includes("#") && pathname === l.to;
               return (
-                <Link key={l.to} to={l.to} style={{ padding: "8px 14px", borderRadius: 12, fontSize: 15, fontWeight: 500, color: active ? "var(--text)" : "var(--text-2)", background: active ? "var(--glass-2)" : "transparent", transition: "color .2s, background .2s" }}
+                <Link key={l.to} to={l.to} style={{ padding: "8px 18px", fontSize: 15, fontWeight: 500, color: active ? "var(--text)" : "var(--text-2)", transition: "color .2s" }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; }} onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "var(--text-2)"; }}>
                   {l.label}
                 </Link>
@@ -70,15 +68,15 @@ export default function Header() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div className="r8-hdr-links" style={{ display: "flex", gap: 8 }}>
               {user ? (
-                <button className="r8-btn r8-btn--ghost r8-btn--sm" onClick={handleLogout}>Log out</button>
+                <><Link to="/app" className="r8-btn r8-btn--dark r8-btn--sm">Open app</Link><button className="r8-btn r8-btn--soft r8-btn--sm" onClick={handleLogout}>Log out</button></>
               ) : (
                 <>
-                  <Link to="/login" className="r8-btn r8-btn--ghost r8-btn--sm">Log in</Link>
-                  <Link to="/register" className="r8-btn r8-btn--primary r8-btn--sm">Get started</Link>
+                  <Link to="/login" className="r8-btn r8-btn--soft r8-btn--sm">Log In</Link>
+                  <Link to="/register" className="r8-btn r8-btn--dark r8-btn--sm">Get the App</Link>
                 </>
               )}
             </div>
-            <button className="r8-icon-btn r8-hdr-menu" onClick={() => setOpen((o) => !o)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} style={{ display: "none" }}>
+            <button className="r8-icon-btn r8-icon-btn--round r8-hdr-menu" onClick={() => setOpen((o) => !o)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} style={{ display: "none" }}>
               <Icon name={open ? "x" : "menu"} size={22} />
             </button>
           </div>
@@ -106,8 +104,8 @@ export default function Header() {
                 <button className="r8-btn r8-btn--glass r8-btn--lg r8-btn--block" onClick={handleLogout}><Icon name="logout" size={20} />Log out</button>
               ) : (
                 <>
-                  <Link to="/register" onClick={() => setOpen(false)} className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block">Get started free</Link>
-                  <Link to="/login" onClick={() => setOpen(false)} className="r8-btn r8-btn--glass r8-btn--lg r8-btn--block">Log in</Link>
+                  <Link to="/register" onClick={() => setOpen(false)} className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block">Get the App</Link>
+                  <Link to="/login" onClick={() => setOpen(false)} className="r8-btn r8-btn--soft r8-btn--lg r8-btn--block">Log In</Link>
                 </>
               )}
             </div>

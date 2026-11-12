@@ -99,7 +99,7 @@ export default function PhotoVerifyPage() {
           {!user?.photo && <div className="r8-error" style={{ color: "var(--warn)", background: "rgba(255,200,96,.10)", borderColor: "rgba(255,200,96,.3)" }}>Add a profile photo first so we have something to compare to.</div>}
           <label style={{ display: "flex", gap: 12, alignItems: "flex-start", fontSize: 14, color: "var(--text-2)", lineHeight: 1.5, cursor: "pointer", padding: 14, borderRadius: 16, background: "var(--glass)", border: "1px solid var(--line)" }}>
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2, width: 20, height: 20, flexShrink: 0, accentColor: "#8C9EFF" }} />
-            <span>I agree Room8 can collect a selfie to confirm who I am. A person reviews it, it's only used for verification, it's never shown on my profile, and it's deleted as soon as the review is done. <a href="/privacy" style={{ color: "var(--peri)", fontWeight: 600 }}>Privacy policy</a></span>
+            <span>I agree Room8 can collect a selfie to confirm who I am. A person reviews it, it's only used for verification, it's never shown on my profile, and it's deleted as soon as the review is done. <a href="/privacy" style={{ color: "var(--text)", textDecoration: "underline", fontWeight: 600 }}>Privacy policy</a></span>
           </label>
           <button className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block" disabled={!consent || !user?.photo || busy} onClick={begin}>{busy ? "Starting..." : "Start verification"}</button>
         </div>

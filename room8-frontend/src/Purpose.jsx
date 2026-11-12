@@ -3,7 +3,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Icon from "./ui/Icon";
-import { Mark } from "./ui/Logo";
 
 const reveal = { initial: { opacity: 0.35, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-60px" }, transition: { type: "spring", stiffness: 160, damping: 24 } };
 
@@ -53,8 +52,7 @@ export default function Purpose() {
 
       <section style={{ padding: "40px 20px 140px", textAlign: "center" }}>
         <motion.div {...reveal} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <Mark size={64} />
-          <h2 style={{ fontSize: "clamp(36px, 6vw, 60px)", marginTop: 22 }}>Ready to find your people?</h2>
+          <h2 style={{ fontSize: "clamp(36px, 6vw, 60px)" }}>Ready to find your people?</h2>
           <p className="r8-muted" style={{ fontSize: 18, marginTop: 14 }}>Free early access for students. Takes about two minutes.</p>
           <Link to="/register" className="r8-btn r8-btn--primary r8-btn--lg" style={{ marginTop: 28 }}>Get started free<Icon name="arrowRight" size={20} /></Link>
         </motion.div>

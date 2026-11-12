@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import Icon, { traitsFor } from "../ui/Icon";
 import VerifiedBadge, { PhotoVerifiedCheck } from "./VerifiedBadge";
 import { initials } from "../ui/kit";
+import MatchBadge from "../ui/MatchBadge";
+
+const CATEGORY = { sleep_schedule: "Sleep", cleanliness: "Clean", study_habits: "Studying", noise: "Noise", social: "Social", guests: "Guests", partying: "Parties", smoking: "Smoking" };
 
 export function photosOf(person) {
   return [person?.profilePhoto || person?.photo, ...(person?.photos || [])].filter((p, i, a) => p && a.indexOf(p) === i);
@@ -14,6 +17,7 @@ export default function ProfileSheet({ person, onClose, onLike, onPass, onMore, 
   const [photo, setPhoto] = useState(0);
   const photos = photosOf(person);
   const traits = traitsFor(person?.dorm_prefs || {}, 8);
+  const basics = [["book", "Major", person?.major], ["calendar", "Year", person?.class_year], ["school", "School", person?.school]].filter((r) => r[2]);
   const pct = compat ?? person?.pct;
 
   useEffect(() => {
@@ -36,11 +40,11 @@ export default function ProfileSheet({ person, onClose, onLike, onPass, onMore, 
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", stiffness: 300, damping: 34 }}
         className="r8-noscroll"
-        style={{ position: "fixed", inset: 0, zIndex: 950, background: "var(--bg)", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+        style={{ position: "fixed", inset: 0, zIndex: 950, background: "var(--elev)", overflowY: "auto", WebkitOverflowScrolling: "touch" }}
       >
         <div style={{ maxWidth: 560, margin: "0 auto", paddingBottom: onLike ? 140 : 48 }}>
           {/* Hero photo */}
-          <div style={{ position: "relative", height: "min(68dvh, 640px)", minHeight: 380, overflow: "hidden", background: "var(--elev)" }}>
+          <div style={{ position: "relative", height: "min(54dvh, 560px)", minHeight: 360, overflow: "hidden", background: "var(--elev)" }}>
             {photos.length ? (
               <AnimatePresence initial={false} mode="popLayout">
                 <motion.img
@@ -63,11 +67,11 @@ export default function ProfileSheet({ person, onClose, onLike, onPass, onMore, 
                 </div>
               </>
             )}
-            <div style={{ position: "absolute", inset: "auto 0 0 0", height: "55%", background: "linear-gradient(180deg, transparent, rgba(14,15,18,.86))", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", inset: "auto 0 0 0", height: "55%", background: "linear-gradient(180deg, transparent, rgba(17,17,18,.75))", pointerEvents: "none" }} />
 
             <div style={{ position: "absolute", top: "calc(var(--safe-t) + 8px)", left: 14, right: 14, display: "flex", justifyContent: "space-between" }}>
               <button className="r8-icon-btn r8-icon-btn--round" onClick={onClose} aria-label="Close profile" style={{ color: "#fff", background: "rgba(14,15,18,.4)", borderColor: "rgba(255,255,255,.2)" }}>
-                <Icon name="chevronDown" size={22} />
+                <Icon name="back" size={22} />
               </button>
               {onMore && (
                 <button className="r8-icon-btn r8-icon-btn--round" onClick={onMore} aria-label="More options" style={{ color: "#fff", background: "rgba(14,15,18,.4)", borderColor: "rgba(255,255,255,.2)" }}>
@@ -76,66 +80,60 @@ export default function ProfileSheet({ person, onClose, onLike, onPass, onMore, 
               )}
             </div>
 
-            {pct != null && (
-              <div className="r8-sticker" style={{ position: "absolute", right: 18, bottom: 110 }}>
-                <b>{pct}%</b><small>MATCH</small>
+            <div style={{ position: "absolute", left: 20, right: 20, bottom: 44, color: "#fff", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <h1 style={{ fontSize: "clamp(32px, 9vw, 40px)", fontWeight: 700, letterSpacing: "-0.04em", color: "#fff" }}>{person.firstName || person.name}{person.age ? `, ${person.age}` : ""}</h1>
+                  <PhotoVerifiedCheck verified={person.is_photo_verified} size={24} />
+                </div>
+                {person.school && <p style={{ marginTop: 4, fontSize: 16, opacity: .88 }}>{person.school}</p>}
               </div>
-            )}
-
-            <div style={{ position: "absolute", left: 20, right: 20, bottom: 22, color: "#fff" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <h1 style={{ fontSize: "clamp(32px, 9vw, 42px)", color: "#fff" }}>{person.firstName || person.name}{person.age ? <span style={{ fontWeight: 500, opacity: .8 }}>, {person.age}</span> : null}</h1>
-                <PhotoVerifiedCheck verified={person.is_photo_verified} size={24} />
-              </div>
-              {person.school && (
-                <p style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 15, opacity: .85 }}>
-                  <Icon name="school" size={17} />{person.school}{sub ? `, ${sub}` : ""}
-                </p>
-              )}
+              <MatchBadge pct={pct} size={68} />
             </div>
           </div>
 
-          <div style={{ padding: "20px 16px 0", display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <VerifiedBadge isStudent={person.is_verified_student} size="md" />
-              {person.is_photo_verified && <span className="r8-badge"><Icon name="verified" size={14} />Photo verified</span>}
-            </div>
+          <div style={{ position: "relative", marginTop: -26, background: "var(--elev)", borderRadius: "28px 28px 0 0", padding: "26px 22px 8px", display: "flex", flexDirection: "column", gap: 28, minHeight: 300 }}>
+            {(person.is_verified_student || person.is_photo_verified) && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <VerifiedBadge isStudent={person.is_verified_student} size="md" />
+                {person.is_photo_verified && <span className="r8-badge"><Icon name="verified" size={14} />Photo verified</span>}
+              </div>
+            )}
 
             {person.bio && (
               <Section label="About me">
-                <p style={{ fontSize: 20, lineHeight: 1.45, fontFamily: "var(--display)", fontWeight: 500, letterSpacing: "-0.015em" }}>{person.bio}</p>
+                <p style={{ fontSize: 16, lineHeight: 1.55, color: "var(--text-2)" }}>{person.bio}</p>
               </Section>
             )}
 
-            {extra[0] && <Photo src={extra[0]} alt={`${person.name}, photo 2`} />}
-
             {traits.length > 0 && (
-              <Section label="How they live">
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-                  {traits.map((t) => (
-                    <div key={t.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 12px", borderRadius: 16, background: "var(--glass)", border: "1px solid var(--line)" }}>
-                      <span style={{ width: 34, height: 34, borderRadius: 11, background: "var(--iri-soft)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name={t.icon} size={18} /></span>
-                      <span style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.25 }}>{t.label}</span>
-                    </div>
-                  ))}
-                </div>
+              <Section label="Lifestyle">
+                <Rows rows={traits.map((t) => [t.icon, CATEGORY[t.key], t.label])} />
+              </Section>
+            )}
+
+            {basics.length > 0 && (
+              <Section label="The basics">
+                <Rows rows={basics} />
               </Section>
             )}
 
             {person.looking_for && (
               <Section label="Looking for">
-                <p style={{ fontSize: 20, lineHeight: 1.45, fontFamily: "var(--display)", fontWeight: 500, letterSpacing: "-0.015em" }}>{person.looking_for}</p>
+                <p style={{ fontSize: 16, lineHeight: 1.55, color: "var(--text-2)" }}>{person.looking_for}</p>
               </Section>
             )}
 
-            {extra.slice(1).map((src, i) => <Photo key={src} src={src} alt={`${person.name}, photo ${i + 3}`} />)}
+            {extra.map((src, i) => <Photo key={src} src={src} alt={`${person.name}, photo ${i + 2}`} />)}
           </div>
         </div>
 
         {(onLike || onPass) && (
-          <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, padding: "18px 20px calc(var(--safe-b) + 20px)", display: "flex", justifyContent: "center", gap: 18, background: "linear-gradient(180deg, transparent, var(--bg) 45%)", pointerEvents: "none" }}>
-            {onPass && <RoundAction kind="pass" onClick={onPass} />}
-            {onLike && <RoundAction kind="like" onClick={onLike} />}
+          <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, padding: "22px 20px calc(var(--safe-b) + 18px)", background: "linear-gradient(180deg, transparent, var(--elev) 40%)" }}>
+            <div style={{ maxWidth: 520, margin: "0 auto", display: "flex", gap: 12 }}>
+              {onPass && <button className="r8-btn r8-btn--soft r8-btn--lg" onClick={onPass} aria-label="Pass" style={{ width: 58, padding: 0 }}><Icon name="x" size={24} stroke={2.2} /></button>}
+              {onLike && <button className="r8-btn r8-btn--primary r8-btn--lg" onClick={onLike} style={{ flex: 1 }}>Request to Match</button>}
+            </div>
           </div>
         )}
       </motion.div>
@@ -146,15 +144,29 @@ export default function ProfileSheet({ person, onClose, onLike, onPass, onMore, 
 
 function Section({ label, children }) {
   return (
-    <section className="r8-card" style={{ padding: "20px 20px 22px", borderRadius: 24 }}>
-      <p className="r8-eyebrow" style={{ marginBottom: 10 }}>{label}</p>
+    <section>
+      <h2 style={{ fontSize: 19, fontWeight: 700, marginBottom: 10 }}>{label}</h2>
       {children}
     </section>
   );
 }
 
+function Rows({ rows }) {
+  return (
+    <div>
+      {rows.map(([icon, label, value], i) => (
+        <div key={label + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: i ? "1px solid var(--line)" : "none" }}>
+          <Icon name={icon} size={19} />
+          <span style={{ fontSize: 15, fontWeight: 600 }}>{label}</span>
+          <span style={{ marginLeft: "auto", fontSize: 15, color: "var(--text-2)", textAlign: "right" }}>{value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Photo({ src, alt }) {
-  return <img src={src} alt={alt} loading="lazy" style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 24, border: "1px solid var(--line)" }} />;
+  return <img src={src} alt={alt} loading="lazy" style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 22 }} />;
 }
 
 export function NoPhoto({ name, size = 120 }) {
@@ -181,8 +193,8 @@ export function RoundAction({ kind, onClick, size }) {
         pointerEvents: "auto", width: s, height: s, borderRadius: "50%",
         display: "flex", alignItems: "center", justifyContent: "center",
         ...(like
-          ? { background: "var(--iri)", color: "#0E0F12", boxShadow: "0 16px 40px rgba(217,139,255,.45), inset 0 2px 0 rgba(255,255,255,.45)" }
-          : { background: "var(--glass-strong)", color: "var(--text)", border: "1px solid var(--line-2)", boxShadow: "var(--shadow-1)", WebkitBackdropFilter: "var(--blur)", backdropFilter: "var(--blur)" }),
+          ? { background: "var(--iri)", color: "#111112", boxShadow: "var(--glow), inset 0 1px 0 rgba(255,255,255,.5)" }
+          : { background: "var(--elev-2)", color: "var(--text)" }),
       }}
     >
       <Icon name={like ? "heart" : "x"} size={like ? 32 : 26} stroke={like ? 2.2 : 2.4} fill={like ? "#0E0F12" : "none"} color={like ? "#0E0F12" : "currentColor"} />

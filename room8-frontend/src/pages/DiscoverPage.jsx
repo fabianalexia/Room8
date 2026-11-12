@@ -8,7 +8,8 @@ import {
   getCompatibility,
 } from "../api";
 import Icon from "../ui/Icon";
-import { Avatar, EmptyState, TopBar } from "../ui/kit";
+import { Avatar, EmptyState } from "../ui/kit";
+import AppHeader from "../components/AppHeader";
 
 const PREF_LABELS = {
   sleep_schedule: "Sleep", cleanliness: "Cleanliness", study_habits: "Study", guests: "Guests",
@@ -231,7 +232,7 @@ export default function DiscoverPage() {
   return (
     <div className="r8-app-page" style={{ position: "relative", overflow: "hidden" }}>
       <div aria-hidden="true" className="r8-aura r8-aura--b" style={{ width: 380, height: 380, top: -200, right: -160 }} />
-      <TopBar title="Matches" />
+      <AppHeader />
       <div style={{ position: "relative", maxWidth: 680, margin: "0 auto", padding: "0 16px" }}>
         <div className="r8-seg" role="tablist" style={{ marginBottom: 16 }}>
           {[{ key: "compat", label: "Best fit" }, { key: "board", label: "Campus board" }].map((t) => (

@@ -217,7 +217,7 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
       <AnimatePresence>
         {showConfirmBanner && !confirmStatus.both_confirmed && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: "hidden", flexShrink: 0 }}>
-            <div style={{ margin: "10px 14px 0", padding: "12px 14px", borderRadius: 18, background: "var(--iri-soft)", border: "1px solid rgba(140,158,255,.35)", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ margin: "10px 14px 0", padding: "12px 14px", borderRadius: 18, background: "var(--elev)", border: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ width: 36, height: 36, borderRadius: 12, background: "var(--iri)", color: "#0E0F12", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="home" size={19} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontWeight: 600, fontSize: 15 }}>{firstName} wants to make it official</p>
@@ -282,7 +282,7 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
                 <div style={{
                   maxWidth: "78%", padding: "10px 15px", borderRadius: radius, fontSize: 16, lineHeight: 1.42, wordBreak: "break-word",
                   ...(isMe
-                    ? { background: "linear-gradient(135deg, #6F8BFF, #B07CFF)", color: "#fff" }
+                    ? { background: "var(--text)", color: "var(--bg)" }
                     : { background: "var(--elev-2)", color: "var(--text)", border: "1px solid var(--line)" }),
                 }}>
                   {m.text}

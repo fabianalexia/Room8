@@ -82,7 +82,7 @@ export default function LoginPage() {
         <div className="r8-field">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <label className="r8-label" htmlFor="li-pass">Password</label>
-            <Link to="/forgot-password" style={{ fontSize: 13, fontWeight: 600, color: "var(--peri)" }}>Forgot?</Link>
+            <Link to="/forgot-password" style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", textDecoration: "underline" }}>Forgot?</Link>
           </div>
           <PasswordInput id="li-pass" value={form.password} onChange={update} />
         </div>

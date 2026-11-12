@@ -58,30 +58,45 @@ function NotificationBell({ notifications, onDismiss }) {
 
 function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifications, onDismissNotification, onViewProfile }) {
   const navigate = useNavigate();
-  const newMatches = matches.filter((m) => !m.last_message);
-  const messaged = matches.filter((m) => m.last_message);
+  const [tab, setTab] = React.useState("all");
+  const newMatches = tab === "unread" ? [] : matches.filter((m) => !m.last_message);
+  const messaged = tab === "matches" ? [] : matches.filter((m) => m.last_message && (tab !== "unread" || m.has_unread));
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, borderRight: isMobile ? "none" : "1px solid var(--line)", background: "var(--bg)" }}>
-      <TopBar title="Chats" right={<NotificationBell notifications={notifications} onDismiss={onDismissNotification} />} />
-      <div className="r8-noscroll" style={{ flex: 1, overflowY: "auto", paddingBottom: isMobile ? "calc(var(--nav-h) + var(--safe-b) + 24px)" : 24 }}>
+      <header style={{ padding: "calc(var(--safe-t) + 18px) 20px 14px", background: "var(--bg)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <h1 style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.045em" }}>Messages</h1>
+          <NotificationBell notifications={notifications} onDismiss={onDismissNotification} />
+        </div>
+        <div role="tablist" style={{ display: "flex", background: "var(--elev-2)", borderRadius: 999, padding: 4 }}>
+          {[["all", "All"], ["matches", "Matches"], ["unread", "Unread"]].map(([k, l]) => (
+            <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+              style={{ flex: 1, height: 36, borderRadius: 999, fontSize: 14.5, fontWeight: 600, background: tab === k ? "var(--text)" : "transparent", color: tab === k ? "var(--bg)" : "var(--text-2)", transition: "all .2s" }}>{l}</button>
+          ))}
+        </div>
+      </header>
+      <div className="r8-noscroll" style={{ flex: 1, overflowY: "auto", paddingBottom: isMobile ? "calc(64px + var(--safe-b) + 24px)" : 24 }}>
         {loading && (
           <div style={{ padding: "8px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
             {[0, 1, 2, 3].map((i) => <div key={i} style={{ display: "flex", gap: 12, alignItems: "center" }}><div className="r8-skel" style={{ width: 56, height: 56, borderRadius: "50%" }} /><div style={{ flex: 1 }}><div className="r8-skel" style={{ height: 14, width: "40%", marginBottom: 8 }} /><div className="r8-skel" style={{ height: 12, width: "70%" }} /></div></div>)}
           </div>
         )}
+        {!loading && matches.length > 0 && newMatches.length === 0 && messaged.length === 0 && (
+          <p className="r8-muted" style={{ textAlign: "center", padding: "40px 20px", fontSize: 15 }}>{tab === "unread" ? "You're all caught up." : "No new matches right now."}</p>
+        )}
         {!loading && matches.length === 0 && (
           <EmptyState icon="chat" title="No chats yet" body="When you and someone both like each other, your conversation starts here."
-            action={<button className="r8-btn r8-btn--primary" onClick={() => navigate("/app")}><Icon name="flame" size={20} />Find roommates</button>} />
+            action={<button className="r8-btn r8-btn--primary" onClick={() => navigate("/app")}>Find roommates</button>} />
         )}
 
         {newMatches.length > 0 && (
           <section style={{ padding: "4px 0 10px" }}>
-            <p className="r8-eyebrow" style={{ margin: "0 20px 12px" }}>New matches</p>
+            <h2 style={{ fontSize: 17, fontWeight: 700, margin: "6px 20px 12px" }}>New matches</h2>
             <div className="r8-noscroll" style={{ display: "flex", gap: 16, overflowX: "auto", padding: "0 20px 6px" }}>
               {newMatches.map((m) => (
                 <motion.button key={m.id} whileTap={{ scale: 0.94 }} onClick={() => onSelect(m)}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, width: 70, flexShrink: 0 }}>
-                  <Avatar src={m.photo} name={m.name} size={66} ring />
+                  <Avatar src={m.photo} name={m.name} size={66} />
                   <span style={{ fontSize: 13, fontWeight: 500, maxWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{first(m.name)}</span>
                 </motion.button>
               ))}
@@ -91,17 +106,17 @@ function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifi
 
         {messaged.length > 0 && (
           <section style={{ paddingTop: 6 }}>
-            <p className="r8-eyebrow" style={{ margin: "8px 20px 6px" }}>Messages</p>
+            
             {messaged.map((m) => {
               const active = m.id === selectedId;
               const unread = !active && !!m.has_unread;
               return (
                 <div key={m.id} role="button" tabIndex={0} onClick={() => onSelect(m)} onKeyDown={(e) => { if (e.key === "Enter") onSelect(m); }}
-                  style={{ display: "flex", alignItems: "center", gap: 14, margin: "2px 10px", padding: "10px 10px", borderRadius: 20, cursor: "pointer", background: active ? "var(--glass-2)" : "transparent", transition: "background .2s" }}
+                  style={{ display: "flex", alignItems: "center", gap: 14, margin: "0 8px", padding: "14px 12px", borderRadius: 18, cursor: "pointer", boxShadow: "inset 0 -1px 0 var(--line)", background: active ? "var(--glass-2)" : "transparent", transition: "background .2s" }}
                   onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "var(--glass)"; }}
                   onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}>
                   <button onClick={(e) => { e.stopPropagation(); onViewProfile?.(m); }} aria-label={`View ${first(m.name)}'s profile`} style={{ position: "relative", borderRadius: "50%", flexShrink: 0 }}>
-                    <Avatar src={m.photo} name={m.name} size={56} ring={unread} />
+                    <Avatar src={m.photo} name={m.name} size={58} />
                   </button>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
@@ -112,7 +127,7 @@ function MatchesPanel({ matches, loading, onSelect, selectedId, isMobile, notifi
                       <span style={{ flex: 1, fontSize: 14.5, color: unread ? "var(--text)" : "var(--text-2)", fontWeight: unread ? 500 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {m.last_message_mine ? "You: " : ""}{m.last_message}
                       </span>
-                      {unread && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--iri)", flexShrink: 0 }} />}
+                      {unread && <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#B48CF5", flexShrink: 0 }} />}
                     </div>
                   </div>
                 </div>

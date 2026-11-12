@@ -14,6 +14,8 @@ import { PhotoVerifiedCheck } from "./VerifiedBadge";
 import { haptic } from "../native";
 import { sendNotification } from "../notifications";
 import Icon, { traitsFor } from "../ui/Icon";
+import MatchBadge from "../ui/MatchBadge";
+import AppHeader from "./AppHeader";
 import { Mark } from "../ui/Logo";
 import { Avatar, Sheet, EmptyState, Spinner } from "../ui/kit";
 
@@ -172,7 +174,7 @@ const Card = forwardRef(function Card({ person, depth, onSwiped, onOpen, onMenu 
     <motion.div
       style={{ position: "absolute", inset: 0, zIndex: 10 - depth, pointerEvents: isTop ? "auto" : "none" }}
       initial={false}
-      animate={{ scale: 1 - depth * 0.045, y: depth * 16, opacity: depth > 2 ? 0 : 1 }}
+      animate={{ scale: 1 - depth * 0.04, y: depth * 10, opacity: depth > 2 ? 0 : 1 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
     <motion.div
@@ -185,7 +187,7 @@ const Card = forwardRef(function Card({ person, depth, onSwiped, onOpen, onMenu 
       onTap={onTap}
       whileTap={isTop ? { scale: 0.985 } : undefined}
     >
-      <div style={{ position: "absolute", inset: 0, borderRadius: 32, overflow: "hidden", background: "var(--elev)", border: "1px solid var(--line)", boxShadow: depth === 0 ? "0 30px 70px rgba(0,0,0,.35)" : "0 16px 40px rgba(0,0,0,.2)", cursor: isTop ? "grab" : "default", userSelect: "none", WebkitUserSelect: "none" }}>
+      <div style={{ position: "absolute", inset: 0, borderRadius: 30, overflow: "hidden", background: "#2a2a2c", boxShadow: depth === 0 ? "0 24px 60px rgba(17,17,18,.22)" : "0 10px 30px rgba(17,17,18,.12)", cursor: isTop ? "grab" : "default", userSelect: "none", WebkitUserSelect: "none" }}>
         {src ? (
           <img key={src} src={src} alt={person.name} draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
         ) : <NoPhoto name={person.name} />}
@@ -197,45 +199,45 @@ const Card = forwardRef(function Card({ person, depth, onSwiped, onOpen, onMenu 
         )}
 
         {/* Like / pass stamps */}
-        <motion.div aria-hidden="true" style={{ opacity: likeOpacity, scale: likeScale, rotate: -10, position: "absolute", top: 46, left: 22, zIndex: 4 }}>
-          <span className="r8-sticker r8-sticker--pill" style={{ fontSize: 22, padding: "8px 18px", transform: "none" }}><Icon name="heart" size={20} fill="#0E0F12" color="#0E0F12" />yes please</span>
+        <motion.div aria-hidden="true" style={{ opacity: likeOpacity, scale: likeScale, rotate: -8, position: "absolute", top: 46, left: 22, zIndex: 4 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 46, padding: "0 20px", borderRadius: 999, background: "var(--iri)", color: "#111112", fontWeight: 700, fontSize: 20, boxShadow: "0 10px 30px rgba(157,177,255,.45)" }}><Icon name="heart" size={20} fill="#111112" color="#111112" />Like</span>
         </motion.div>
-        <motion.div aria-hidden="true" style={{ opacity: passOpacity, scale: passScale, rotate: 10, position: "absolute", top: 46, right: 22, zIndex: 4 }}>
-          <span className="r8-sticker r8-sticker--pill" style={{ fontSize: 22, padding: "8px 18px", transform: "none", background: "#F2F2F5", color: "#0E0F12" }}><Icon name="x" size={20} stroke={2.6} />not it</span>
+        <motion.div aria-hidden="true" style={{ opacity: passOpacity, scale: passScale, rotate: 8, position: "absolute", top: 46, right: 22, zIndex: 4 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 46, padding: "0 20px", borderRadius: 999, background: "#fff", color: "#111112", fontWeight: 700, fontSize: 20, boxShadow: "0 10px 30px rgba(0,0,0,.25)" }}><Icon name="x" size={20} stroke={2.6} />Pass</span>
         </motion.div>
 
-        {person.pct != null && (
-          <div className="r8-sticker" style={{ position: "absolute", top: photos.length > 1 ? 34 : 22, right: 18, zIndex: 3 }}>
-            <b>{person.pct}%</b><small>MATCH</small>
-          </div>
-        )}
-
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "90px 20px 20px", background: "linear-gradient(180deg, transparent, rgba(14,15,18,.55) 35%, rgba(14,15,18,.9))", color: "#fff", zIndex: 2 }}>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "120px 18px 18px", background: "linear-gradient(180deg, transparent, rgba(17,17,18,.5) 30%, rgba(17,17,18,.88) 70%, rgba(17,17,18,.94))", color: "#fff", zIndex: 2 }}>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <h2 style={{ fontSize: 32, color: "#fff" }}>{person.firstName}{person.age ? <span style={{ fontWeight: 500, opacity: .85 }}>, {person.age}</span> : null}</h2>
+                <h2 style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.04em", color: "#fff" }}>{person.firstName}{person.age ? `, ${person.age}` : ""}</h2>
                 <PhotoVerifiedCheck verified={person.is_photo_verified} size={22} />
               </div>
-              {(person.school || person.sub) && (
-                <p style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, fontSize: 14, color: "rgba(255,255,255,.8)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  <Icon name="school" size={16} />{[shortSchool(person.school), person.class_year].filter(Boolean).join(", ")}
+              {(person.school || person.class_year) && (
+                <p style={{ marginTop: 4, fontSize: 16, color: "rgba(255,255,255,.86)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {[person.school, person.class_year].filter(Boolean).join(", ")}
                 </p>
               )}
             </div>
-            <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onOpen(person); }} aria-label={`Open ${person.firstName}'s full profile`}
-              className="r8-icon-btn r8-icon-btn--round" style={{ color: "#fff", background: "rgba(255,255,255,.14)", borderColor: "rgba(255,255,255,.22)", flexShrink: 0 }}>
-              <Icon name="arrowUp" size={20} stroke={2.2} />
-            </button>
+            <MatchBadge pct={person.pct} size={68} />
           </div>
-          {person.bio && (
-            <p style={{ marginTop: 10, fontSize: 15, lineHeight: 1.45, color: "rgba(255,255,255,.88)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{person.bio}</p>
-          )}
           {traits.length > 0 && (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-              {traits.map((t) => (
-                <span key={t.key} className="r8-chip" style={{ background: "rgba(255,255,255,.14)", borderColor: "rgba(255,255,255,.2)", color: "#fff" }}><Icon name={t.icon} size={15} />{t.label}</span>
-              ))}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+              {traits.map((t) => <span key={t.key} className="r8-photo-tag">{t.label}</span>)}
+            </div>
+          )}
+          {isTop && (
+            <div style={{ display: "flex", justifyContent: "center", gap: 18, marginTop: 18 }}>
+              <button className="r8-card-btn" aria-label="Pass" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); haptic("light"); fly("left", -1400); }}>
+                <Icon name="x" size={26} stroke={2.2} />
+              </button>
+              <button className="r8-card-btn" aria-label={`Open ${person.firstName}'s full profile`} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onOpen(person); }}>
+                <Icon name="arrowUp" size={24} stroke={2.2} />
+              </button>
+              <button className="r8-card-btn r8-card-btn--like" aria-label="Like" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); haptic("light"); fly("right", 1400); }}>
+                <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true"><linearGradient id="r8-heart-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#5FE3F4" /><stop offset=".5" stopColor="#9DB1FF" /><stop offset="1" stopColor="#F58AC4" /></linearGradient></svg>
+                <Icon name="heart" size={28} stroke={0} fill="url(#r8-heart-g)" />
+              </button>
             </div>
           )}
         </div>
@@ -333,24 +335,7 @@ export default function SwipeDeck() {
 
   return (
     <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", minHeight: "100dvh", background: "var(--bg)", overflow: "hidden" }}>
-      <div aria-hidden="true" className="r8-aura r8-aura--a" style={{ width: 460, height: 460, top: -220, right: -200 }} />
-      <div aria-hidden="true" className="r8-aura r8-aura--b" style={{ width: 380, height: 380, bottom: 40, left: -240 }} />
-
-      {/* Top bar */}
-      <header style={{ position: "relative", zIndex: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "calc(var(--safe-t) + 12px) 18px 10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Mark size={34} />
-          <span style={{ fontFamily: "var(--brand)", fontWeight: 600, fontSize: 24, letterSpacing: "-0.01em" }}>room<span className="r8-iri-text" style={{ background: "var(--iri-v)", WebkitBackgroundClip: "text", backgroundClip: "text" }}>8</span></span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          {user?.school && <span className="r8-chip" style={{ maxWidth: 170, overflow: "hidden", textOverflow: "ellipsis" }}><Icon name="school" size={15} /><span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{shortSchool(user.school)}</span></span>}
-          {user && (
-            <button onClick={() => navigate("/profile")} aria-label="Your profile" style={{ borderRadius: "50%" }}>
-              <Avatar src={user.photo} name={user.name} size={38} ring />
-            </button>
-          )}
-        </div>
-      </header>
+      <AppHeader />
 
       {user && user.email_verified === false && (
         <div className="r8-glass" style={{ position: "relative", zIndex: 20, margin: "0 16px 8px", borderRadius: 16, padding: "10px 12px 10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "rgba(255,200,96,.12)", borderColor: "rgba(255,200,96,.3)" }}>
@@ -361,7 +346,7 @@ export default function SwipeDeck() {
         </div>
       )}
 
-      <main style={{ position: "relative", zIndex: 10, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "6px 16px calc(var(--nav-h) + var(--safe-b) + 18px)" }}>
+      <main style={{ position: "relative", zIndex: 10, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "4px 16px calc(64px + var(--safe-b) + 14px)" }}>
         {loading ? (
           <div style={{ width: "min(420px, 100%)", height: "min(620px, calc(100dvh - 300px))", borderRadius: 32 }} className="r8-skel" aria-label="Finding roommates" />
         ) : !user ? (
@@ -373,7 +358,7 @@ export default function SwipeDeck() {
             action={<button className="r8-btn r8-btn--primary" onClick={() => load(true)}><Icon name="refresh" size={18} />See people again</button>} />
         ) : (
           <>
-            <div style={{ position: "relative", width: "min(420px, 100%)", height: "min(620px, calc(100dvh - 290px))", minHeight: 420 }}>
+            <div style={{ position: "relative", width: "min(440px, 100%)", height: "min(720px, calc(100dvh - 236px - var(--safe-t) - var(--safe-b)))", minHeight: 440 }}>
               {visible.slice().reverse().map((p) => {
                 const depth = visible.indexOf(p);
                 return (
@@ -388,10 +373,6 @@ export default function SwipeDeck() {
                   />
                 );
               })}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 22, marginTop: 18 }}>
-              <RoundAction kind="pass" onClick={() => topRef.current?.swipe("left")} />
-              <RoundAction kind="like" onClick={() => topRef.current?.swipe("right")} />
             </div>
           </>
         )}

@@ -1,843 +1,418 @@
-import React, { useState, useEffect, useRef } from "react";
+// Discover: physics-based swipe deck. Drag, flick or tap the buttons.
+// Tap the sides of a card to flip photos, tap the middle or the info button for the full profile.
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import {
   getCurrentUser, getCandidates, likeUser, skipUser,
   reportUser, blockUser, resendVerification, getSchoolStatus,
 } from "../api";
 import WaitlistScreen from "./WaitlistScreen";
+import ProfileSheet, { photosOf, NoPhoto, RoundAction } from "./ProfileSheet";
+import MatchMoment from "./MatchMoment";
+import { PhotoVerifiedCheck } from "./VerifiedBadge";
 import { haptic } from "../native";
 import { sendNotification } from "../notifications";
-import VerifiedBadge, { PhotoVerifiedCheck } from "./VerifiedBadge";
+import Icon, { traitsFor } from "../ui/Icon";
+import MatchBadge from "../ui/MatchBadge";
+import AppHeader from "./AppHeader";
+import { Mark } from "../ui/Logo";
+import { Avatar, Sheet, EmptyState, Spinner } from "../ui/kit";
 
-// ─── Palette ─────────────────────────────────────────────────────
-const GOLD   = "#f5a623";
-const GOLD2  = "#f5c842";
-const DARK   = "#03040b";
-const NAVY   = "#0F2D5E";
-const WHITE  = "#ffffff";
-const MUTED  = "rgba(255,255,255,0.45)";
-const BORDER = "rgba(255,255,255,0.08)";
-const JAKARTA = "'Plus Jakarta Sans', 'Inter', sans-serif";
-const BEBAS   = "'Bebas Neue', cursive";
+export { default as ProfileModal } from "./ProfileSheet";
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-// ─── Demo profiles (fallback when no API candidates) ─────────────
+// ─── Demo profiles (only when the school gate is off and nobody is real yet) ───
 const DEMO_PROFILES = [
-  {
-    id: "d1", name: "Maya Chen", firstName: "Maya", initials: "MC",
-    sub: "UCLA · Junior · Computer Science", pct: 94,
-    photo: "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=800&q=80",
-    bio: "CS major obsessed with hackathons and oat milk lattes. I keep a tidy space and love lo-fi music while I work. Looking for someone who won't leave dishes in the sink.",
-    looking_for: "A chill, considerate roomie who respects quiet hours after 10pm. Bonus if you're into hiking or indie films.",
-    isMatch: true,
-    tags: [
-      { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
-      { label: "CS Major",   bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
-      { label: "Night Owl",  bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
-      { label: "Clean",      bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
-    ],
-  },
-  {
-    id: "d2", name: "Jordan Lee", firstName: "Jordan", initials: "JL",
-    sub: "USC · Sophomore · Business", pct: 81,
-    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80",
-    bio: "Business major by day, amateur chef by night. I meal-prep on Sundays and keep common areas spotless. Early riser — usually out the door by 7am.",
-    looking_for: "Someone low-drama and easy to live with. I travel a lot for internships so a roomie who's independent is ideal.",
-    isMatch: false,
-    tags: [
-      { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
-      { label: "Business",   bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
-      { label: "Early Bird", bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
-      { label: "Relaxed",    bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
-    ],
-  },
-  {
-    id: "d3", name: "Priya Nair", firstName: "Priya", initials: "PN",
-    sub: "NYU · Senior · Psychology", pct: 88,
-    photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80",
-    bio: "Psych senior finishing my thesis on decision-making. I light candles, do yoga at 6am, and appreciate a quiet home. Very clean and communicative.",
-    looking_for: "A grounded, mature roommate. I need a calm environment to write — would love someone who feels the same way.",
-    isMatch: true,
-    tags: [
-      { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
-      { label: "Psychology", bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
-      { label: "Flexible",   bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
-      { label: "Spotless",   bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
-    ],
-  },
-  {
-    id: "d4", name: "Marcus Webb", firstName: "Marcus", initials: "MW",
-    sub: "Stanford · Junior · Engineering", pct: 76,
-    photo: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=800&q=80",
-    bio: "Mech E junior who spends weekends rock climbing and tinkering with robotics projects. I keep my stuff out of shared spaces and love a good movie night.",
-    looking_for: "Someone who's social but understands that finals week means total silence. Down to split cooking duties.",
-    isMatch: false,
-    tags: [
-      { label: "✓ Verified",  bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
-      { label: "Engineering", bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
-      { label: "Night Owl",   bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
-      { label: "Casual",      bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
-    ],
-  },
-  {
-    id: "d5", name: "Sofia Reyes", firstName: "Sofia", initials: "SR",
-    sub: "MIT · Freshman · Biology", pct: 91,
-    photo: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=800&q=80",
-    bio: "Pre-med bio major from Miami. I wake up early, study hard, and decompress with Pilates or cooking Cuban food. Very tidy — I believe a clean space is a clear mind.",
-    looking_for: "A driven, kind roommate who takes academics seriously but still knows how to have fun on weekends.",
-    isMatch: true,
-    tags: [
-      { label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" },
-      { label: "Biology",    bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" },
-      { label: "Early Bird", bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" },
-      { label: "Clean",      bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" },
-    ],
-  },
+  { id: "d1", name: "Maya Chen", school: "UCLA", class_year: "Junior", major: "Computer Science", pct: 94, isMatch: true, is_verified_student: true,
+    photo: "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=900&q=80",
+    bio: "cs major, hackathon goblin, oat milk latte loyalist. i keep a tidy space and live on lo-fi.",
+    looking_for: "someone chill who respects quiet hours after 10pm. bonus points for hiking or indie films.",
+    dorm_prefs: { sleep_schedule: "night_owl", cleanliness: "clean", study_habits: "in_room", noise: "quiet" } },
+  { id: "d2", name: "Jordan Lee", school: "USC", class_year: "Sophomore", major: "Business", pct: 81, isMatch: false, is_verified_student: true,
+    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900&q=80",
+    bio: "business by day, amateur chef by night. sunday meal prep is my personality. out the door by 7.",
+    looking_for: "low drama and independent. i travel a lot for internships.",
+    dorm_prefs: { sleep_schedule: "early_bird", cleanliness: "very_clean", social: "social", partying: "sometimes" } },
+  { id: "d3", name: "Priya Nair", school: "NYU", class_year: "Senior", major: "Psychology", pct: 88, isMatch: true, is_verified_student: true,
+    photo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=80",
+    bio: "writing my thesis on decision making. candles, 6am yoga, a very calm home.",
+    looking_for: "a grounded roommate who also needs a peaceful place to think.",
+    dorm_prefs: { sleep_schedule: "early_bird", cleanliness: "very_clean", noise: "silent", social: "private" } },
+  { id: "d4", name: "Marcus Webb", school: "Stanford", class_year: "Junior", major: "Mechanical Engineering", pct: 76, isMatch: false, is_verified_student: true,
+    photo: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=900&q=80",
+    bio: "rock climbing on weekends, robotics in between. movie nights are mandatory.",
+    looking_for: "social, but finals week means total silence. down to split cooking.",
+    dorm_prefs: { sleep_schedule: "night_owl", cleanliness: "relaxed", social: "very_social", guests: "occasionally" } },
+  { id: "d5", name: "Sofia Reyes", school: "MIT", class_year: "Freshman", major: "Biology", pct: 91, isMatch: true, is_verified_student: true,
+    photo: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=900&q=80",
+    bio: "pre-med from miami. pilates, cuban food, and a clean space for a clear mind.",
+    looking_for: "driven and kind, takes school seriously but still has fun on weekends.",
+    dorm_prefs: { sleep_schedule: "early_bird", cleanliness: "clean", study_habits: "library", partying: "sometimes" } },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────
-const COMPAT_KEYS = ["sleep_schedule","cleanliness","study_habits","guests","noise","social","partying","smoking"];
-const SLEEP_MAP   = { early_bird: "Early Bird", night_owl: "Night Owl", flexible: "Flexible" };
-const CLEAN_MAP   = { very_clean: "Spotless", clean: "Clean", relaxed: "Relaxed", messy: "Casual" };
-
-function getCompatPercent(myP, theirP) {
-  if (!myP || !theirP) return null;
-  const match = COMPAT_KEYS.filter((k) => myP[k] && myP[k] === theirP[k]).length;
-  return Math.round((match / COMPAT_KEYS.length) * 100);
+const COMPAT_KEYS = ["sleep_schedule", "cleanliness", "study_habits", "guests", "noise", "social", "partying", "smoking"];
+function compatPercent(mine, theirs) {
+  if (!mine || !theirs) return null;
+  const answered = COMPAT_KEYS.filter((k) => mine[k] && theirs[k]);
+  if (!answered.length) return null;
+  return Math.round((answered.filter((k) => mine[k] === theirs[k]).length / answered.length) * 100);
 }
 function shortSchool(name) {
   if (!name) return null;
   const a = { "New York University (NYU)": "NYU", "Massachusetts Institute of Technology": "MIT" };
-  return a[name] || (name.length > 20 ? name.slice(0, 18) + "…" : name);
+  return a[name] || name;
 }
-function candidateToCard(c, viewerPrefs) {
-  const prefs = c.dorm_prefs || {};
-  const pct   = getCompatPercent(viewerPrefs, prefs);
-  const tags  = [];
-  if (c.is_verified_student) tags.push({ label: "✓ Verified", bg: "rgba(34,197,94,.15)",  border: "rgba(34,197,94,.35)",  color: "#86efac" });
-  if (c.major)               tags.push({ label: c.major.slice(0,14), bg: "rgba(59,130,246,.15)", border: "rgba(59,130,246,.35)", color: "#93c5fd" });
-  if (prefs.sleep_schedule && SLEEP_MAP[prefs.sleep_schedule]) tags.push({ label: SLEEP_MAP[prefs.sleep_schedule], bg: "rgba(139,92,246,.15)", border: "rgba(139,92,246,.35)", color: "#c4b5fd" });
-  if (prefs.cleanliness && CLEAN_MAP[prefs.cleanliness])       tags.push({ label: CLEAN_MAP[prefs.cleanliness],   bg: "rgba(245,158,11,.15)", border: "rgba(245,158,11,.35)", color: "#fcd34d" });
+function toCard(c, viewerPrefs) {
   const parts = (c.name || "").split(" ");
   return {
     ...c,
     firstName: parts[0] || c.name,
-    initials:  parts.map((p) => p[0]).join("").slice(0, 2).toUpperCase(),
-    sub:       [c.class_year, c.major, shortSchool(c.school)].filter(Boolean).join(" · "),
-    pct,
-    tags:      tags.slice(0, 4),
-    isMatch:   false,
+    pct: c.pct ?? compatPercent(viewerPrefs, c.dorm_prefs || {}),
+    sub: [c.class_year, c.major].filter(Boolean).join(", "),
+    isMatch: !!c.isMatch,
   };
 }
 
-// ─── Report reasons ───────────────────────────────────────────────
 const REPORT_REASONS = [
   { value: "inappropriate", label: "Inappropriate content" },
-  { value: "fake",          label: "Fake profile" },
-  { value: "harassment",    label: "Harassment" },
-  { value: "spam",          label: "Spam" },
-  { value: "other",         label: "Other" },
+  { value: "fake", label: "Fake profile" },
+  { value: "harassment", label: "Harassment" },
+  { value: "spam", label: "Spam" },
+  { value: "other", label: "Something else" },
 ];
 
-function ReportModal({ person, userId, onClose, onDone }) {
-  const [reason, setReason]         = useState("inappropriate");
-  const [notes, setNotes]           = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone]             = useState(false);
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
+function ReportSheet({ person, userId, onClose, onDone, demo }) {
+  const [reason, setReason] = useState("inappropriate");
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const submit = async () => {
+    setBusy(true);
     try {
-      await reportUser(userId, person.id, reason, notes);
+      if (!demo) await reportUser(userId, person.id, reason, notes);
       setDone(true);
-      setTimeout(onDone, 1200);
-    } catch { onClose(); } finally { setSubmitting(false); }
+      setTimeout(onDone, 1100);
+    } catch { onClose(); } finally { setBusy(false); }
+  };
+  return (
+    <Sheet open onClose={onClose} title={done ? "" : `Report ${person.firstName || person.name}`} labelledBy="r8-report-title">
+      {done ? (
+        <EmptyState icon="shield" title="Report sent" body="Thanks for keeping Room8 safe. We'll review this profile." />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p className="r8-muted" style={{ fontSize: 15, marginBottom: 4 }}>What's going on? They won't know you reported them.</p>
+          {REPORT_REASONS.map((r) => (
+            <button key={r.value} onClick={() => setReason(r.value)} aria-pressed={reason === r.value}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 52, padding: "0 16px", borderRadius: 16, textAlign: "left", fontSize: 15, fontWeight: 500,
+                background: reason === r.value ? "var(--iri-soft)" : "var(--glass)", border: `1.5px solid ${reason === r.value ? "rgba(140,158,255,.7)" : "var(--line)"}` }}>
+              {r.label}
+              {reason === r.value && <Icon name="check" size={18} stroke={2.4} />}
+            </button>
+          ))}
+          <textarea className="r8-textarea" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything else we should know? (optional)" style={{ minHeight: 84 }} />
+          <button className="r8-btn r8-btn--danger r8-btn--block" onClick={submit} disabled={busy}>{busy ? "Sending..." : "Send report"}</button>
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+// ─── One card ─────────────────────────────────────────────────────
+const Card = forwardRef(function Card({ person, depth, onSwiped, onOpen, onMenu }, ref) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotate = useTransform(x, [-320, 0, 320], [-16, 0, 16]);
+  const likeOpacity = useTransform(x, [24, 120], [0, 1]);
+  const passOpacity = useTransform(x, [-120, -24], [1, 0]);
+  const likeScale = useTransform(x, [24, 140], [0.8, 1.05]);
+  const passScale = useTransform(x, [-140, -24], [1.05, 0.8]);
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const photos = photosOf(person);
+  const flying = useRef(false);
+  const cardEl = useRef(null);
+  const isTop = depth === 0;
+
+  const fly = useCallback((dir, velocity = 0) => {
+    if (flying.current) return;
+    flying.current = true;
+    const w = typeof window !== "undefined" ? window.innerWidth : 800;
+    const target = (dir === "right" ? 1 : -1) * (w + 260);
+    animate(x, target, { type: "spring", stiffness: 160, damping: 26, velocity, restDelta: 40 });
+    animate(y, y.get() - 40, { duration: 0.4 });
+    setTimeout(() => onSwiped(dir), 230);
+  }, [x, y, onSwiped]);
+
+  useImperativeHandle(ref, () => ({ swipe: (dir) => { haptic("light"); fly(dir, dir === "right" ? 1400 : -1400); } }), [fly]);
+
+  const onDragEnd = (_, info) => {
+    const dx = info.offset.x, vx = info.velocity.x;
+    if (dx > 110 || vx > 650) { haptic("light"); fly("right", vx); }
+    else if (dx < -110 || vx < -650) { haptic("light"); fly("left", vx); }
+    else {
+      animate(x, 0, { type: "spring", stiffness: 520, damping: 30 });
+      animate(y, 0, { type: "spring", stiffness: 520, damping: 30 });
+    }
   };
 
+  const onTap = (e, info) => {
+    if (!isTop || !cardEl.current) return;
+    const rect = cardEl.current.getBoundingClientRect();
+    const rx = (info.point.x - rect.left) / rect.width;
+    const ry = (info.point.y - rect.top) / rect.height;
+    if (photos.length > 1 && ry < 0.66 && (rx < 0.32 || rx > 0.68)) {
+      haptic("light");
+      setPhotoIdx((i) => (rx < 0.5 ? Math.max(0, i - 1) : Math.min(photos.length - 1, i + 1)));
+      return;
+    }
+    onOpen(person);
+  };
+
+  const traits = traitsFor(person.dorm_prefs || {}, 3);
+  const src = photos[photoIdx];
+
   return (
-    <div style={{ position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)" }} onClick={onClose}>
-      <div style={{ position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",background:"#0A1628",borderRadius:20,padding:"28px 24px 32px",width:"calc(100% - 40px)",maxWidth:480,maxHeight:"90vh",overflowY:"auto",border:`1px solid ${BORDER}`,boxSizing:"border-box" }} onClick={(e)=>e.stopPropagation()}>
-        {done ? (
-          <div style={{textAlign:"center",padding:"20px 0"}}>
-            <div style={{fontSize:"2.5rem",marginBottom:12}}>✅</div>
-            <p style={{color:WHITE,fontWeight:700,fontFamily:JAKARTA}}>Report submitted</p>
-            <p style={{color:MUTED,fontSize:"0.88rem",fontFamily:JAKARTA}}>We'll review this profile shortly.</p>
+    <motion.div
+      style={{ position: "absolute", inset: 0, zIndex: 10 - depth, pointerEvents: isTop ? "auto" : "none" }}
+      initial={false}
+      animate={{ scale: 1 - depth * 0.04, y: depth * 10, opacity: depth > 2 ? 0 : 1 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+    <motion.div
+      ref={cardEl}
+      style={{ x, y, rotate, touchAction: "none", position: "absolute", inset: 0 }}
+      drag={isTop}
+      dragElastic={0.9}
+      dragMomentum={false}
+      onDragEnd={onDragEnd}
+      onTap={onTap}
+      whileTap={isTop ? { scale: 0.985 } : undefined}
+    >
+      <div style={{ position: "absolute", inset: 0, borderRadius: 30, overflow: "hidden", background: "#2a2a2c", boxShadow: depth === 0 ? "0 24px 60px rgba(17,17,18,.22)" : "0 10px 30px rgba(17,17,18,.12)", cursor: isTop ? "grab" : "default", userSelect: "none", WebkitUserSelect: "none" }}>
+        {src ? (
+          <img key={src} src={src} alt={person.name} draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
+        ) : <NoPhoto name={person.name} />}
+
+        {photos.length > 1 && (
+          <div style={{ position: "absolute", top: 14, left: 16, right: 16, display: "flex", gap: 5, zIndex: 3 }}>
+            {photos.map((_, i) => <div key={i} style={{ flex: 1, height: 3, borderRadius: 3, background: i === photoIdx ? "#fff" : "rgba(255,255,255,.35)" }} />)}
           </div>
-        ) : (
-          <>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-              <h3 style={{color:WHITE,fontWeight:800,margin:0,fontFamily:JAKARTA}}>Report {person.name?.split(" ")[0]}</h3>
-              <button onClick={onClose} style={{background:"rgba(255,255,255,.08)",border:"none",color:WHITE,width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:"1rem"}}>✕</button>
+        )}
+
+        {/* Like / pass stamps */}
+        <motion.div aria-hidden="true" style={{ opacity: likeOpacity, scale: likeScale, rotate: -8, position: "absolute", top: 46, left: 22, zIndex: 4 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 46, padding: "0 20px", borderRadius: 999, background: "var(--iri)", color: "#111112", fontWeight: 700, fontSize: 20, boxShadow: "0 10px 30px rgba(157,177,255,.45)" }}><Icon name="heart" size={20} fill="#111112" color="#111112" />Like</span>
+        </motion.div>
+        <motion.div aria-hidden="true" style={{ opacity: passOpacity, scale: passScale, rotate: 8, position: "absolute", top: 46, right: 22, zIndex: 4 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 46, padding: "0 20px", borderRadius: 999, background: "#fff", color: "#111112", fontWeight: 700, fontSize: 20, boxShadow: "0 10px 30px rgba(0,0,0,.25)" }}><Icon name="x" size={20} stroke={2.6} />Pass</span>
+        </motion.div>
+
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "120px 18px 18px", background: "linear-gradient(180deg, transparent, rgba(17,17,18,.5) 30%, rgba(17,17,18,.88) 70%, rgba(17,17,18,.94))", color: "#fff", zIndex: 2 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <h2 style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.04em", color: "#fff" }}>{person.firstName}{person.age ? `, ${person.age}` : ""}</h2>
+                <PhotoVerifiedCheck verified={person.is_photo_verified} size={22} />
+              </div>
+              {(person.school || person.class_year) && (
+                <p style={{ marginTop: 4, fontSize: 16, color: "rgba(255,255,255,.86)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {[person.school, person.class_year].filter(Boolean).join(", ")}
+                </p>
+              )}
             </div>
-            <p style={{color:MUTED,fontSize:"0.85rem",marginBottom:16,fontFamily:JAKARTA}}>Why are you reporting this profile?</p>
-            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
-              {REPORT_REASONS.map((r) => (
-                <button key={r.value} onClick={()=>setReason(r.value)} style={{padding:"12px 16px",borderRadius:8,textAlign:"left",background:reason===r.value?"rgba(245,158,11,.15)":"rgba(255,255,255,.05)",border:`1.5px solid ${reason===r.value?GOLD:BORDER}`,color:reason===r.value?GOLD:MUTED,fontWeight:reason===r.value?700:400,cursor:"pointer",fontSize:"0.9rem",fontFamily:JAKARTA}}>
-                  {r.label}
-                </button>
-              ))}
+            <MatchBadge pct={person.pct} size={68} />
+          </div>
+          {traits.length > 0 && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+              {traits.map((t) => <span key={t.key} className="r8-photo-tag">{t.label}</span>)}
             </div>
-            <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} placeholder="Additional details (optional)…" rows={2} style={{width:"100%",background:"rgba(255,255,255,.05)",border:`1.5px solid ${BORDER}`,borderRadius:8,color:WHITE,padding:"10px 14px",fontSize:"0.88rem",fontFamily:JAKARTA,resize:"none",outline:"none",boxSizing:"border-box",marginBottom:18}} />
-            <button onClick={handleSubmit} disabled={submitting} style={{width:"100%",padding:"13px",background:submitting?"rgba(245,158,11,.5)":GOLD,color:DARK,border:"none",borderRadius:8,fontWeight:700,fontSize:"0.95rem",cursor:submitting?"default":"pointer",fontFamily:JAKARTA}}>
-              {submitting ? "Submitting…" : "Submit Report"}
-            </button>
-          </>
+          )}
+          {isTop && (
+            <div style={{ display: "flex", justifyContent: "center", gap: 18, marginTop: 18 }}>
+              <button className="r8-card-btn" aria-label="Pass" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); haptic("light"); fly("left", -1400); }}>
+                <Icon name="x" size={26} stroke={2.2} />
+              </button>
+              <button className="r8-card-btn" aria-label={`Open ${person.firstName}'s full profile`} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onOpen(person); }}>
+                <Icon name="arrowUp" size={24} stroke={2.2} />
+              </button>
+              <button className="r8-card-btn r8-card-btn--like" aria-label="Like" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); haptic("light"); fly("right", 1400); }}>
+                <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true"><linearGradient id="r8-heart-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#5FE3F4" /><stop offset=".5" stopColor="#9DB1FF" /><stop offset="1" stopColor="#F58AC4" /></linearGradient></svg>
+                <Icon name="heart" size={28} stroke={0} fill="url(#r8-heart-g)" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {isTop && (
+          <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onMenu(person); }} aria-label="Report or block"
+            style={{ position: "absolute", top: photos.length > 1 ? 30 : 16, left: 14, zIndex: 5, width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: "rgba(14,15,18,.35)", WebkitBackdropFilter: "blur(12px)", backdropFilter: "blur(12px)" }}>
+            <Icon name="more" size={20} />
+          </button>
         )}
       </div>
-    </div>
+    </motion.div>
+    </motion.div>
   );
-}
+});
 
-// ─── Profile Modal (full-screen detail view) ──────────────────────
-export function ProfileModal({ person, onClose }) {
-  const [activePhoto, setActivePhoto] = useState(0);
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-  useEffect(() => {
-    const h = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [onClose]);
-
-  const allPhotos = [person.photo, ...(person.photos || [])].filter(Boolean);
-  const prefs     = person.dorm_prefs || {};
-
-  return (
-    <div style={{position:"fixed",inset:0,zIndex:500,background:"#07111f",overflowY:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none"}} className="r8-profile-modal">
-      <div style={{maxWidth:640,margin:"0 auto",paddingBottom:48}}>
-        <div style={{position:"relative",height:"52vh",minHeight:280}}>
-          {allPhotos.length > 0 ? (
-            <img src={allPhotos[activePhoto]} alt={person.name} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={(e)=>{e.target.onerror=null;e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230F2D5E'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%234b6fa8'/%3E%3Cellipse cx='50' cy='82' rx='28' ry='18' fill='%234b6fa8'/%3E%3C/svg%3E";}} />
-          ) : (
-            <div style={{width:"100%",height:"100%",background:"linear-gradient(135deg,#0A1628,#0F2D5E)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <span style={{fontSize:"5rem",opacity:0.2}}>👤</span>
-            </div>
-          )}
-          <div style={{position:"absolute",inset:0,background:"linear-gradient(to top,rgba(7,17,31,1) 0%,rgba(7,17,31,.3) 50%,transparent 100%)"}} />
-          <button onClick={onClose} style={{position:"absolute",top:16,left:16,display:"flex",alignItems:"center",gap:6,background:"rgba(0,0,0,.55)",border:"1px solid rgba(255,255,255,.18)",color:WHITE,cursor:"pointer",fontSize:"0.88rem",fontWeight:600,padding:"8px 14px",borderRadius:20,backdropFilter:"blur(8px)",fontFamily:JAKARTA}}>← Back</button>
-          {allPhotos.length > 1 && (
-            <div style={{position:"absolute",bottom:10,left:12,right:12,display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none"}}>
-              {allPhotos.map((p,i)=>(
-                <img key={i} src={p} alt="" onClick={()=>setActivePhoto(i)} style={{width:44,height:44,borderRadius:8,objectFit:"cover",border:`2px solid ${i===activePhoto?GOLD:"rgba(255,255,255,.25)"}`,cursor:"pointer",flexShrink:0,opacity:i===activePhoto?1:.65,transition:"all .15s"}} onError={(e)=>{e.target.onerror=null;e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230F2D5E'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%234b6fa8'/%3E%3Cellipse cx='50' cy='82' rx='28' ry='18' fill='%234b6fa8'/%3E%3C/svg%3E";}} />
-              ))}
-            </div>
-          )}
-          <div style={{position:"absolute",bottom:allPhotos.length>1?64:18,left:18,right:18}}>
-            <div style={{display:"flex",alignItems:"baseline",gap:10}}>
-              <h2 style={{margin:0,color:WHITE,fontSize:"clamp(1.6rem,6vw,2rem)",fontWeight:800,letterSpacing:"-0.025em",textShadow:"0 2px 12px rgba(0,0,0,.6)",fontFamily:JAKARTA}}>{person.name}</h2>
-              <PhotoVerifiedCheck verified={person.is_photo_verified} size={22} />
-              {person.age && <span style={{color:"rgba(255,255,255,.7)",fontSize:"1.3rem",fontFamily:JAKARTA}}>{person.age}</span>}
-            </div>
-            <div style={{marginTop:6}}><VerifiedBadge isStudent={person.is_verified_student} size="sm" /></div>
-            {(person.class_year||person.major) && <p style={{margin:"4px 0 0",color:"rgba(255,255,255,.65)",fontSize:"0.86rem",fontFamily:JAKARTA}}>{[person.class_year,person.major].filter(Boolean).join(" · ")}</p>}
-          </div>
-        </div>
-        <div style={{padding:"18px 18px 36px"}}>
-          {person.school && (
-            <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(245,158,11,.1)",border:"1px solid rgba(245,158,11,.25)",borderRadius:8,padding:"5px 12px",marginBottom:16}}>
-              <span style={{fontSize:"0.78rem"}}>🏫</span>
-              <span style={{color:"rgba(245,158,11,.9)",fontSize:"0.82rem",fontWeight:600,fontFamily:JAKARTA}}>{person.school}</span>
-            </div>
-          )}
-          {person.bio && (
-            <div style={{marginBottom:20}}>
-              <p style={{margin:"0 0 8px",color:"rgba(255,255,255,.4)",fontSize:"0.68rem",fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",fontFamily:JAKARTA}}>About</p>
-              <p style={{margin:0,color:"rgba(255,255,255,.82)",fontSize:"0.92rem",lineHeight:1.68,fontFamily:JAKARTA}}>{person.bio}</p>
-            </div>
-          )}
-          {person.looking_for && (
-            <div style={{background:"rgba(245,158,11,.06)",border:"1px solid rgba(245,158,11,.18)",borderRadius:12,padding:"14px 16px"}}>
-              <p style={{margin:"0 0 6px",color:"rgba(245,158,11,.65)",fontSize:"0.68rem",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",fontFamily:JAKARTA}}>Looking For</p>
-              <p style={{margin:0,color:"rgba(255,255,255,.75)",fontSize:"0.9rem",lineHeight:1.62,fontStyle:"italic",fontFamily:JAKARTA}}>"{person.looking_for}"</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Match Overlay ────────────────────────────────────────────────
-function MatchOverlay({ user, card, onChat, onKeepSwiping }) {
-  const userInitials = (user?.name || "").split(" ").map((p)=>p[0]).join("").slice(0,2).toUpperCase() || "?";
-  return (
-    <div style={{
-      position:"absolute",inset:0,zIndex:100,
-      background:"rgba(3,4,11,.92)",
-      backdropFilter:"blur(2px)",
-      display:"flex",flexDirection:"column",
-      alignItems:"center",justifyContent:"center",
-      padding:"0 28px",
-      animation:"fadeInOverlay .25s ease",
-    }}>
-      {/* Avatars + heart */}
-      <div style={{display:"flex",alignItems:"center",marginBottom:28}}>
-        <div style={{width:72,height:72,borderRadius:"50%",border:"3px solid "+GOLD,background:user?.photo?`url(${user.photo}) center/cover`:"linear-gradient(135deg,#1a3a6e,#0d1e3e)",display:"flex",alignItems:"center",justifyContent:"center",color:WHITE,fontWeight:700,fontSize:"1.3rem",fontFamily:JAKARTA,marginRight:-16,zIndex:1,boxShadow:"0 0 24px rgba(245,166,35,.4)"}}>
-          {!user?.photo && userInitials}
-        </div>
-        <div style={{width:32,height:32,borderRadius:"50%",background:`linear-gradient(135deg,${GOLD},${GOLD2})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",zIndex:2,boxShadow:`0 0 20px rgba(245,166,35,.6)`,flexShrink:0}}>❤</div>
-        <div style={{width:72,height:72,borderRadius:"50%",border:"3px solid "+GOLD,background:card?.photo?`url(${card.photo}) center/cover`:"linear-gradient(135deg,#1a3a6e,#0d1e3e)",display:"flex",alignItems:"center",justifyContent:"center",color:WHITE,fontWeight:700,fontSize:"1.3rem",fontFamily:JAKARTA,marginLeft:-16,zIndex:1,boxShadow:"0 0 24px rgba(245,166,35,.4)"}}>
-          {!card?.photo && (card?.initials || "?")}
-        </div>
-      </div>
-
-      {/* Heading */}
-      <h1 style={{fontFamily:BEBAS,fontSize:"3.2rem",letterSpacing:"0.08em",color:WHITE,margin:"0 0 6px",lineHeight:1,textAlign:"center"}}>
-        It's a <span style={{color:GOLD}}>Match!</span>
-      </h1>
-      <p style={{color:"rgba(255,255,255,.6)",fontSize:"0.9rem",fontFamily:JAKARTA,margin:"0 0 36px",textAlign:"center",lineHeight:1.5}}>
-        You and {card?.firstName} both liked each other
-      </p>
-
-      {/* Buttons */}
-      <button onClick={onChat} style={{
-        width:"100%",maxWidth:280,padding:"14px",marginBottom:12,
-        background:`linear-gradient(135deg,${GOLD},${GOLD2})`,
-        border:"none",borderRadius:40,
-        color:DARK,fontWeight:700,fontSize:"1rem",fontFamily:JAKARTA,
-        cursor:"pointer",
-        boxShadow:`0 8px 28px rgba(245,166,35,.45)`,
-        letterSpacing:"0.02em",
-      }}>Start Chatting →</button>
-      <button onClick={onKeepSwiping} style={{
-        width:"100%",maxWidth:280,padding:"13px",
-        background:"transparent",
-        border:"1.5px solid rgba(255,255,255,.2)",
-        borderRadius:40,color:"rgba(255,255,255,.6)",
-        fontWeight:600,fontSize:"0.95rem",fontFamily:JAKARTA,
-        cursor:"pointer",
-      }}>Keep Swiping</button>
-    </div>
-  );
-}
-
-// ─── Canvas helpers ───────────────────────────────────────────────
-const NEBULAS = [
-  { xp:.15, yp:.25, color:[30,55,130],   op:.13, rx:180, ry:90  },
-  { xp:.82, yp:.62, color:[130,40,80],   op:.09, rx:140, ry:80  },
-  { xp:.50, yp:.08, color:[60,30,140],   op:.10, rx:200, ry:70  },
-  { xp:.05, yp:.72, color:[20,80,60],    op:.08, rx:120, ry:90  },
-  { xp:.90, yp:.18, color:[200,120,30],  op:.07, rx:110, ry:70  },
-  { xp:.55, yp:.78, color:[40,90,160],   op:.07, rx:160, ry:80  },
-];
-const CONST_SHAPES = [
-  [[.08,.12],[.12,.18],[.10,.25],[.15,.20],[.18,.14]],
-  [[.72,.08],[.78,.06],[.76,.14],[.82,.10]],
-  [[.28,.55],[.34,.52],[.38,.58],[.32,.62]],
-  [[.60,.32],[.66,.28],[.70,.35],[.64,.40],[.68,.44]],
-  [[.04,.42],[.09,.47],[.06,.53],[.13,.50]],
-  [[.85,.72],[.89,.68],[.92,.74],[.88,.80],[.84,.76]],
-];
-
-function initStars(w, h) {
-  const arr = [];
-  const add = (n, rMin, rDr, baseMin, baseDr, amber) => {
-    for (let i = 0; i < n; i++) arr.push({ x: Math.random()*w, y: Math.random()*h, r: rMin+Math.random()*rDr, phase: Math.random()*Math.PI*2, speed: .002+Math.random()*.006, base: baseMin+Math.random()*baseDr, amber });
-  };
-  add(220, .15, .50, .40, .50, false);
-  add(60,  .50, .50, .50, .40, false);
-  add(18, 1.00, .60, .60, .35, false);
-  add(14,  .40, .80, .40, .50, true);
-  return arr;
-}
-
-function mkShot(w, h, golden) {
-  const ang = -Math.PI/6 + (Math.random()-.5)*(Math.PI/4);
-  const spd = 6 + Math.random()*6;
-  return { x:Math.random()*w*.8+w*.1, y:Math.random()*h*.3, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd, life:1, decay:.022+Math.random()*.01, len:55+Math.random()*70, golden };
-}
-
-// ─── Star Canvas ──────────────────────────────────────────────────
-function StarCanvas({ triggerRef }) {
-  const cvRef  = useRef(null);
-  const dataRef = useRef({ stars:[], shots:[], frame:0, w:0, h:0 });
-
-  useEffect(() => {
-    const cv = cvRef.current;
-    if (!cv) return;
-    const ctx = cv.getContext("2d");
-    let rafId;
-
-    const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const w = cv.offsetWidth, h = cv.offsetHeight;
-      cv.width = w * dpr; cv.height = h * dpr;
-      Object.assign(dataRef.current, { w, h, stars: initStars(w, h) });
-    };
-    const ro = new ResizeObserver(resize);
-    ro.observe(cv);
-    resize();
-
-    triggerRef.current = {
-      triggerMatch: () => {
-        const { w, h } = dataRef.current;
-        for (let i = 0; i < 7; i++) setTimeout(() => dataRef.current.shots.push(mkShot(w, h, i < 3)), i * 110);
-      },
-    };
-
-    const draw = () => {
-      const { w, h, stars, shots } = dataRef.current;
-      const dpr = window.devicePixelRatio || 1;
-      const f = ++dataRef.current.frame;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      ctx.fillStyle = "#03040b";
-      ctx.fillRect(0, 0, w, h);
-
-      // Nebulas
-      for (const nb of NEBULAS) {
-        const [nx, ny] = [nb.xp*w, nb.yp*h];
-        ctx.save();
-        ctx.translate(nx, ny);
-        ctx.scale(1, nb.ry/nb.rx);
-        const g = ctx.createRadialGradient(0,0,0,0,0,nb.rx);
-        const [r,gr,b] = nb.color;
-        g.addColorStop(0, `rgba(${r},${gr},${b},${nb.op})`);
-        g.addColorStop(1, `rgba(${r},${gr},${b},0)`);
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(0,0,nb.rx,0,Math.PI*2); ctx.fill();
-        ctx.restore();
-      }
-
-      // Stars
-      for (const s of stars) {
-        const a = s.base * (.5 + .5*Math.sin(f*s.speed+s.phase));
-        ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-        ctx.fillStyle = s.amber ? `rgba(255,200,90,${a})` : `rgba(210,225,255,${a})`;
-        ctx.fill();
-      }
-
-      // Constellations
-      for (const shape of CONST_SHAPES) {
-        const pts = shape.map(([xp,yp]) => [xp*w, yp*h]);
-        ctx.strokeStyle = "rgba(190,215,255,0.055)";
-        ctx.lineWidth = .55;
-        ctx.beginPath();
-        pts.forEach(([x,y],i) => i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y));
-        ctx.stroke();
-        for (const [x,y] of pts) {
-          ctx.beginPath(); ctx.arc(x,y,1.6,0,Math.PI*2);
-          ctx.fillStyle = "rgba(210,230,255,0.5)"; ctx.fill();
-        }
-      }
-
-      // Shooting stars
-      dataRef.current.shots = shots.filter(s => s.life > 0);
-      for (const s of dataRef.current.shots) {
-        const spd = Math.hypot(s.vx, s.vy);
-        const [tx, ty] = [s.x - s.vx/spd*s.len, s.y - s.vy/spd*s.len];
-        const g = ctx.createLinearGradient(s.x,s.y,tx,ty);
-        const c = s.golden ? "255,200,90" : "210,225,255";
-        g.addColorStop(0, `rgba(${c},${s.life})`);
-        g.addColorStop(1, `rgba(${c},0)`);
-        ctx.strokeStyle = g; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(s.x,s.y); ctx.lineTo(tx,ty); ctx.stroke();
-        ctx.beginPath(); ctx.arc(s.x,s.y,2,0,Math.PI*2);
-        ctx.fillStyle = `rgba(${c},${s.life})`; ctx.fill();
-        s.x += s.vx; s.y += s.vy; s.life -= s.decay;
-      }
-
-      // Ambient shooting star
-      if (f % 300 === 0 && Math.random() < .7)
-        dataRef.current.shots.push(mkShot(dataRef.current.w, dataRef.current.h, false));
-
-      rafId = requestAnimationFrame(draw);
-    };
-    rafId = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(rafId); ro.disconnect(); };
-  }, []);
-
-  return <canvas ref={cvRef} style={{ position:"absolute",inset:0,width:"100%",height:"100%",zIndex:0,display:"block" }} />;
-}
-
-// ─── Action Buttons ───────────────────────────────────────────────
-function PassButton({ onClick }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
-      width:64,height:64,borderRadius:"50%",flexShrink:0,
-      background: hov ? "rgba(239,68,68,.15)" : "rgba(255,255,255,.06)",
-      border: `1.5px solid ${hov?"#ef4444":"rgba(255,255,255,.18)"}`,
-      color: hov ? "#ef4444" : "rgba(255,255,255,.6)",
-      display:"flex",alignItems:"center",justifyContent:"center",
-      fontSize:"1.5rem",cursor:"pointer",
-      boxShadow: hov ? "0 0 24px rgba(239,68,68,.3)" : "0 4px 20px rgba(0,0,0,.3)",
-      transition:"all .2s",
-    }}>✕</button>
-  );
-}
-function LikeButton({ onClick }) {
-  const [hov, setHov]   = useState(false);
-  const [pop, setPop]   = useState(false);
-  const handleClick = () => {
-    setPop(true);
-    setTimeout(() => setPop(false), 500);
-    onClick();
-  };
-  return (
-    <button onClick={handleClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{
-      width:76,height:76,borderRadius:"50%",flexShrink:0,
-      background: `linear-gradient(135deg,${GOLD},${GOLD2})`,
-      border:"none",
-      color:DARK,
-      display:"flex",alignItems:"center",justifyContent:"center",
-      fontSize:"2rem",cursor:"pointer",
-      boxShadow:`0 8px 32px rgba(245,166,35,${hov?.6:.45})`,
-      transition:"box-shadow .2s, transform .15s",
-      transform: pop ? "scale(1.18)" : hov ? "scale(1.05)" : "scale(1)",
-      animation: pop ? "springPop .45s cubic-bezier(.34,1.56,.64,1)" : "none",
-    }}>♥</button>
-  );
-}
-
-// ─── Main SwipeDeck ───────────────────────────────────────────────
+// ─── Deck ─────────────────────────────────────────────────────────
 export default function SwipeDeck() {
-  const user        = getCurrentUser();
+  const navigate = useNavigate();
+  const user = getCurrentUser();
   const viewerPrefs = user?.dorm_prefs || {};
 
-  const [candidates,  setCandidates]  = useState([]);
-  const [idx,         setIdx]         = useState(0);
-  const [loading,     setLoading]     = useState(true);
-  const [showMatch,   setShowMatch]   = useState(false);
-  const [matchCard,   setMatchCard]   = useState(null);
+  const [candidates, setCandidates] = useState([]);
+  const [idx, setIdx] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [match, setMatch] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
-  const [profileModal, setProfileModal] = useState(null);
-  const [resendSent,   setResendSent]   = useState(false);
-  const [menuOpen,     setMenuOpen]     = useState(false);
-  const [swiping,      setSwiping]      = useState(false);
-  const [gate,         setGate]         = useState(null); // school unlock status from API
+  const [menuTarget, setMenuTarget] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [resendSent, setResendSent] = useState(false);
+  const [gate, setGate] = useState(null);
+  const topRef = useRef(null);
 
-  const cardRef     = useRef(null);
-  const likeRef     = useRef(null);
-  const nopeRef     = useRef(null);
-  const menuRef     = useRef(null);
-  const dragRef     = useRef({ active:false, startX:0, startY:0 });
-  const triggerRef  = useRef(null);
-
-  // ── Load candidates ──────────────────────────────────────────
-  const load = (reset=false) => {
+  const load = (reset = false) => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
     getSchoolStatus()
-      .catch(() => null) // older backend without the gate: behave as before
+      .catch(() => null)
       .then((status) => {
         setGate(status);
-        if (status?.gate_enabled && !status.is_unlocked) {
-          setCandidates([]);
-          return;
-        }
-        return getCandidates(user.id, reset).then((d) => { setCandidates(d); setIdx(0); });
+        if (status?.gate_enabled && !status.is_unlocked) { setCandidates([]); return; }
+        return getCandidates(user.id, reset).then((d) => { setCandidates(Array.isArray(d) ? d : []); setIdx(0); });
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(false); }, []); // eslint-disable-line
 
-  // Use demo profiles when no real candidates
-  // Demo profiles only when the school gate is off; real campuses never see fake people
-  const gateOn   = !!gate?.gate_enabled;
-  const locked   = gateOn && !gate.is_unlocked;
-  const deck    = candidates.length > 0 ? candidates.map((c) => candidateToCard(c, viewerPrefs)) : (gateOn ? [] : DEMO_PROFILES);
+  const gateOn = !!gate?.gate_enabled;
+  const locked = gateOn && !gate.is_unlocked;
   const usesDemo = candidates.length === 0 && !gateOn;
-  const current = idx < deck.length ? deck[idx] : null;
+  const deck = (candidates.length ? candidates : (gateOn ? [] : DEMO_PROFILES)).map((c) => toCard(c, viewerPrefs));
+  const current = deck[idx] || null;
 
-  // ── Direct-DOM transform helpers ─────────────────────────────
-  const applyXY = (x, y, tr) => {
-    if (!cardRef.current) return;
-    const rot = Math.max(-18, Math.min(18, x/20));
-    cardRef.current.style.transition = tr || "none";
-    cardRef.current.style.transform  = `translate(${x}px,${y}px) rotate(${rot}deg)`;
-    if (likeRef.current) likeRef.current.style.opacity  = x > 0 ? Math.min(1, x/60)  : 0;
-    if (nopeRef.current) nopeRef.current.style.opacity  = x < 0 ? Math.min(1,-x/60)  : 0;
-  };
-  const resetCard = () => applyXY(0, 0, "none");
-
-  // ── Swipe logic ───────────────────────────────────────────────
-  const doSwipe = async (dir, candidate) => {
-    if (swiping || !candidate) return;
-    setSwiping(true);
-    haptic("light");
-    const flyX = dir === "right" ? 700 : -700;
-    applyXY(flyX, -80, "transform .35s ease-in");
-    await sleep(350);
+  const onSwiped = useCallback(async (dir) => {
+    const candidate = deck[idx];
     setIdx((p) => p + 1);
-    resetCard();
-    setSwiping(false);
-
+    if (!candidate) return;
     if (usesDemo) {
-      // Demo mode: simulate match based on isMatch flag
-      if (dir === "right" && candidate.isMatch) {
-        await sleep(220);
-        setMatchCard(candidate);
-        setShowMatch(true);
-        triggerRef.current?.triggerMatch();
-      }
+      if (dir === "right" && candidate.isMatch) setTimeout(() => setMatch(candidate), 260);
       return;
     }
-
-    // Real API
     try {
       if (dir === "right") {
         const res = await likeUser(user.id, candidate.id);
         if (res?.matched) {
-          await sleep(220);
-          setMatchCard(candidate);
-          setShowMatch(true);
-          triggerRef.current?.triggerMatch();
-          haptic("match");
-          sendNotification("You have a new match on Room8!", `You and ${candidate.firstName} liked each other.`);
+          setTimeout(() => setMatch(candidate), 260);
+          sendNotification("New match on Room8", `You and ${candidate.firstName} liked each other.`);
         }
       } else {
         await skipUser(user.id, candidate.id);
       }
     } catch (err) { console.error(err); }
-  };
+  }, [deck, idx, usesDemo, user]); // eslint-disable-line
 
-  // ── Pointer drag ──────────────────────────────────────────────
-  const onPtrDown = (e) => {
-    if (swiping || !current || e.target.closest("[data-menu]")) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { active:true, startX:e.clientX, startY:e.clientY };
-    applyXY(0, 0, "none");
-  };
-  const onPtrMove = (e) => {
-    if (!dragRef.current.active) return;
-    const x = e.clientX - dragRef.current.startX;
-    const y = e.clientY - dragRef.current.startY;
-    applyXY(x, y, "none");
-    dragRef.current.lastX = x;
-    dragRef.current.lastY = y;
-  };
-  const onPtrUp = (e) => {
-    if (!dragRef.current.active) return;
-    dragRef.current.active = false;
-    const x = dragRef.current.lastX || 0;
-    const y = dragRef.current.lastY || 0;
-    if (Math.abs(x) > 105) {
-      doSwipe(x > 0 ? "right" : "left", current);
-    } else if (Math.abs(x) < 8 && Math.abs(y) < 8) {
-      // Tap — open full profile modal
-      applyXY(0, 0, "none");
-      setProfileModal(current);
-    } else {
-      applyXY(0, 0, "transform .5s cubic-bezier(.34,1.56,.64,1)");
-    }
-  };
-
-  // ── Button swipe ──────────────────────────────────────────────
-  const btnSwipe = (dir) => doSwipe(dir, current);
-
-  // ── Menu close on outside click ───────────────────────────────
+  // Desktop arrow keys
   useEffect(() => {
-    if (!menuOpen) return;
-    const h = (e) => { if (!menuRef.current?.contains(e.target)) setMenuOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [menuOpen]);
+    const h = (e) => {
+      if (profile || match || reportTarget || menuTarget) return;
+      if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+      if (e.key === "ArrowRight") topRef.current?.swipe("right");
+      if (e.key === "ArrowLeft") topRef.current?.swipe("left");
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [profile, match, reportTarget, menuTarget]);
 
-  // ── Render helpers ────────────────────────────────────────────
-  const CARD_W = "min(420px, calc(100vw - 40px))";
-  // Budget: AppShell = 100vh-64 | outer pad top 64 + bottom 80 | buttons ~96px → leaves 100dvh-304px for card
-  const CARD_H = "min(600px, calc(100dvh - 310px))";
-
-  const renderDeck = () => {
-    if (!current) return (
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:500,textAlign:"center",padding:32}}>
-        <div style={{width:72,height:72,borderRadius:"50%",background:`rgba(245,158,11,.12)`,border:`1px solid rgba(245,158,11,.35)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem",marginBottom:16}}>✓</div>
-        <p style={{color:WHITE,fontSize:"1.05rem",fontWeight:700,margin:"0 0 8px",fontFamily:JAKARTA}}>You've seen everyone!</p>
-        <p style={{color:MUTED,fontSize:"0.88rem",marginBottom:24,fontFamily:JAKARTA}}>Check back later for new profiles.</p>
-        <button onClick={()=>load(true)} style={{background:GOLD,color:DARK,border:"none",padding:"12px 28px",borderRadius:8,fontWeight:700,fontSize:"0.95rem",cursor:"pointer",fontFamily:JAKARTA,boxShadow:"0 4px 20px rgba(245,158,11,.35)"}}>Refresh</button>
-      </div>
-    );
-
-    const ghost = (t, s, r, op) => (
-      <div style={{ position:"absolute",inset:0,borderRadius:28,background:"linear-gradient(160deg,#0d1e3e,#08142a 45%,#050c1a)",border:"1px solid rgba(255,255,255,.06)",transform:`translateY(${t}px) scale(${s}) rotate(${r}deg)`,opacity:op,pointerEvents:"none" }} />
-    );
-
-    const photo = current.profilePhoto || current.photo || null;
-
-    return (
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:CARD_W,maxWidth:"100%",gap:0}}>
-        {/* Card stack */}
-        <div style={{position:"relative",width:"100%",height:CARD_H,flexShrink:0,maxWidth:"100%",overflow:"hidden",borderRadius:28}}>
-          {ghost(18,.94, 2,.3)}
-          {ghost( 9,.97,-1,.5)}
-
-          {/* Main card */}
-          <div
-            ref={cardRef}
-            onPointerDown={onPtrDown}
-            onPointerMove={onPtrMove}
-            onPointerUp={onPtrUp}
-            style={{
-              position:"absolute",inset:0,
-              borderRadius:28,
-              background:"linear-gradient(160deg,#0d1e3e 0%,#08142a 45%,#050c1a 100%)",
-              border:"1px solid rgba(255,255,255,.08)",
-              boxShadow:"0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.03)",
-              cursor:"grab",userSelect:"none",touchAction:"none",
-              willChange:"transform",overflow:"hidden",
-            }}
-          >
-            {/* LIKE hint */}
-            <div ref={likeRef} style={{position:"absolute",top:28,right:20,zIndex:31,border:"3px solid "+GOLD,color:GOLD,borderRadius:8,padding:"4px 14px",fontFamily:BEBAS,fontSize:"1.8rem",letterSpacing:2,opacity:0,pointerEvents:"none",textShadow:`0 0 20px rgba(245,166,35,.8)`}}>LIKE</div>
-            {/* NOPE hint */}
-            <div ref={nopeRef} style={{position:"absolute",top:28,left:20,zIndex:31,border:"3px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"4px 14px",fontFamily:BEBAS,fontSize:"1.8rem",letterSpacing:2,opacity:0,pointerEvents:"none",textShadow:"0 0 20px rgba(239,68,68,.8)"}}>NOPE</div>
-
-            {/* Top row */}
-            <div style={{position:"absolute",top:0,left:0,right:0,padding:"16px 16px 0",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:30}}>
-              {current.pct !== null && current.pct !== undefined ? (
-                <div style={{background:"rgba(245,166,35,.18)",border:"1px solid rgba(245,166,35,.45)",borderRadius:20,padding:"4px 12px",display:"flex",alignItems:"center",gap:4}}>
-                  <span style={{color:GOLD2,fontWeight:800,fontSize:"0.88rem",fontFamily:JAKARTA}}>{current.pct}%</span>
-                  <span style={{color:"rgba(245,166,35,.7)",fontSize:"0.68rem",fontWeight:600,fontFamily:JAKARTA}}>match</span>
-                </div>
-              ) : <div />}
-              {/* 3-dot menu */}
-              <div ref={menuRef} data-menu="true" style={{position:"relative"}}>
-                <button onClick={(e)=>{e.stopPropagation();setMenuOpen(v=>!v);}} style={{background:"rgba(3,4,11,.6)",border:"1px solid rgba(255,255,255,.12)",color:WHITE,width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:"1rem",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(6px)"}}>⋯</button>
-                {menuOpen && (
-                  <div onClick={(e)=>e.stopPropagation()} style={{position:"absolute",top:"calc(100% + 6px)",right:0,background:"#0e1f3d",border:"1px solid rgba(255,255,255,.12)",borderRadius:10,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,.6)",minWidth:148,zIndex:30}}>
-                    {[{label:"Report 🚩",fn:()=>{setMenuOpen(false);setReportTarget(candidates[idx]||current);}},{label:"Block 🚫",fn:async()=>{setMenuOpen(false);setIdx(p=>p+1);if(!usesDemo)try{await blockUser(user.id,candidates[idx].id);}catch(e){console.error(e);}}}].map(item=>(
-                      <button key={item.label} onClick={(e)=>{e.stopPropagation();item.fn();}} style={{display:"block",width:"100%",padding:"11px 16px",background:"none",border:"none",color:"#f87171",fontSize:"0.85rem",cursor:"pointer",textAlign:"left",fontFamily:JAKARTA}}>{item.label}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Photo zone — full bleed, or initials fallback */}
-            <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,overflow:"hidden",borderRadius:28}}>
-              {photo ? (
-                <img
-                  src={photo} alt={current.name} draggable={false}
-                  onError={(e)=>{ e.target.onerror=null; e.target.style.display="none"; }}
-                  style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",pointerEvents:"none"}}
-                />
-              ) : (
-                <div style={{position:"absolute",inset:0,background:"linear-gradient(160deg,#0d1e3e,#08142a 45%,#050c1a)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:"0 28px"}}>
-                  <div style={{width:96,height:96,borderRadius:"50%",background:"rgba(255,255,255,.08)",border:"2px solid rgba(245,166,35,.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2.2rem",color:"rgba(255,255,255,.65)",fontFamily:JAKARTA,fontWeight:700,flexShrink:0}}>
-                    {current.initials || "?"}
-                  </div>
-                  {current.bio && (
-                    <p style={{margin:0,fontFamily:JAKARTA,fontSize:13,color:"rgba(255,255,255,.55)",lineHeight:1.6,textAlign:"center",display:"-webkit-box",WebkitLineClamp:4,WebkitBoxOrient:"vertical",overflow:"hidden"}}>
-                      {current.bio}
-                    </p>
-                  )}
-                </div>
-              )}
-              {/* Gradient scrim */}
-              <div style={{position:"absolute",bottom:0,left:0,right:0,height:photo?190:140,background:"linear-gradient(to top,#08142a 0%,transparent 100%)",pointerEvents:"none"}} />
-            </div>
-
-            {/* Info zone — overlaps scrim */}
-            <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"0 20px 20px"}}>
-              <h2 style={{margin:"0 0 3px",fontFamily:JAKARTA,fontSize:26,fontWeight:700,color:WHITE,lineHeight:1.15,textShadow:"0 2px 8px rgba(0,0,0,.5)",display:"flex",alignItems:"center",gap:8}}>{current.name}<PhotoVerifiedCheck verified={current.is_photo_verified} size={22} /></h2>
-              <p style={{margin:"0 0 8px",fontFamily:JAKARTA,fontSize:12,color:"rgba(255,255,255,.6)",lineHeight:1.5}}>{current.sub || "\u00a0"}</p>
-              {photo && current.bio && (
-                <p style={{margin:"0 0 10px",fontFamily:JAKARTA,fontSize:12,color:"rgba(255,255,255,.7)",lineHeight:1.55,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",textShadow:"0 1px 4px rgba(0,0,0,.6)"}}>{current.bio}</p>
-              )}
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {current.tags.map((t,i)=>(
-                  <span key={i} style={{background:t.bg,border:`1px solid ${t.border}`,color:t.color,padding:"4px 11px",borderRadius:20,fontSize:"0.7rem",fontWeight:600,fontFamily:JAKARTA}}>{t.label}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Match overlay — inside card stack */}
-          {showMatch && matchCard && (
-            <MatchOverlay
-              user={user}
-              card={matchCard}
-              onChat={()=>{ setShowMatch(false); }}
-              onKeepSwiping={()=>setShowMatch(false)}
-            />
-          )}
-        </div>
-
-        {/* Action buttons */}
-        <div style={{flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",gap:48,paddingTop:10,paddingBottom:10}}>
-          <PassButton onClick={()=>btnSwipe("left")} />
-          <LikeButton onClick={()=>btnSwipe("right")} />
-        </div>
-      </div>
-    );
+  const block = async (person) => {
+    setMenuTarget(null);
+    setIdx((p) => p + 1);
+    if (!usesDemo) { try { await blockUser(user.id, person.id); } catch (e) { console.error(e); } }
   };
+
+  const visible = deck.slice(idx, idx + 3);
 
   return (
-    <div style={{
-      flex:1,display:"flex",flexDirection:"column",
-      alignItems:"center",justifyContent:"flex-start",
-      width:"100%",height:"100%",
-      paddingTop:64,paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 80px)",
-      position:"relative",overflow:"hidden",
-      boxSizing:"border-box",background:DARK,
-    }}>
-      {/* Canvas */}
-      <StarCanvas triggerRef={triggerRef} />
+    <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", minHeight: "100dvh", background: "var(--bg)", overflow: "hidden" }}>
+      <AppHeader />
 
-      {/* Top bar */}
-      <div style={{position:"absolute",top:0,left:0,right:0,padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:50,background:"rgba(3,4,11,.85)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,.07)"}}>
-        <span style={{fontSize:"1.4rem",fontFamily:BEBAS,color:GOLD,letterSpacing:"0.1em",flexShrink:0}}>ROOM8</span>
-        {user?.school && (
-          <span style={{background:"rgba(245,158,11,.12)",color:"rgba(245,158,11,.85)",padding:"4px 12px",borderRadius:6,fontSize:"0.72rem",fontWeight:600,border:"1px solid rgba(245,158,11,.25)",maxWidth:"calc(100% - 120px)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:JAKARTA}}>
-            {shortSchool(user.school)}
-          </span>
-        )}
-        {user && (
-          <div style={{width:34,height:34,borderRadius:"50%",background:user.photo?`url(${user.photo}) center/cover`:NAVY,display:"flex",alignItems:"center",justifyContent:"center",color:WHITE,fontWeight:700,fontSize:"0.85rem",flexShrink:0,border:"2px solid rgba(245,158,11,.4)",fontFamily:JAKARTA}}>
-            {!user.photo && (user.name?.[0]?.toUpperCase()||"?")}
-          </div>
-        )}
-      </div>
-
-      {/* Email banner */}
       {user && user.email_verified === false && (
-        <div style={{position:"absolute",top:64,left:0,right:0,zIndex:90,background:"rgba(245,158,11,.12)",borderBottom:"1px solid rgba(245,158,11,.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-          <span style={{color:"rgba(245,158,11,.9)",fontSize:"0.8rem",fontWeight:600,fontFamily:JAKARTA}}>⚠ Please verify your email — check your inbox</span>
-          <button onClick={async()=>{try{await resendVerification(user.id);setResendSent(true);setTimeout(()=>setResendSent(false),4000);}catch(e){console.error(e);}}} style={{background:"none",border:"1px solid rgba(245,158,11,.4)",color:GOLD,padding:"4px 12px",borderRadius:6,fontSize:"0.75rem",fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,fontFamily:JAKARTA}}>
-            {resendSent ? "Sent ✓" : "Resend"}
+        <div className="r8-glass" style={{ position: "relative", zIndex: 20, margin: "0 16px 8px", borderRadius: 16, padding: "10px 12px 10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "rgba(255,200,96,.12)", borderColor: "rgba(255,200,96,.3)" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 500 }}><Icon name="mail" size={18} />Confirm your email to start matching</span>
+          <button className="r8-btn r8-btn--glass r8-btn--sm" style={{ height: 34 }} onClick={async () => { try { await resendVerification(user.id); setResendSent(true); setTimeout(() => setResendSent(false), 4000); } catch (e) { console.error(e); } }}>
+            {resendSent ? "Sent" : "Resend"}
           </button>
         </div>
       )}
 
-      {/* Content */}
-      <div style={{flex:1,minHeight:0,position:"relative",zIndex:10,display:"flex",alignItems:"center",justifyContent:"center",width:"100%",maxWidth:"100vw",overflow:"hidden"}}>
+      <main style={{ position: "relative", zIndex: 10, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "4px 16px calc(64px + var(--safe-b) + 14px)" }}>
         {loading ? (
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
-            <div style={{width:36,height:36,border:"2.5px solid rgba(255,255,255,.1)",borderTop:`2.5px solid ${GOLD}`,borderRadius:"50%",animation:"r8spin .8s linear infinite"}} />
-            <p style={{color:MUTED,fontSize:"0.9rem",fontFamily:JAKARTA}}>Finding roommates…</p>
-          </div>
+          <div style={{ width: "min(420px, 100%)", height: "min(620px, calc(100dvh - 300px))", borderRadius: 32 }} className="r8-skel" aria-label="Finding roommates" />
         ) : !user ? (
-          <p style={{color:MUTED,fontFamily:JAKARTA}}>Please log in to browse candidates.</p>
+          <EmptyState icon="lock" title="Log in to start swiping" action={<button className="r8-btn r8-btn--primary" onClick={() => navigate("/login")}>Log in</button>} />
         ) : locked ? (
-          <WaitlistScreen status={gate} user={user} onRefresh={()=>load(false)} />
-        ) : renderDeck()}
-      </div>
+          <WaitlistScreen status={gate} user={user} onRefresh={() => load(false)} />
+        ) : !current ? (
+          <EmptyState icon="sparkle" title="You're all caught up" body="You've seen everyone at your school for now. New people join every day."
+            action={<button className="r8-btn r8-btn--primary" onClick={() => load(true)}><Icon name="refresh" size={18} />See people again</button>} />
+        ) : (
+          <>
+            <div style={{ position: "relative", width: "min(440px, 100%)", height: "min(720px, calc(100dvh - 236px - var(--safe-t) - var(--safe-b)))", minHeight: 440 }}>
+              {visible.slice().reverse().map((p) => {
+                const depth = visible.indexOf(p);
+                return (
+                  <Card
+                    key={p.id}
+                    ref={depth === 0 ? topRef : undefined}
+                    person={p}
+                    depth={depth}
+                    onSwiped={onSwiped}
+                    onOpen={setProfile}
+                    onMenu={setMenuTarget}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
+      </main>
 
-      {/* Report modal */}
-      {reportTarget && (
-        <ReportModal person={reportTarget} userId={user.id} onClose={()=>setReportTarget(null)}
-          onDone={()=>{setReportTarget(null);setIdx(p=>p+1);}} />
+      {profile && (
+        <ProfileSheet
+          person={profile}
+          onClose={() => setProfile(null)}
+          onMore={() => { setMenuTarget(profile); }}
+          onPass={profile.id === current?.id ? () => { setProfile(null); setTimeout(() => topRef.current?.swipe("left"), 280); } : undefined}
+          onLike={profile.id === current?.id ? () => { setProfile(null); setTimeout(() => topRef.current?.swipe("right"), 280); } : undefined}
+        />
       )}
 
-      {/* Profile modal */}
-      {profileModal && <ProfileModal person={profileModal} onClose={()=>setProfileModal(null)} />}
+      <Sheet open={!!menuTarget} onClose={() => setMenuTarget(null)} title={menuTarget ? menuTarget.firstName || menuTarget.name : ""} labelledBy="r8-menu-title">
+        {menuTarget && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <button className="r8-btn r8-btn--glass r8-btn--block" style={{ justifyContent: "flex-start" }} onClick={() => { const t = menuTarget; setMenuTarget(null); setProfile(null); setReportTarget(t); }}><Icon name="flag" size={20} />Report</button>
+            <button className="r8-btn r8-btn--glass r8-btn--block" style={{ justifyContent: "flex-start", color: "var(--danger)" }} onClick={() => { const t = menuTarget; setProfile(null); block(t); }}><Icon name="block" size={20} />Block</button>
+            <p className="r8-faint" style={{ fontSize: 13, textAlign: "center", marginTop: 4 }}>Blocking hides you from each other. They won't be notified.</p>
+          </div>
+        )}
+      </Sheet>
 
-      <style>{`
-        @keyframes r8spin { to { transform: rotate(360deg); } }
-        @keyframes fadeInOverlay { from { opacity:0; } to { opacity:1; } }
-        @keyframes springPop { 0%{transform:scale(1)} 40%{transform:scale(1.22)} 70%{transform:scale(.95)} 100%{transform:scale(1)} }
-        .r8-pulse-ring-outer { animation: r8pulseOut 2.4s ease-in-out infinite; }
-        .r8-pulse-ring-inner { animation: r8pulseIn  2.4s ease-in-out infinite .5s; }
-        @keyframes r8pulseOut { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.09);opacity:.2} }
-        @keyframes r8pulseIn  { 0%,100%{transform:scale(1);opacity:.6} 50%{transform:scale(1.07);opacity:.25} }
-        .r8-profile-modal::-webkit-scrollbar { display:none; }
-        @keyframes slideDown { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
-      `}</style>
+      {reportTarget && (
+        <ReportSheet person={reportTarget} userId={user?.id} demo={usesDemo} onClose={() => setReportTarget(null)}
+          onDone={() => { setReportTarget(null); setIdx((p) => p + 1); }} />
+      )}
+
+      <AnimatePresence>
+        {match && (
+          <MatchMoment
+            me={user}
+            them={match}
+            onClose={() => setMatch(null)}
+            onChat={() => { const m = match; setMatch(null); if (!usesDemo) navigate("/messages", { state: { openUserId: m.id } }); }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

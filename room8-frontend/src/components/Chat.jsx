@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Icon from "../ui/Icon";
+import { Avatar, Sheet, EmptyState } from "../ui/kit";
 import { getChat, sendMessage as apiSendMessage, reportUser, blockUser, unmatchUser, getRoommateStatus, confirmRoommate } from "../api";
 
 function formatMsgTime(iso) {
@@ -15,33 +18,23 @@ function formatMsgTime(iso) {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-const NAVY   = "#0F2D5E";
-const GOLD   = "#F59E0B";
-const DARK   = "#050D1F";
-const DARKER = "#030914";
-const WHITE  = "#FFFFFF";
-const MUTED  = "rgba(255,255,255,0.4)";
-const BORDER = "rgba(255,255,255,0.08)";
-const HF = "'Outfit', sans-serif";
-const BF = "'Inter', sans-serif";
-
 const SUGGESTED_PROMPTS = [
-  "What's your sleep schedule like?",
-  "What's your major?",
-  "Are you tidy or more relaxed?",
-  "Do you study in your room?",
-  "What are you looking for in a roommate?",
+  "what's your sleep schedule like?",
+  "are you neat or more relaxed?",
+  "do you study in your room?",
+  "how do you feel about guests?",
+  "what are you looking for in a roommate?",
 ];
 
 const REPORT_REASONS = [
   { value: "inappropriate", label: "Inappropriate content" },
-  { value: "fake",          label: "Fake profile" },
-  { value: "harassment",    label: "Harassment" },
-  { value: "spam",          label: "Spam" },
-  { value: "other",         label: "Other" },
+  { value: "fake", label: "Fake profile" },
+  { value: "harassment", label: "Harassment" },
+  { value: "spam", label: "Spam" },
+  { value: "other", label: "Something else" },
 ];
 
-export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUnmatch, onBlock: onBlockProp, incomingMessage }) {
+export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUnmatch, onBlock: onBlockProp, incomingMessage, onViewProfile }) {
   const [messages,        setMessages]        = useState([]);
   const [input,           setInput]           = useState("");
   const [sending,         setSending]         = useState(false);
@@ -195,281 +188,69 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
     finally { setReportSubmitting(false); }
   };
 
-  const initials = peerName?.[0]?.toUpperCase() || "?";
-
-  const MENU_ITEMS = [
-    { label: "Unmatch 💔",  action: handleUnmatch,    danger: true  },
-    { label: "Block 🚫",    action: handleBlock,      danger: true  },
-    { label: "Report 🚩",   action: handleReportOpen, danger: false },
-  ];
+  const firstName = peerName?.split(" ")[0] || "them";
+  const status = confirmStatus.both_confirmed ? "Confirmed roommates" : confirmStatus.i_confirmed ? "Waiting on them to confirm" : "Matched";
 
   return (
-    <div style={{
-      display: "flex", flexDirection: "column", height: "100%",
-      background: `linear-gradient(180deg, ${DARKER} 0%, #071020 100%)`,
-    }}>
-
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--bg)", position: "relative" }}>
       {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 12,
-        padding: "14px 20px",
-        borderBottom: `1px solid ${BORDER}`,
-        background: "rgba(3,9,20,0.8)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        flexShrink: 0,
-      }}>
-        {onBack && (
-          <button onClick={onBack} style={{
-            background: "none", border: "none", color: "rgba(255,255,255,0.6)",
-            fontSize: "1.3rem", cursor: "pointer", padding: "0 8px 0 0",
-            display: "flex", alignItems: "center",
-            transition: "color 0.15s",
-          }}
-            onMouseEnter={e => e.currentTarget.style.color = WHITE}
-            onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.6)"}
-          >
-            ←
-          </button>
-        )}
-        <div style={{
-          width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-          background: peerPhoto ? `url(${peerPhoto}) center/cover` : NAVY,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: WHITE, fontWeight: 700, fontSize: "1rem",
-          border: `2px solid rgba(245,158,11,0.4)`,
-        }}>
-          {!peerPhoto && initials}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ color: WHITE, fontWeight: 700, fontSize: "0.95rem", fontFamily: HF }}>{peerName || "Chat"}</div>
-          <div style={{ color: confirmStatus.both_confirmed ? "#34D399" : "rgba(245,158,11,0.7)", fontSize: "0.7rem", fontFamily: BF }}>
-            {confirmStatus.both_confirmed
-              ? "Confirmed roommates"
-              : confirmStatus.i_confirmed
-              ? "Awaiting their confirmation…"
-              : "Matched with you"}
-          </div>
-        </div>
-
-        {/* Confirm Roommate button */}
+      <header style={{ display: "flex", alignItems: "center", gap: 10, padding: "calc(var(--safe-t) + 10px) 14px 10px", borderBottom: "1px solid var(--line)", background: "color-mix(in srgb, var(--bg) 80%, transparent)", WebkitBackdropFilter: "var(--blur)", backdropFilter: "var(--blur)", flexShrink: 0, zIndex: 5 }}>
+        {onBack && <button className="r8-icon-btn r8-icon-btn--round" onClick={onBack} aria-label="Back to chats" style={{ background: "transparent", borderColor: "transparent" }}><Icon name="back" size={24} /></button>}
+        <button onClick={onViewProfile} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, textAlign: "left", borderRadius: 16 }} aria-label={`View ${firstName}'s profile`}>
+          <Avatar src={peerPhoto} name={peerName} size={42} ring={confirmStatus.both_confirmed} />
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontWeight: 700, fontSize: 17, fontFamily: "var(--display)", letterSpacing: "-0.02em" }}>{firstName}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: confirmStatus.both_confirmed ? "var(--success)" : "var(--text-3)" }}>
+              {confirmStatus.both_confirmed && <Icon name="home" size={13} />}{status}
+            </span>
+          </span>
+        </button>
         {!confirmStatus.both_confirmed && (
-          <button
-            onClick={handleConfirmRoommate}
-            disabled={confirming || confirmStatus.i_confirmed}
-            title={
-              confirmStatus.i_confirmed
-                ? "You've confirmed — waiting for them"
-                : "Confirm this person as your roommate"
-            }
-            style={{
-              flexShrink: 0,
-              padding: "6px 12px",
-              borderRadius: 20,
-              border: `1.5px solid ${confirmStatus.i_confirmed ? "rgba(52,211,153,0.4)" : "rgba(245,158,11,0.5)"}`,
-              background: confirmStatus.i_confirmed
-                ? "rgba(52,211,153,0.1)"
-                : confirming
-                ? "rgba(245,158,11,0.15)"
-                : "rgba(245,158,11,0.12)",
-              color: confirmStatus.i_confirmed ? "#34D399" : GOLD,
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              fontFamily: BF,
-              cursor: confirmStatus.i_confirmed || confirming ? "default" : "pointer",
-              whiteSpace: "nowrap",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              if (!confirmStatus.i_confirmed && !confirming) {
-                e.currentTarget.style.background = "rgba(245,158,11,0.25)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!confirmStatus.i_confirmed && !confirming) {
-                e.currentTarget.style.background = "rgba(245,158,11,0.12)";
-              }
-            }}
-          >
-            {confirming
-              ? "Confirming…"
-              : confirmStatus.i_confirmed
-              ? "✓ Confirmed"
-              : "Confirm Roommate"}
+          <button className={`r8-btn r8-btn--sm ${confirmStatus.i_confirmed ? "r8-btn--glass" : "r8-btn--primary"}`} onClick={handleConfirmRoommate} disabled={confirming || confirmStatus.i_confirmed}
+            title={confirmStatus.i_confirmed ? "You confirmed, waiting on them" : "Confirm this person as your roommate"} style={{ height: 36, padding: "0 14px", fontSize: 13.5 }}>
+            <Icon name={confirmStatus.i_confirmed ? "check" : "key"} size={16} />{confirming ? "Confirming" : confirmStatus.i_confirmed ? "Confirmed" : "Roommates?"}
           </button>
         )}
+        <button className="r8-icon-btn r8-icon-btn--round" onClick={() => setMenuOpen(true)} aria-label="Chat options" style={{ background: "transparent", borderColor: "transparent" }}><Icon name="more" size={22} /></button>
+      </header>
 
-        {confirmStatus.both_confirmed && (
-          <div style={{
-            flexShrink: 0,
-            padding: "6px 12px",
-            borderRadius: 20,
-            border: "1.5px solid rgba(52,211,153,0.4)",
-            background: "rgba(52,211,153,0.1)",
-            color: "#34D399",
-            fontSize: "0.72rem",
-            fontWeight: 700,
-            fontFamily: BF,
-            whiteSpace: "nowrap",
-          }}>
-            Roommates
-          </div>
-        )}
-
-        {/* ⋯ menu */}
-        <div ref={menuRef} style={{ position: "relative", flexShrink: 0 }}>
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            style={{
-              background: menuOpen ? "rgba(255,255,255,0.1)" : "none",
-              border: "none", color: menuOpen ? WHITE : "rgba(255,255,255,0.5)",
-              width: 34, height: 34, borderRadius: "50%",
-              cursor: "pointer", fontSize: "1.15rem",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "background 0.15s, color 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = WHITE; }}
-            onMouseLeave={e => { if (!menuOpen) { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; } }}
-          >
-            ⋯
-          </button>
-
-          {menuOpen && (
-            <div style={{
-              position: "absolute", top: "calc(100% + 6px)", right: 0,
-              background: "#0E1F3D",
-              border: `1px solid rgba(255,255,255,0.12)`,
-              borderRadius: 10, overflow: "hidden",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
-              minWidth: 168, zIndex: 200,
-            }}>
-              {MENU_ITEMS.map((item) => (
-                <button
-                  key={item.label}
-                  onClick={item.action}
-                  style={{
-                    display: "block", width: "100%", padding: "11px 16px",
-                    background: "none", border: "none",
-                    color: item.danger ? "#F87171" : "rgba(255,255,255,0.75)",
-                    fontSize: "0.88rem", cursor: "pointer", textAlign: "left",
-                    fontFamily: BF, fontWeight: 500,
-                    transition: "background 0.1s",
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "none")}
-                >
-                  {item.label}
-                </button>
-              ))}
+      <AnimatePresence>
+        {showConfirmBanner && !confirmStatus.both_confirmed && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: "hidden", flexShrink: 0 }}>
+            <div style={{ margin: "10px 14px 0", padding: "12px 14px", borderRadius: 18, background: "var(--elev)", border: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ width: 36, height: 36, borderRadius: 12, background: "var(--iri)", color: "#0E0F12", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="home" size={19} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontWeight: 600, fontSize: 15 }}>{firstName} wants to make it official</p>
+                <p className="r8-muted" style={{ fontSize: 13 }}>Tap Roommates? to confirm.</p>
+              </div>
+              <button className="r8-btn r8-btn--ghost r8-btn--sm" style={{ height: 32, padding: "0 8px" }} onClick={() => setShowConfirmBanner(false)} aria-label="Dismiss"><Icon name="x" size={16} /></button>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Roommate request banner — peer has confirmed, we haven't yet */}
-      {showConfirmBanner && !confirmStatus.both_confirmed && (
-        <div style={{
-          background: "rgba(245,158,11,0.12)",
-          borderBottom: "1px solid rgba(245,158,11,0.25)",
-          padding: "12px 20px",
-          display: "flex", alignItems: "center", gap: 12,
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: "1.1rem" }}>🏠</span>
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, color: WHITE, fontWeight: 700, fontSize: "0.88rem", fontFamily: BF }}>
-              {peerName?.split(" ")[0]} wants to be your roommate!
-            </p>
-            <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.55)", fontSize: "0.78rem", fontFamily: BF }}>
-              Click "Confirm Roommate" to finalize.
-            </p>
-          </div>
-          <button
-            onClick={() => setShowConfirmBanner(false)}
-            style={{
-              background: "none", border: "none", color: "rgba(255,255,255,0.4)",
-              cursor: "pointer", fontSize: "1rem", padding: 4, flexShrink: 0,
-            }}
-          >✕</button>
-        </div>
-      )}
-
-      {/* Both confirmed celebration banner */}
+          </motion.div>
+        )}
+      </AnimatePresence>
       {confirmStatus.both_confirmed && (
-        <div style={{
-          background: "rgba(52,211,153,0.1)",
-          borderBottom: "1px solid rgba(52,211,153,0.25)",
-          padding: "12px 20px",
-          display: "flex", alignItems: "center", gap: 12,
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: "1.2rem" }}>🎉</span>
-          <div>
-            <p style={{ margin: 0, color: "#34D399", fontWeight: 700, fontSize: "0.88rem", fontFamily: BF }}>
-              You're confirmed roommates with {peerName?.split(" ")[0]}!
-            </p>
-            <p style={{ margin: "2px 0 0", color: "rgba(52,211,153,0.7)", fontSize: "0.78rem", fontFamily: BF }}>
-              Your school's housing office has been notified.
-            </p>
-          </div>
+        <div style={{ margin: "10px 14px 0", padding: "12px 14px", borderRadius: 18, background: "rgba(61,220,151,.10)", border: "1px solid rgba(61,220,151,.28)", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          <span className="r8-sticker r8-sticker--pill" style={{ fontSize: 12 }}><Icon name="home" size={13} />roomies</span>
+          <p style={{ fontSize: 14 }}>You and {firstName} are official. Your housing office has been notified.</p>
         </div>
       )}
 
       {/* Messages */}
-      <div style={{
-        flex: 1, overflowY: "auto", padding: "16px 20px",
-        display: "flex", flexDirection: "column", gap: 10,
-      }}>
+      <div className="r8-noscroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 14px 8px", display: "flex", flexDirection: "column", gap: 3 }}>
         {loading && (
-          <div style={{ textAlign: "center", color: MUTED, paddingTop: 40, fontSize: "0.9rem", fontFamily: BF }}>
-            Loading messages…
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10 }}>
+            {[60, 45, 70].map((w, i) => <div key={i} className="r8-skel" style={{ height: 40, width: `${w}%`, alignSelf: i % 2 ? "flex-end" : "flex-start", borderRadius: 20 }} />)}
           </div>
         )}
         {!loading && messages.length === 0 && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 40, gap: 0 }}>
-            <div style={{
-              width: 72, height: 72, borderRadius: "50%", marginBottom: 16,
-              background: peerPhoto ? `url(${peerPhoto}) center/cover` : NAVY,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: WHITE, fontWeight: 700, fontSize: "1.8rem",
-              border: `3px solid rgba(245,158,11,0.4)`,
-              boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-            }}>
-              {!peerPhoto && initials}
-            </div>
-            <p style={{ color: WHITE, fontWeight: 700, margin: "0 0 4px", fontSize: "1rem", fontFamily: HF }}>
-              You matched with {peerName?.split(" ")[0]}!
-            </p>
-            <p style={{ color: MUTED, fontSize: "0.85rem", margin: "0 0 24px", fontFamily: BF }}>
-              Be the first to say something
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 360 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "36px 10px 10px", gap: 10 }}>
+            <Avatar src={peerPhoto} name={peerName} size={88} ring />
+            <h3 style={{ fontSize: 22, marginTop: 6 }}>You matched with {firstName}</h3>
+            <p className="r8-muted" style={{ fontSize: 15, marginBottom: 10 }}>Break the ice. Tap one to start.</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 380 }}>
               {SUGGESTED_PROMPTS.map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => { setInput(prompt); inputRef.current?.focus(); }}
-                  style={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: `1px solid ${BORDER}`,
-                    color: "rgba(255,255,255,0.7)",
-                    padding: "8px 14px", borderRadius: 20,
-                    fontSize: "0.8rem", fontWeight: 500,
-                    cursor: "pointer", fontFamily: BF,
-                    transition: "all 0.15s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(245,158,11,0.4)";
-                    e.currentTarget.style.color = GOLD;
-                    e.currentTarget.style.background = "rgba(245,158,11,0.06)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = BORDER;
-                    e.currentTarget.style.color = "rgba(255,255,255,0.7)";
-                    e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                  }}
-                >
-                  {prompt}
-                </button>
+                <motion.button key={prompt} whileTap={{ scale: 0.95 }} className="r8-chip" style={{ height: 40, fontSize: 14.5, cursor: "pointer" }}
+                  onClick={() => { setInput(prompt); inputRef.current?.focus(); }}>{prompt}</motion.button>
               ))}
             </div>
           </div>
@@ -478,191 +259,89 @@ export default function Chat({ userId, peerId, peerName, peerPhoto, onBack, onUn
         {messages.map((m, i) => {
           const isMe = String(m.sender_id) === String(userId);
           const prev = messages[i - 1];
-          // Show a time divider when the gap exceeds 5 minutes or it's the first message
-          const showDivider = !prev ||
-            (m.created_at && prev.created_at &&
-              new Date(m.created_at) - new Date(prev.created_at) > 5 * 60 * 1000);
-          // Show per-bubble timestamp only on the last message in a run
           const next = messages[i + 1];
-          const isLastInRun = !next || String(next.sender_id) !== String(m.sender_id) ||
-            (m.created_at && next.created_at &&
-              new Date(next.created_at) - new Date(m.created_at) > 5 * 60 * 1000);
-
+          const showDivider = !prev || (m.created_at && prev.created_at && new Date(m.created_at) - new Date(prev.created_at) > 5 * 60 * 1000);
+          const samePrev = prev && String(prev.sender_id) === String(m.sender_id) && !showDivider;
+          const isLastInRun = !next || String(next.sender_id) !== String(m.sender_id) || (m.created_at && next.created_at && new Date(next.created_at) - new Date(m.created_at) > 5 * 60 * 1000);
+          const r = 22, t = 7;
+          const radius = isMe
+            ? `${r}px ${samePrev ? t : r}px ${isLastInRun ? t : t}px ${r}px`
+            : `${samePrev ? t : r}px ${r}px ${r}px ${isLastInRun ? t : t}px`;
           return (
             <React.Fragment key={i}>
               {showDivider && m.created_at && (
-                <div style={{ textAlign: "center", margin: "8px 0 4px" }}>
-                  <span style={{
-                    fontSize: "0.65rem", color: "rgba(255,255,255,0.3)",
-                    fontFamily: BF, letterSpacing: "0.04em",
-                  }}>
-                    {formatMsgTime(m.created_at)}
-                  </span>
+                <div style={{ textAlign: "center", margin: "12px 0 8px" }}>
+                  <span className="r8-faint" style={{ fontSize: 12, fontWeight: 500 }}>{formatMsgTime(m.created_at)}</span>
                 </div>
               )}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start" }}>
+              <motion.div
+                initial={i >= messages.length - 1 ? { opacity: 0, y: 10, scale: 0.96 } : false}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                style={{ display: "flex", flexDirection: "column", alignItems: isMe ? "flex-end" : "flex-start", marginTop: samePrev ? 0 : 6 }}>
                 <div style={{
-                  maxWidth: "72%", padding: "10px 15px",
-                  borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                  background: isMe ? `linear-gradient(135deg, ${NAVY}, #1a3f7a)` : "rgba(255,255,255,0.07)",
-                  color: WHITE, fontSize: "0.93rem", lineHeight: 1.5,
-                  boxShadow: isMe ? "0 2px 12px rgba(15,45,94,0.4)" : "0 1px 4px rgba(0,0,0,0.2)",
-                  border: isMe ? "none" : `1px solid ${BORDER}`,
-                  fontFamily: BF,
+                  maxWidth: "78%", padding: "10px 15px", borderRadius: radius, fontSize: 16, lineHeight: 1.42, wordBreak: "break-word",
+                  ...(isMe
+                    ? { background: "var(--text)", color: "var(--bg)" }
+                    : { background: "var(--elev-2)", color: "var(--text)", border: "1px solid var(--line)" }),
                 }}>
                   {m.text}
                 </div>
                 {isLastInRun && m.created_at && (
-                  <span style={{
-                    fontSize: "0.62rem", color: "rgba(255,255,255,0.25)",
-                    fontFamily: BF, marginTop: 3, padding: "0 4px",
-                  }}>
+                  <span className="r8-faint" style={{ fontSize: 11.5, marginTop: 4, padding: "0 6px" }}>
                     {new Date(m.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                   </span>
                 )}
-              </div>
+              </motion.div>
             </React.Fragment>
           );
         })}
         <div ref={bottomRef} />
       </div>
 
-      {/* Send error */}
-      {sendError && (
-        <div style={{
-          padding: "6px 20px",
-          color: "#F87171", fontSize: "0.8rem", fontFamily: BF,
-          background: "rgba(239,68,68,0.08)",
-          borderTop: "1px solid rgba(239,68,68,0.2)",
-          flexShrink: 0,
-        }}>
-          {sendError}
-        </div>
-      )}
+      {sendError && <div className="r8-error" style={{ margin: "0 14px 8px", padding: "8px 12px" }}>{sendError} Tap send to try again.</div>}
 
-      {/* Input */}
-      <div style={{
-        display: "flex", gap: 10, padding: "12px 16px",
-        borderTop: `1px solid ${BORDER}`,
-        background: "rgba(3,9,20,0.8)",
-        backdropFilter: "blur(16px)",
-        alignItems: "flex-end",
-        flexShrink: 0,
-      }}>
+      {/* Composer */}
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-end", padding: "10px 12px calc(var(--safe-b) + 10px)", flexShrink: 0, background: "color-mix(in srgb, var(--bg) 85%, transparent)", WebkitBackdropFilter: "var(--blur)", backdropFilter: "var(--blur)" }}>
         <input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          placeholder={`Message ${peerName || ""}…`}
-          style={{
-            flex: 1,
-            background: "rgba(255,255,255,0.06)",
-            border: `1.5px solid ${BORDER}`,
-            borderRadius: 24, color: WHITE, padding: "10px 16px",
-            fontSize: "0.93rem", outline: "none",
-            transition: "border-color 0.2s",
-            fontFamily: BF,
-          }}
-          onFocus={(e) => (e.target.style.borderColor = "rgba(245,158,11,0.5)")}
-          onBlur={(e) => (e.target.style.borderColor = BORDER)}
+          ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey}
+          placeholder={`Message ${firstName}`} aria-label={`Message ${firstName}`}
+          className="r8-input" style={{ flex: 1, borderRadius: 999, minHeight: 48, padding: "0 18px" }}
         />
-        <button
-          onClick={handleSend}
-          disabled={!input.trim() || sending}
-          style={{
-            width: 42, height: 42, borderRadius: "50%", border: "none",
-            background: input.trim() ? GOLD : "rgba(255,255,255,0.08)",
-            color: input.trim() ? DARK : "rgba(255,255,255,0.3)",
-            fontSize: "1rem", cursor: input.trim() ? "pointer" : "not-allowed",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0, transition: "all 0.15s",
-            boxShadow: input.trim() ? "0 4px 16px rgba(245,158,11,0.4)" : "none",
-          }}
-        >
-          ➤
-        </button>
+        <motion.button whileTap={{ scale: 0.88 }} onClick={handleSend} disabled={!input.trim() || sending} aria-label="Send"
+          style={{ width: 48, height: 48, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s",
+            ...(input.trim() ? { background: "var(--iri)", color: "#0E0F12", boxShadow: "var(--glow)" } : { background: "var(--glass-2)", color: "var(--text-3)", border: "1px solid var(--line)" }) }}>
+          <Icon name="arrowUp" size={22} stroke={2.4} />
+        </motion.button>
       </div>
 
-      {/* Report modal */}
-      {showReport && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 300,
-            background: "rgba(0,0,0,0.72)",
-            display: "flex", alignItems: "flex-end", justifyContent: "center",
-            backdropFilter: "blur(8px)",
-          }}
-          onClick={() => { setShowReport(false); setReportDone(false); }}
-        >
-          <div
-            style={{
-              background: "#0A1628", borderRadius: "20px 20px 0 0",
-              padding: "28px 24px 40px", width: "100%", maxWidth: 480,
-              border: `1px solid ${BORDER}`,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {reportDone ? (
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>✅</div>
-                <p style={{ color: WHITE, fontWeight: 700, fontFamily: BF }}>Report submitted</p>
-                <p style={{ color: MUTED, fontSize: "0.88rem", fontFamily: BF }}>We'll review this profile shortly.</p>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                  <h3 style={{ color: WHITE, fontWeight: 800, margin: 0, fontFamily: HF }}>
-                    Report {peerName?.split(" ")[0]}
-                  </h3>
-                  <button
-                    onClick={() => setShowReport(false)}
-                    style={{
-                      background: "rgba(255,255,255,0.08)", border: "none", color: WHITE,
-                      width: 32, height: 32, borderRadius: "50%", cursor: "pointer", fontSize: "1rem",
-                    }}
-                  >✕</button>
-                </div>
-                <p style={{ color: MUTED, fontSize: "0.85rem", marginBottom: 16, fontFamily: BF }}>
-                  Why are you reporting this profile?
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-                  {REPORT_REASONS.map((r) => (
-                    <button
-                      key={r.value}
-                      onClick={() => setReportReason(r.value)}
-                      style={{
-                        padding: "12px 16px", borderRadius: 8, textAlign: "left",
-                        background: reportReason === r.value ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.05)",
-                        border: `1.5px solid ${reportReason === r.value ? GOLD : BORDER}`,
-                        color: reportReason === r.value ? GOLD : MUTED,
-                        fontWeight: reportReason === r.value ? 700 : 400,
-                        cursor: "pointer", fontSize: "0.9rem", fontFamily: BF,
-                      }}
-                    >
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={submitReport}
-                  disabled={reportSubmitting}
-                  style={{
-                    width: "100%", padding: "13px",
-                    background: reportSubmitting ? "rgba(245,158,11,0.5)" : GOLD,
-                    color: DARK, border: "none", borderRadius: 8,
-                    fontWeight: 700, fontSize: "0.95rem",
-                    cursor: reportSubmitting ? "default" : "pointer",
-                    fontFamily: BF,
-                  }}
-                >
-                  {reportSubmitting ? "Submitting…" : "Submit Report"}
-                </button>
-              </>
-            )}
-          </div>
+      {/* Options */}
+      <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title={firstName} labelledBy="r8-chat-menu">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {onViewProfile && <button className="r8-btn r8-btn--glass r8-btn--block" style={{ justifyContent: "flex-start" }} onClick={() => { setMenuOpen(false); onViewProfile(); }}><Icon name="user" size={20} />View profile</button>}
+          <button className="r8-btn r8-btn--glass r8-btn--block" style={{ justifyContent: "flex-start" }} onClick={handleReportOpen}><Icon name="flag" size={20} />Report</button>
+          <button className="r8-btn r8-btn--glass r8-btn--block" style={{ justifyContent: "flex-start", color: "var(--danger)" }} onClick={handleUnmatch}><Icon name="x" size={20} />Unmatch</button>
+          <button className="r8-btn r8-btn--glass r8-btn--block" style={{ justifyContent: "flex-start", color: "var(--danger)" }} onClick={handleBlock}><Icon name="block" size={20} />Block</button>
         </div>
-      )}
+      </Sheet>
+
+      <Sheet open={showReport} onClose={() => { setShowReport(false); setReportDone(false); }} title={reportDone ? "" : `Report ${firstName}`} labelledBy="r8-chat-report">
+        {reportDone ? (
+          <EmptyState icon="shield" title="Report sent" body="Thanks for keeping Room8 safe. We'll take a look." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <p className="r8-muted" style={{ fontSize: 15, marginBottom: 4 }}>What's going on? They won't know you reported them.</p>
+            {REPORT_REASONS.map((r) => (
+              <button key={r.value} onClick={() => setReportReason(r.value)} aria-pressed={reportReason === r.value}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 52, padding: "0 16px", borderRadius: 16, textAlign: "left", fontSize: 15, fontWeight: 500,
+                  background: reportReason === r.value ? "var(--iri-soft)" : "var(--glass)", border: `1.5px solid ${reportReason === r.value ? "rgba(140,158,255,.7)" : "var(--line)"}` }}>
+                {r.label}{reportReason === r.value && <Icon name="check" size={18} stroke={2.4} />}
+              </button>
+            ))}
+            <button className="r8-btn r8-btn--danger r8-btn--block" onClick={submitReport} disabled={reportSubmitting}>{reportSubmitting ? "Sending..." : "Send report"}</button>
+          </div>
+        )}
+      </Sheet>
     </div>
   );
 }

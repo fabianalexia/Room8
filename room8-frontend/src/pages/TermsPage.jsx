@@ -2,27 +2,24 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-const NAVY   = "#0F2D5E";
-const GOLD   = "#F59E0B";
-const DARK   = "#050D1F";
-const DARKER = "#030914";
-const WHITE  = "#FFFFFF";
-const MUTED  = "rgba(255,255,255,0.55)";
-const BORDER = "rgba(255,255,255,0.08)";
-const HF = "'Outfit', sans-serif";
-const BF = "'Inter', sans-serif";
+const GOLD   = "var(--accent)";
+const WHITE  = "var(--text)";
+const MUTED  = "var(--text-2)";
+const BORDER = "var(--line)";
+const HF = "var(--display)";
+const BF = "var(--font)";
 
 function Section({ title, children }) {
   return (
     <section style={{ marginBottom: 40 }}>
       <h2 style={{
         fontFamily: HF, fontWeight: 700, fontSize: "1.15rem",
-        color: GOLD, margin: "0 0 12px", letterSpacing: "-0.01em",
+        color: WHITE, margin: "0 0 12px", letterSpacing: "-0.02em",
       }}>
         {title}
       </h2>
       <div style={{
-        color: "rgba(255,255,255,0.8)", fontSize: "0.92rem",
+        color: "var(--text)", fontSize: "0.92rem",
         lineHeight: 1.8, fontFamily: BF,
       }}>
         {children}
@@ -35,7 +32,7 @@ function Ul({ items }) {
   return (
     <ul style={{ margin: "8px 0 0", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
       {items.map((item, i) => (
-        <li key={i} style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.92rem", lineHeight: 1.7, fontFamily: BF }}>
+        <li key={i} style={{ color: "var(--text)", fontSize: "0.92rem", lineHeight: 1.7, fontFamily: BF }}>
           {item}
         </li>
       ))}
@@ -47,38 +44,22 @@ export default function TermsPage() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: `linear-gradient(160deg, ${DARKER} 0%, #071020 60%, ${NAVY} 100%)`,
+      background: "var(--bg)", position: "relative", overflow: "hidden",
     }}>
       {/* Background glow */}
       <div style={{
         position: "fixed", width: 600, height: 600, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(245,158,11,0.04) 0%, transparent 70%)",
+        background: "radial-gradient(circle, rgba(140,158,255,0.10) 0%, transparent 70%)",
         top: "30%", left: "50%", transform: "translate(-50%,-50%)",
         pointerEvents: "none",
       }} />
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "64px 24px 80px", position: "relative" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "calc(var(--safe-t) + 120px) 20px 100px", position: "relative" }}>
         {/* Header */}
         <div style={{ marginBottom: 48 }}>
-          <Link to="/" style={{
-            color: MUTED, textDecoration: "none", fontSize: "0.85rem",
-            fontFamily: BF, display: "inline-flex", alignItems: "center", gap: 6,
-            marginBottom: 28,
-          }}>
-            ← Back to Room8
-          </Link>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-            <div style={{
-              fontFamily: HF, fontWeight: 800, fontSize: "1.4rem",
-              color: WHITE, letterSpacing: "-0.02em",
-            }}>
-              room<span style={{ color: GOLD }}>8</span>
-            </div>
-          </div>
 
           <h1 style={{
-            fontFamily: HF, fontWeight: 800, fontSize: "2rem",
+            fontFamily: HF, fontWeight: 700, fontSize: "clamp(40px, 7vw, 64px)", lineHeight: 1,
             color: WHITE, margin: "0 0 12px", letterSpacing: "-0.03em",
           }}>
             Terms of Service
@@ -93,7 +74,7 @@ export default function TermsPage() {
 
         {/* Intro */}
         <p style={{
-          color: "rgba(255,255,255,0.75)", fontFamily: BF,
+          color: "var(--text-2)", fontFamily: BF,
           fontSize: "0.95rem", lineHeight: 1.8, marginBottom: 40,
         }}>
           These Terms of Service ("Terms") govern your use of Room8, operated by Room8 ("we," "us," or "our"),

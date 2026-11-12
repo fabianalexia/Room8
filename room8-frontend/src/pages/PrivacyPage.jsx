@@ -2,27 +2,24 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-const NAVY   = "#0F2D5E";
-const GOLD   = "#F59E0B";
-const DARK   = "#050D1F";
-const DARKER = "#030914";
-const WHITE  = "#FFFFFF";
-const MUTED  = "rgba(255,255,255,0.55)";
-const BORDER = "rgba(255,255,255,0.08)";
-const HF = "'Outfit', sans-serif";
-const BF = "'Inter', sans-serif";
+const GOLD   = "var(--accent)";
+const WHITE  = "var(--text)";
+const MUTED  = "var(--text-2)";
+const BORDER = "var(--line)";
+const HF = "var(--display)";
+const BF = "var(--font)";
 
 function Section({ title, children }) {
   return (
     <section style={{ marginBottom: 40 }}>
       <h2 style={{
         fontFamily: HF, fontWeight: 700, fontSize: "1.15rem",
-        color: GOLD, margin: "0 0 12px", letterSpacing: "-0.01em",
+        color: WHITE, margin: "0 0 12px", letterSpacing: "-0.02em",
       }}>
         {title}
       </h2>
       <div style={{
-        color: "rgba(255,255,255,0.8)", fontSize: "0.92rem",
+        color: "var(--text)", fontSize: "0.92rem",
         lineHeight: 1.8, fontFamily: BF,
       }}>
         {children}
@@ -35,7 +32,7 @@ function Ul({ items }) {
   return (
     <ul style={{ margin: "8px 0 0", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
       {items.map((item, i) => (
-        <li key={i} style={{ color: "rgba(255,255,255,0.8)", fontSize: "0.92rem", lineHeight: 1.7, fontFamily: BF }}>
+        <li key={i} style={{ color: "var(--text)", fontSize: "0.92rem", lineHeight: 1.7, fontFamily: BF }}>
           {item}
         </li>
       ))}
@@ -47,38 +44,22 @@ export default function PrivacyPage() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: `linear-gradient(160deg, ${DARKER} 0%, #071020 60%, ${NAVY} 100%)`,
+      background: "var(--bg)", position: "relative", overflow: "hidden",
     }}>
       {/* Background glow */}
       <div style={{
         position: "fixed", width: 600, height: 600, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(245,158,11,0.04) 0%, transparent 70%)",
+        background: "none",
         top: "30%", left: "50%", transform: "translate(-50%,-50%)",
         pointerEvents: "none",
       }} />
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "64px 24px 80px", position: "relative" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "calc(var(--safe-t) + 120px) 20px 100px", position: "relative" }}>
         {/* Header */}
         <div style={{ marginBottom: 48 }}>
-          <Link to="/" style={{
-            color: MUTED, textDecoration: "none", fontSize: "0.85rem",
-            fontFamily: BF, display: "inline-flex", alignItems: "center", gap: 6,
-            marginBottom: 28,
-          }}>
-            ← Back to Room8
-          </Link>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-            <div style={{
-              fontFamily: HF, fontWeight: 800, fontSize: "1.4rem",
-              color: WHITE, letterSpacing: "-0.02em",
-            }}>
-              room<span style={{ color: GOLD }}>8</span>
-            </div>
-          </div>
 
           <h1 style={{
-            fontFamily: HF, fontWeight: 800, fontSize: "2rem",
+            fontFamily: HF, fontWeight: 700, fontSize: "clamp(40px, 7vw, 64px)", lineHeight: 1,
             color: WHITE, margin: "0 0 12px", letterSpacing: "-0.03em",
           }}>
             Privacy Policy
@@ -93,7 +74,7 @@ export default function PrivacyPage() {
 
         {/* Intro */}
         <p style={{
-          color: "rgba(255,255,255,0.75)", fontFamily: BF,
+          color: "var(--text-2)", fontFamily: BF,
           fontSize: "0.95rem", lineHeight: 1.8, marginBottom: 40,
         }}>
           Room8 ("we," "us," or "our") is a student roommate-matching platform. This Privacy Policy
@@ -124,12 +105,12 @@ export default function PrivacyPage() {
 
         <Section title="2. How We Use Your Information">
           <Ul items={[
-            "Roommate matching — we use your profile and preferences to surface compatible matches",
-            "School verification — we email a one-time code to your .edu address to confirm you are a student. The code expires after 15 minutes and is stored only in scrambled (hashed) form",
-            "Photo verification (optional) — if you choose to get photo verified, you take a selfie copying a pose we show you. A Room8 team member compares it to your profile photos. The selfie is stored privately, never shown on your profile, and permanently deleted as soon as the review is finished. We do not create or keep face templates or other biometric identifiers",
-            "Messaging — messages are stored to deliver them to the recipient and display your conversation history",
-            "Account management — your email is used for password resets, security notices, and product updates",
-            "Safety and moderation — reports and block actions are processed to keep the platform safe",
+            "Roommate matching: we use your profile and preferences to surface compatible matches",
+            "School verification: we email a one-time code to your .edu address to confirm you are a student. The code expires after 15 minutes and is stored only in scrambled (hashed) form",
+            "Photo verification (optional): if you choose to get photo verified, you take a selfie copying a pose we show you. A Room8 team member compares it to your profile photos. The selfie is stored privately, never shown on your profile, and permanently deleted as soon as the review is finished. We do not create or keep face templates or other biometric identifiers",
+            "Messaging: messages are stored to deliver them to the recipient and display your conversation history",
+            "Account management: your email is used for password resets, security notices, and product updates",
+            "Safety and moderation: reports and block actions are processed to keep the platform safe",
           ]} />
         </Section>
 
@@ -142,16 +123,16 @@ export default function PrivacyPage() {
             We share information in the following limited circumstances:
           </p>
           <Ul items={[
-            "University housing offices — when you and another student mutually confirm each other as roommates using the \"Confirm Roommate\" feature, we send a summary of both students' profiles (name, email, school, class year, major, housing preferences) to the housing office at your school. This notification is sent only when both students have confirmed, and only at your initiation.",
-            "Service providers — we use Cloudinary for photo storage and hosting. Photos you upload are stored on Cloudinary's infrastructure subject to their privacy policy.",
-            "Legal compliance — we may disclose information if required by law or to protect the safety of users.",
+            "University housing offices: when you and another student mutually confirm each other as roommates using the \"Confirm Roommate\" feature, we send a summary of both students' profiles (name, email, school, class year, major, housing preferences) to the housing office at your school. This notification is sent only when both students have confirmed, and only at your initiation.",
+            "Service providers: we use Cloudinary for photo storage and hosting. Photos you upload are stored on Cloudinary's infrastructure subject to their privacy policy.",
+            "Legal compliance: we may disclose information if required by law or to protect the safety of users.",
           ]} />
         </Section>
 
         <Section title="4. FERPA Notice">
           <p style={{ margin: "0 0 10px" }}>
             The Family Educational Rights and Privacy Act (FERPA) protects the privacy of student
-            education records held by educational institutions. Room8 is an independent platform —
+            education records held by educational institutions. Room8 is an independent platform , 
             we are not affiliated with any university and we do not access university records.
           </p>
           <p style={{ margin: 0 }}>
@@ -165,7 +146,7 @@ export default function PrivacyPage() {
         <Section title="5. Data Security">
           <Ul items={[
             "All data is transmitted over HTTPS/TLS encryption",
-            "Passwords are hashed using industry-standard algorithms (bcrypt via Werkzeug) — we never store plaintext passwords",
+            "Passwords are hashed using industry-standard algorithms (bcrypt via Werkzeug): we never store plaintext passwords",
             "Our database is hosted on a managed cloud provider with encryption at rest",
             "Authentication tokens are short-lived (24 hours) and invalidated on password change",
           ]} />
@@ -178,10 +159,10 @@ export default function PrivacyPage() {
 
         <Section title="6. Your Rights and Choices">
           <Ul items={[
-            "Update your profile — you can edit your profile information at any time from the Profile tab",
-            "Delete your account — you can delete your account at any time from the Profile tab in the app or on the website. This immediately removes your profile, photos, messages, matches, and any verification selfie. You can also email partner@swiperoom8.com and we will do it for you.",
-            "Data access and portability — you can request a copy of the data we hold about you by emailing partner@swiperoom8.com",
-            "Opt out of housing notifications — if you do not want your information shared with your housing office, do not use the \"Confirm Roommate\" feature",
+            "Update your profile: you can edit your profile information at any time from the Profile tab",
+            "Delete your account: you can delete your account at any time from the Profile tab in the app or on the website. This immediately removes your profile, photos, messages, matches, and any verification selfie. You can also email partner@swiperoom8.com and we will do it for you.",
+            "Data access and portability: you can request a copy of the data we hold about you by emailing partner@swiperoom8.com",
+            "Opt out of housing notifications: if you do not want your information shared with your housing office, do not use the \"Confirm Roommate\" feature",
           ]} />
         </Section>
 

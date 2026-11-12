@@ -2,10 +2,6 @@
 import React, { useState } from "react";
 import { acceptTerms, getCurrentUser, setCurrentUser } from "../api";
 
-const GOLD = "#f5a623";
-const DARK = "#03040b";
-const MUTED = "rgba(255,255,255,0.6)";
-const JAKARTA = "'Plus Jakarta Sans', 'Inter', sans-serif";
 
 export default function TermsGate({ onAccepted }) {
   const [agree, setAgree] = useState(false);
@@ -24,19 +20,19 @@ export default function TermsGate({ onAccepted }) {
   };
 
   return (
-    <div style={{ minHeight: "100dvh", background: DARK, color: "#fff", fontFamily: JAKARTA, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, boxSizing: "border-box" }}>
-      <div style={{ maxWidth: 420, width: "100%", background: "linear-gradient(160deg,#0d1e3e,#08142a 45%,#050c1a)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 24, padding: "26px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
-        <h1 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 800 }}>Before you start</h1>
-        <p style={{ margin: 0, color: MUTED, fontSize: 14, lineHeight: 1.6 }}>
+    <div style={{ minHeight: "100dvh", background: "var(--bg)", color: "var(--text)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div className="r8-card" style={{ maxWidth: 420, width: "100%", borderRadius: 28, padding: "30px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.04em" }}>Before you start</h1>
+        <p className="r8-muted" style={{ fontSize: 15, lineHeight: 1.6 }}>
           Room8 has zero tolerance for harassment, hate speech, threats, or sexual content. You can report or block anyone, and we review every report within 24 hours. Accounts that break the rules are removed.
         </p>
-        <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14, color: MUTED, lineHeight: 1.5, cursor: "pointer" }}>
-          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ width: 18, height: 18, marginTop: 2, flexShrink: 0 }} />
-          <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" style={{ color: GOLD }}>Terms of Service</a> and <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: GOLD }}>Privacy Policy</a>.</span>
+        <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 15, lineHeight: 1.5, cursor: "pointer" }} className="r8-muted">
+          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: "#111112" }} />
+          <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "var(--text)", fontWeight: 600 }}>Terms of Service</a> and <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "var(--text)", fontWeight: 600 }}>Privacy Policy</a>.</span>
         </label>
-        {err && <div style={{ color: "#fca5a5", fontSize: 13 }}>{err}</div>}
-        <button disabled={!agree || busy} onClick={accept} style={{ background: GOLD, color: DARK, border: "none", borderRadius: 12, padding: "14px 18px", fontWeight: 800, fontSize: "1rem", cursor: "pointer", opacity: !agree || busy ? 0.5 : 1, fontFamily: JAKARTA }}>
-          {busy ? "Saving…" : "Agree and continue"}
+        {err && <div className="r8-error">{err}</div>}
+        <button disabled={!agree || busy} onClick={accept} className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block">
+          {busy ? "Saving" : "Agree and continue"}
         </button>
       </div>
     </div>

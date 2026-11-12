@@ -42,9 +42,9 @@ const APP_PAGES = ["/app", "/messages", "/discover", "/profile", "/likes", "/set
 function AppShell() {
   return (
     <div style={{
-      height: "100vh",
+      minHeight: "100dvh",
       overflow: "hidden",
-      backgroundColor: "#03040b",
+      background: "var(--bg)",
       display: "flex",
       alignItems: "stretch",
       position: "relative",
@@ -59,12 +59,13 @@ function Layout() {
   const navigate = useNavigate();
   useEffect(() => { setupNativeDeepLinks(navigate); }, [navigate]);
   const isAppPage = APP_PAGES.some((p) => pathname.startsWith(p));
+  const isAuthPage = ["/login", "/register", "/forgot-password", "/reset-password", "/auth/callback"].some((p) => pathname.startsWith(p));
   useRouteMeta(pathname);
 
   return (
     <>
       {/* Global header — hidden on authenticated app pages */}
-      {!isAppPage && <Header />}
+      {!isAppPage && !isAuthPage && <Header />}
 
       <Routes>
         <Route path="/"              element={<Home />} />
@@ -124,7 +125,7 @@ function Layout() {
       {isAppPage && <BottomNav />}
 
       {/* Footer — hidden on app pages (BottomNav takes its place) */}
-      {!isAppPage && <Footer />}
+      {!isAppPage && !isAuthPage && <Footer />}
     </>
   );
 }

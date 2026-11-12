@@ -1,14 +1,8 @@
 // Shown instead of the swipe deck while the user's school is still locked.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const GOLD = "#f5a623";
-const GOLD2 = "#f5c842";
-const DARK = "#03040b";
-const WHITE = "#ffffff";
-const MUTED = "rgba(255,255,255,0.55)";
-const JAKARTA = "'Plus Jakarta Sans', 'Inter', sans-serif";
-const BEBAS = "'Bebas Neue', cursive";
+import { motion } from "framer-motion";
+import Icon from "../ui/Icon";
 
 const INVITE_URL = "https://swiperoom8.com/register";
 
@@ -16,13 +10,13 @@ export default function WaitlistScreen({ status, user, onRefresh }) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
-  // No school picked yet: send them to choose one
   if (!status?.school) {
     return (
       <Shell>
+        <Badge icon="school" text="One step left" />
         <h2 style={h2}>Pick your school</h2>
         <p style={p}>Room8 only shows you students from your own campus. Choose your school to join its waitlist.</p>
-        <button style={primaryBtn} onClick={() => navigate("/onboarding/school")}>Choose school</button>
+        <button className="r8-btn r8-btn--primary r8-btn--block" onClick={() => navigate("/onboarding/school")}>Choose school</button>
       </Shell>
     );
   }
@@ -33,11 +27,8 @@ export default function WaitlistScreen({ status, user, onRefresh }) {
   const share = async () => {
     const text = `I'm on the Room8 waitlist for ${name}. We need ${remaining} more students to unlock roommate matching. Join with your school email:`;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: "Join me on Room8", text, url: INVITE_URL });
-        return;
-      }
-    } catch { /* user cancelled share sheet */ return; }
+      if (navigator.share) { await navigator.share({ title: "Join me on Room8", text, url: INVITE_URL }); return; }
+    } catch { return; }
     try {
       await navigator.clipboard.writeText(`${text} ${INVITE_URL}`);
       setCopied(true);
@@ -47,68 +38,61 @@ export default function WaitlistScreen({ status, user, onRefresh }) {
 
   return (
     <Shell>
-      <span style={{ fontFamily: BEBAS, letterSpacing: "0.12em", color: GOLD, fontSize: "0.95rem" }}>WAITLIST</span>
-      <h2 style={h2}>{name} unlocks at {unlock_threshold} students</h2>
-      <p style={p}>
-        We open each campus once enough students join, so the first time you swipe there are real people to match with.
-      </p>
+      <Badge icon="clock" text="Waitlist" />
+      <h2 style={h2}>{name} opens at {unlock_threshold} students</h2>
+      <p style={p}>We open each campus once enough students join, so your first swipe has real people behind it.</p>
 
-      <div style={{ width: "100%", margin: "8px 0 6px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: JAKARTA, fontSize: 13, color: MUTED, marginBottom: 8 }}>
-          <span><b style={{ color: WHITE, fontSize: 20 }}>{verified_count}</b> of {unlock_threshold} joined</span>
-          <span>{remaining} to go</span>
+      <div style={{ width: "100%", margin: "6px 0 4px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, color: "var(--text-2)", marginBottom: 10 }}>
+          <span><b style={{ color: "var(--text)", fontSize: 26, fontFamily: "var(--display)", letterSpacing: "-0.03em" }}>{verified_count}</b> of {unlock_threshold} joined</span>
+          <span className="r8-badge r8-badge--iri">{remaining} to go</span>
         </div>
         <div role="progressbar" aria-valuemin={0} aria-valuemax={unlock_threshold} aria-valuenow={verified_count}
-          style={{ height: 12, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-          <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: `linear-gradient(90deg,${GOLD},${GOLD2})`, transition: "width .6s ease" }} />
+          style={{ height: 12, borderRadius: 999, background: "var(--glass-2)", overflow: "hidden", border: "1px solid var(--line)" }}>
+          <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ type: "spring", stiffness: 90, damping: 20 }}
+            style={{ height: "100%", borderRadius: 999, background: "var(--iri)" }} />
         </div>
       </div>
 
       {!status.you_count && (
-        <>
-          <p style={{ ...p, color: "#fcd34d", fontSize: 13 }}>You're not counted yet. Verify your school email to help unlock {name}.</p>
-          <button style={secondaryGold} onClick={() => navigate("/verify/student")}>Verify school email</button>
-        </>
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 18, background: "rgba(255,200,96,.10)", border: "1px solid rgba(255,200,96,.28)" }}>
+          <p style={{ ...p, color: "var(--text)" }}>You're not counted yet. Verify your school email to help unlock {name}.</p>
+          <button className="r8-btn r8-btn--glass r8-btn--sm" onClick={() => navigate("/verify/student")}><Icon name="mail" size={18} />Verify school email</button>
+        </div>
       )}
 
-      <button style={primaryBtn} onClick={share}>{copied ? "Link copied" : "Invite classmates"}</button>
-
+      <button className="r8-btn r8-btn--primary r8-btn--block" onClick={share}>
+        <Icon name={copied ? "check" : "users"} size={20} />{copied ? "Link copied" : "Invite classmates"}
+      </button>
       {!user?.is_photo_verified && (
-        <button style={secondaryBtn} onClick={() => navigate("/verify/photo")}>Get photo verified while you wait</button>
+        <button className="r8-btn r8-btn--glass r8-btn--block" onClick={() => navigate("/verify/photo")}>
+          <Icon name="verified" size={20} />Get photo verified while you wait
+        </button>
       )}
-      <button style={linkBtn} onClick={() => navigate("/profile")}>Finish your profile</button>
-      <button style={linkBtn} onClick={onRefresh}>Refresh count</button>
-      <p style={{ ...p, fontSize: 12, marginTop: 4 }}>We'll send you a notification the moment {name} goes live.</p>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button className="r8-btn r8-btn--ghost r8-btn--sm" onClick={() => navigate("/profile")}>Finish profile</button>
+        <button className="r8-btn r8-btn--ghost r8-btn--sm" onClick={onRefresh}><Icon name="refresh" size={16} />Refresh</button>
+      </div>
+      <p style={{ ...p, fontSize: 12.5 }}>You'll get a notification the moment {name} goes live.</p>
     </Shell>
   );
 }
 
+function Badge({ icon, text }) {
+  return <span className="r8-sticker r8-sticker--pill"><Icon name={icon} size={14} stroke={2.2} />{text}</span>;
+}
+
 function Shell({ children }) {
   return (
-    <div style={{
-      width: "min(420px, calc(100vw - 40px))", display: "flex", flexDirection: "column", alignItems: "center",
-      gap: 12, textAlign: "center", padding: "28px 22px", borderRadius: 28,
-      background: "linear-gradient(160deg,#0d1e3e,#08142a 45%,#050c1a)", border: "1px solid rgba(255,255,255,.08)",
-      boxShadow: "0 20px 60px rgba(0,0,0,.45)",
-    }}>
+    <motion.div
+      initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 26 }}
+      className="r8-card"
+      style={{ width: "min(420px, calc(100vw - 32px))", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center", padding: "28px 22px 22px" }}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
-const h2 = { margin: 0, color: WHITE, fontFamily: JAKARTA, fontSize: "1.45rem", fontWeight: 800, lineHeight: 1.25 };
-const p = { margin: 0, color: MUTED, fontFamily: JAKARTA, fontSize: 14, lineHeight: 1.55 };
-const primaryBtn = {
-  width: "100%", marginTop: 8, background: `linear-gradient(135deg,${GOLD},${GOLD2})`, color: DARK, border: "none",
-  padding: "14px 20px", borderRadius: 12, fontWeight: 800, fontSize: "1rem", cursor: "pointer", fontFamily: JAKARTA,
-  boxShadow: "0 6px 24px rgba(245,166,35,.35)",
-};
-const secondaryBtn = {
-  width: "100%", background: "rgba(29,155,240,.12)", color: "#7cc4f7", border: "1px solid rgba(29,155,240,.4)",
-  padding: "12px 20px", borderRadius: 12, fontWeight: 700, fontSize: "0.92rem", cursor: "pointer", fontFamily: JAKARTA,
-};
-const secondaryGold = {
-  width: "100%", background: "rgba(245,166,35,.12)", color: GOLD, border: "1px solid rgba(245,166,35,.45)",
-  padding: "12px 20px", borderRadius: 12, fontWeight: 800, fontSize: "0.95rem", cursor: "pointer", fontFamily: JAKARTA,
-};
-const linkBtn = { background: "none", border: "none", color: MUTED, fontFamily: JAKARTA, fontSize: 13, cursor: "pointer", textDecoration: "underline" };
+const h2 = { fontSize: 26, lineHeight: 1.15 };
+const p = { color: "var(--text-2)", fontSize: 15, lineHeight: 1.55 };

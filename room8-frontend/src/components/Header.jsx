@@ -1,351 +1,117 @@
-// src/components/Header.jsx — Dark glass rebrand
+// src/components/Header.jsx: floating glass header for the public site
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { getCurrentUser, logout as apiLogout } from "../api";
-import logoImg from "../assets/images/logo.png";
+import { Wordmark } from "../ui/Logo";
+import Icon from "../ui/Icon";
 
-const GOLD    = "#F59E0B";
-const GOLD_D  = "#D97706";
-const NAVY    = "#0F2D5E";
-const DARK    = "#050D1F";
-const WHITE   = "#FFFFFF";
-const MUTED   = "rgba(255,255,255,0.55)";
-const BORDER  = "rgba(255,255,255,0.08)";
-
-const HF = "'Outfit', sans-serif";
-const BF = "'Inter', sans-serif";
+const PUBLIC_LINKS = [
+  { to: "/#how-it-works", label: "Features" },
+  { to: "/#safety", label: "Safety" },
+  { to: "/schools", label: "For Colleges" },
+];
+const APP_LINKS = [
+  { to: "/app", label: "Discover" },
+  { to: "/likes", label: "Likes" },
+  { to: "/messages", label: "Chats" },
+  { to: "/profile", label: "Profile" },
+];
 
 export default function Header() {
-  const navigate   = useNavigate();
+  const navigate = useNavigate();
   const { pathname } = useLocation();
-  const user       = getCurrentUser();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [scrolled, setScrolled]     = useState(false);
+  const user = getCurrentUser();
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  useEffect(() => { setDrawerOpen(false); }, [pathname]);
-
+  useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 12);
-    window.addEventListener("scroll", fn);
+    fn();
+    window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
   }, []);
-
   useEffect(() => {
-    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [drawerOpen]);
+  }, [open]);
 
-  const close = () => setDrawerOpen(false);
-  const handleLogout = () => { apiLogout(); close(); navigate("/"); };
+  const links = user ? APP_LINKS : PUBLIC_LINKS;
+  const handleLogout = () => { apiLogout(); setOpen(false); navigate("/"); };
 
   return (
     <>
-      <header style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 900,
-        background: scrolled
-          ? "rgba(5,13,31,0.92)"
-          : "rgba(5,13,31,0.75)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        borderBottom: `1px solid ${scrolled ? BORDER : "transparent"}`,
-        transition: "background 0.3s, border-color 0.3s",
-        boxShadow: scrolled ? "0 4px 32px rgba(0,0,0,0.3)" : "none",
-      }}>
-        {/* Thin gold/blue accent rule at very bottom of header */}
-        <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, height: 1,
-          background: "linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.25) 30%, rgba(37,99,235,0.2) 70%, transparent 100%)",
-          opacity: scrolled ? 1 : 0.4,
-          transition: "opacity 0.3s",
-        }} />
-        <nav style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 32px",
-          height: 68,
-          maxWidth: 1200,
-          margin: "0 auto",
+      <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 900, paddingTop: "var(--safe-t)",
+        background: "color-mix(in srgb, var(--bg) 90%, transparent)", WebkitBackdropFilter: "blur(20px) saturate(160%)", backdropFilter: "blur(20px) saturate(160%)",
+        boxShadow: scrolled ? "0 1px 0 var(--line)" : "none", transition: "box-shadow .3s" }}>
+        <nav aria-label="Main" style={{
+          maxWidth: 1200, margin: "0 auto", height: 72,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 20px",
         }}>
-
-          {/* ── Logo ── */}
-          <Link
-            to="/"
-            onClick={close}
-            style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flexShrink: 0 }}
-          >
-            <img
-              src={logoImg}
-              alt="Room8"
-              style={{
-                height: 34, width: "auto", objectFit: "contain",
-                filter: "brightness(0) invert(1)",
-                opacity: 0.92,
-              }}
-            />
-            <span style={{
-              fontFamily: HF,
-              fontWeight: 800,
-              fontSize: "1.15rem",
-              color: GOLD,
-              letterSpacing: "0.06em",
-            }}>
-              ROOM8
-            </span>
+          <Link to="/" aria-label="Room8 home" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+            <Wordmark size={27} />
           </Link>
 
-          {/* ── Desktop center nav ── */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 4,
-            position: "absolute", left: "50%", transform: "translateX(-50%)",
-          }} className="desk-nav">
-            {!user ? (
-              <>
-                <GlassNavLink to="/#how-it-works" label="How It Works" />
-                <GlassNavLink to="/schools" label="For Schools" />
-              </>
-            ) : (
-              <>
-                <GlassNavLink to="/app"       label="Swipe"    />
-                <GlassNavLink to="/discover"  label="Discover" />
-                <GlassNavLink to="/messages"  label="Messages" />
-              </>
-            )}
+          <div className="r8-hdr-links" style={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {links.map((l) => {
+              const active = !l.to.includes("#") && pathname === l.to;
+              return (
+                <Link key={l.to} to={l.to} style={{ padding: "8px 18px", fontSize: 15, fontWeight: 500, color: active ? "var(--text)" : "var(--text-2)", transition: "color .2s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; }} onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "var(--text-2)"; }}>
+                  {l.label}
+                </Link>
+              );
+            })}
           </div>
 
-          {/* ── Desktop right actions ── */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }} className="desk-actions">
-            {!user ? (
-              <>
-                <Link to="/login" style={{
-                  color: MUTED, textDecoration: "none",
-                  fontWeight: 500, fontSize: "0.9rem",
-                  fontFamily: BF,
-                  padding: "8px 16px", borderRadius: 8,
-                  transition: "color 0.15s",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.color = WHITE}
-                  onMouseLeave={e => e.currentTarget.style.color = MUTED}
-                >
-                  Log In
-                </Link>
-                <Link to="/register" style={{
-                  background: GOLD,
-                  color: DARK,
-                  padding: "9px 22px",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                  fontFamily: HF,
-                  textDecoration: "none",
-                  transition: "background 0.15s, transform 0.15s",
-                  boxShadow: "0 4px 16px rgba(245,158,11,0.35)",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = GOLD_D; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.transform = "none"; }}
-                >
-                  Sign Up Free
-                </Link>
-              </>
-            ) : (
-              <button onClick={handleLogout} style={{
-                background: "transparent",
-                border: `1px solid ${BORDER}`,
-                borderRadius: 8,
-                padding: "8px 18px",
-                color: MUTED,
-                fontWeight: 600,
-                fontSize: "0.88rem",
-                fontFamily: BF,
-                cursor: "pointer",
-                transition: "border-color 0.15s, color 0.15s",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)"; e.currentTarget.style.color = WHITE; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED; }}
-              >
-                Log Out
-              </button>
-            )}
-          </div>
-
-          {/* ── Hamburger (mobile) ── */}
-          <button
-            aria-label={drawerOpen ? "Close menu" : "Open menu"}
-            onClick={() => setDrawerOpen(v => !v)}
-            style={{
-              background: "none", border: "none",
-              cursor: "pointer", padding: 8,
-              flexDirection: "column", gap: 5,
-            }}
-            className="ham-btn"
-          >
-            {[
-              drawerOpen ? "translateY(7px) rotate(45deg)"  : "none",
-              "none",
-              drawerOpen ? "translateY(-7px) rotate(-45deg)" : "none",
-            ].map((t, i) => (
-              <span key={i} style={{
-                display: "block", width: 22, height: 2,
-                background: GOLD, borderRadius: 2,
-                transition: "transform 0.25s, opacity 0.25s",
-                transform: t,
-                opacity: i === 1 && drawerOpen ? 0 : 1,
-              }} />
-            ))}
-          </button>
-        </nav>
-      </header>
-
-      {/* ── Mobile backdrop ── */}
-      <div
-        onClick={close}
-        style={{
-          position: "fixed", inset: 0,
-          background: "rgba(0,0,0,0.6)",
-          backdropFilter: "blur(4px)",
-          zIndex: 950,
-          opacity: drawerOpen ? 1 : 0,
-          pointerEvents: drawerOpen ? "auto" : "none",
-          transition: "opacity 0.25s",
-        }}
-      />
-
-      {/* ── Mobile drawer ── */}
-      <div style={{
-        position: "fixed", top: 0, right: 0, bottom: 0,
-        width: "min(300px, 85vw)",
-        background: "rgba(5,13,31,0.97)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        borderLeft: `1px solid ${BORDER}`,
-        zIndex: 960,
-        transform: drawerOpen ? "translateX(0)" : "translateX(100%)",
-        transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
-        display: "flex", flexDirection: "column",
-        padding: "0 0 32px",
-        overflowY: "auto",
-      }}>
-        {/* Drawer header */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "20px 24px",
-          borderBottom: `1px solid ${BORDER}`,
-        }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src={logoImg} alt="Room8" style={{ height: 28, filter: "brightness(0) invert(1)", opacity: 0.9 }} />
-            <span style={{ fontFamily: HF, fontWeight: 800, fontSize: "1rem", color: GOLD }}>ROOM8</span>
-          </div>
-          <button onClick={close} style={{
-            background: "rgba(255,255,255,0.08)", border: "none",
-            color: WHITE, width: 34, height: 34, borderRadius: "50%",
-            cursor: "pointer", fontSize: "1rem",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>✕</button>
-        </div>
-
-        <nav style={{ flex: 1, padding: "12px 0" }}>
-          {!user ? (
-            <>
-              <DLink to="/"        label="Home"         onClick={close} />
-              <DLink to="/schools" label="For Schools"  onClick={close} />
-              <DLink to="/login"   label="Log In"       onClick={close} />
-              <div style={{ padding: "12px 20px" }}>
-                <Link to="/register" onClick={close} style={{
-                  display: "block", background: GOLD,
-                  color: DARK, padding: "13px 20px",
-                  borderRadius: 10, fontWeight: 700,
-                  fontSize: "0.95rem", textDecoration: "none",
-                  textAlign: "center", fontFamily: HF,
-                  boxShadow: "0 4px 20px rgba(245,158,11,0.4)",
-                }}>
-                  Sign Up Free
-                </Link>
-              </div>
-            </>
-          ) : (
-            <>
-              <DLink to="/app"      label="Swipe"    onClick={close} />
-              <DLink to="/discover" label="Discover" onClick={close} />
-              <DLink to="/likes"    label="Likes"    onClick={close} />
-              <DLink to="/messages" label="Messages" onClick={close} />
-              <DLink to="/profile"  label="Profile"  onClick={close} />
-            </>
-          )}
-        </nav>
-
-        {user && (
-          <div style={{ padding: "0 20px" }}>
-            <button onClick={handleLogout} style={{
-              width: "100%", padding: "12px",
-              background: "transparent",
-              border: "1px solid rgba(239,68,68,0.4)",
-              borderRadius: 8, color: "#F87171",
-              fontWeight: 700, fontSize: "0.95rem",
-              cursor: "pointer", fontFamily: BF,
-            }}>
-              Log Out
+            <div className="r8-hdr-links" style={{ display: "flex", gap: 8 }}>
+              {user ? (
+                <><Link to="/app" className="r8-btn r8-btn--dark r8-btn--sm">Open app</Link><button className="r8-btn r8-btn--soft r8-btn--sm" onClick={handleLogout}>Log out</button></>
+              ) : (
+                <>
+                  <Link to="/login" className="r8-btn r8-btn--soft r8-btn--sm">Log In</Link>
+                  <Link to="/register" className="r8-btn r8-btn--dark r8-btn--sm">Get the App</Link>
+                </>
+              )}
+            </div>
+            <button className="r8-icon-btn r8-icon-btn--round r8-hdr-menu" onClick={() => setOpen((o) => !o)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} style={{ display: "none" }}>
+              <Icon name={open ? "x" : "menu"} size={22} />
             </button>
           </div>
-        )}
-      </div>
-
+        </nav>
+      </header>
       <style>{`
-        .ham-btn { display: none; }
-        @media (max-width: 768px) {
-          .desk-nav     { display: none !important; }
-          .desk-actions { display: none !important; }
-          .ham-btn      { display: flex !important; }
-        }
+        @media (max-width: 820px) { .r8-hdr-links { display: none !important; } .r8-hdr-menu { display: inline-flex !important; } }
       `}</style>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+            style={{ position: "fixed", inset: 0, zIndex: 880, background: "color-mix(in srgb, var(--bg) 88%, transparent)", WebkitBackdropFilter: "var(--blur)", backdropFilter: "var(--blur)", padding: "calc(var(--safe-t) + 96px) 24px 32px", display: "flex", flexDirection: "column" }}>
+            <nav aria-label="Mobile" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {[...(user ? APP_LINKS : [{ to: "/", label: "Home" }, ...PUBLIC_LINKS])].map((l, i) => (
+                <motion.div key={l.to} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 * i, type: "spring", stiffness: 300, damping: 28 }}>
+                  <Link to={l.to} onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 4px", fontFamily: "var(--display)", fontWeight: 700, fontSize: 32, letterSpacing: "-0.03em", borderBottom: "1px solid var(--line)" }}>
+                    {l.label}<Icon name="arrowRight" size={22} color="var(--text-3)" />
+                  </Link>
+                </motion.div>
+              ))}
+            </nav>
+            <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+              {user ? (
+                <button className="r8-btn r8-btn--glass r8-btn--lg r8-btn--block" onClick={handleLogout}><Icon name="logout" size={20} />Log out</button>
+              ) : (
+                <>
+                  <Link to="/register" onClick={() => setOpen(false)} className="r8-btn r8-btn--primary r8-btn--lg r8-btn--block">Get the App</Link>
+                  <Link to="/login" onClick={() => setOpen(false)} className="r8-btn r8-btn--soft r8-btn--lg r8-btn--block">Log In</Link>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
-  );
-}
-
-function GlassNavLink({ to, label }) {
-  const { pathname } = useLocation();
-  const active = pathname === to || (to.includes("#") && pathname === "/");
-  return (
-    <Link
-      to={to}
-      style={{
-        color: active ? WHITE : MUTED,
-        textDecoration: "none",
-        fontWeight: active ? 600 : 400,
-        fontSize: "0.9rem",
-        fontFamily: BF,
-        padding: "8px 14px",
-        borderRadius: 8,
-        transition: "color 0.15s, background 0.15s",
-        whiteSpace: "nowrap",
-      }}
-      onMouseEnter={e => { e.currentTarget.style.color = WHITE; e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
-      onMouseLeave={e => { e.currentTarget.style.color = active ? WHITE : MUTED; e.currentTarget.style.background = "transparent"; }}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function DLink({ to, label, onClick }) {
-  const { pathname } = useLocation();
-  const active = pathname === to;
-  return (
-    <Link to={to} onClick={onClick} style={{
-      display: "flex", alignItems: "center",
-      padding: "13px 24px", textDecoration: "none",
-      color: active ? WHITE : MUTED,
-      fontWeight: active ? 600 : 400,
-      fontSize: "1rem", fontFamily: BF,
-      background: active ? "rgba(245,158,11,0.1)" : "transparent",
-      borderLeft: `3px solid ${active ? GOLD : "transparent"}`,
-      transition: "background 0.15s",
-    }}
-      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = WHITE; } }}
-      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = MUTED; } }}
-    >
-      {label}
-    </Link>
   );
 }

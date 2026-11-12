@@ -1,1255 +1,348 @@
-// src/Home.jsx — Cinematic atmosphere: fog, cursor, parallax, word-reveal
-import React, {
-  useRef, useEffect, useState, useCallback,
-} from "react";
+// src/Home.jsx: Room8 public homepage
+import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { getCurrentUser, API_URL } from "./api";
 import { FOUNDERS, TESTIMONIALS, TESTIMONIALS_MIN_TO_SHOW, COUNTER_MIN_TO_SHOW } from "./siteContent";
-import {
-  motion, useScroll, useTransform, useInView,
-  animate, useMotionValue, useSpring,
-} from "framer-motion";
-import * as THREE from "three";
+import Icon from "./ui/Icon";
+import MatchBadge from "./ui/MatchBadge";
+import { Avatar } from "./ui/kit";
 
-/* ─── Brand tokens ──────────────────────────────────────────────── */
-const DARK   = "#050D1F";
-const NAVY   = "#0F2D5E";
-const BLUE   = "#2563EB";
-const GOLD   = "#F59E0B";
-const GOLD_D = "#D97706";
-const WHITE  = "#FFFFFF";
-const MUTED  = "#94A3B8";
-const SURF   = "#F8F9FA";
-const BORD   = "#E5E7EB";
-const HF = "'Outfit', sans-serif";
-const BF = "'Inter', sans-serif";
-
-/* ─── Static data ───────────────────────────────────────────────── */
-const MOCK_PROFILES = [
-  { name: "Priya S.",  school: "Stanford University",       major: "Computer Science", compat: 94, initials: "PS", grad: "135deg,#3b82f6,#1d4ed8",   tags: ["Early Bird 🌅","Clean ✨"] },
-  { name: "James K.",  school: "Harvard University",        major: "Economics",        compat: 88, initials: "JK", grad: "135deg,#10b981,#065f46",   tags: ["Night Owl 🦉","Quiet 📚"] },
-  { name: "Sofia M.",  school: "UCLA",                      major: "Design",           compat: 91, initials: "SM", grad: "135deg,#8b5cf6,#5b21b6",   tags: ["Social 🎉","Tidy ✅"]    },
-  { name: "Tyler B.",  school: "University of Michigan",    major: "Engineering",      compat: 86, initials: "TB", grad: "135deg,#f59e0b,#b45309",   tags: ["Gym 💪","Chill 😌"]      },
-];
-const UNIVERSITIES = [
-  "Stanford University","Harvard University","MIT","UCLA","University of Michigan",
-  "New York University","Georgetown University","Boston University","Duke University",
-  "USC","Northwestern","Cornell University","Yale University","Columbia University",
-  "UChicago","Vanderbilt","Emory University","UC Berkeley","Notre Dame","UNC Chapel Hill",
-];
-const FEATURES = [
-  { icon:"🏫", title:"School Verified",    desc:"Verify with your .edu email. Click the link we send and you're in. No student ID uploads, no paperwork.", badge:"Campus Only", more:{ label:"How verification works", href:"#faq-verification" } },
-  { icon:"🎯", title:"Deep Compatibility", desc:"We match on sleep schedules, study habits, cleanliness, and noise tolerance — the things that actually matter when you share a space.", badge:"AI Matched"  },
-  { icon:"🔒", title:"Built-In Safety",    desc:"Verified profiles, built-in reporting, and block tools. Your wellbeing is a core feature of Room8, not an afterthought.", badge:"Trusted & Safe" },
-  { icon:"💬", title:"Instant Messaging",  desc:"Mutual match? Start chatting immediately. No housing office emails, no awkward Facebook group posts.", badge:"Real-Time"    },
-];
 const STEPS = [
-  { n:"01", icon:"👤", title:"Build Your Profile",     desc:"Add your photo, bio, school, and living preferences in under 5 minutes. Be honest — better profile = better match." },
-  { n:"02", icon:"🔍", title:"Discover Your Campus",   desc:"Browse verified students from your school. Our algorithm shows your strongest compatibility matches first."         },
-  { n:"03", icon:"✨", title:"Match & Move In",         desc:"Swipe right, get a mutual match, and start the conversation. From first match to move-in day — Room8 is with you." },
+  { icon: "user", title: "Build your profile", body: "Photos, a bio, and a few quick questions about how you actually live. Takes about five minutes." },
+  { icon: "flame", title: "Swipe your campus", body: "Only verified students from your school. Your strongest compatibility matches show up first." },
+  { icon: "chat", title: "Match and move in", body: "Both swipe right and the chat opens. Confirm each other as roommates when it's official." },
 ];
-// Testimonials: real ones only, added in src/siteContent.js
 
 const FAQS = [
-  { id:"faq-verification", q:"How does school verification work?",
-    a:"Sign up with your school .edu email and click the link we send to it. That marks you as a verified student at your school. Want the verified badge too? Take a quick selfie in the pose we ask for and our team checks it by hand. No student ID uploads, no paperwork." },
-  { id:"faq-data", q:"Do you sell my data?",
-    a:"No. We never sell your data and we don't share it with advertisers or data brokers. Your answers about how you live are used to match you with roommates. Your housing office only hears from us if you use Confirm Roommate.", link:{ label:"Read the privacy policy", to:"/privacy" } },
-  { id:"faq-free", q:"Is Room8 free?",
-    a:"Yes. Room8 is free for students." },
-  { id:"faq-app", q:"Is there an app?",
-    a:"Room8 works in your phone or laptop browser right now at swiperoom8.com. A native iPhone app is in progress." },
-  { id:"faq-random", q:"Why not just go random?",
-    a:"Going random means hoping your roommate's sleep schedule, study habits, cleanliness and noise tolerance line up with yours. Room8 asks about those up front and shows you your best matches first, so you can talk before move-in day." },
+  { id: "faq-verification", q: "How does school verification work?",
+    a: "Use your school .edu email and we send a quick confirmation to prove it's yours. That marks you as a verified student. Want the photo check too? Take a selfie in the pose we ask for and a real person on our team reviews it. No student ID uploads, no paperwork." },
+  { id: "faq-data", q: "Do you sell my data?",
+    a: "No. We never sell your data and we don't share it with advertisers or data brokers. Your answers about how you live are only used to match you with roommates. Your housing office only hears from us if you use Confirm Roommate.", link: { label: "Read the privacy policy", to: "/privacy" } },
+  { id: "faq-free", q: "Is Room8 free?", a: "Yes. Room8 is free for students." },
+  { id: "faq-app", q: "Is there an app?", a: "Room8 works in your phone or laptop browser right now at swiperoom8.com. A native iPhone app is in progress." },
+  { id: "faq-random", q: "Why not just go random?",
+    a: "Going random means hoping your roommate's sleep schedule, study habits, cleanliness and noise tolerance line up with yours. Room8 asks about those up front and shows your best matches first, so you can talk before move-in day." },
 ];
 
-/* ══════════════════════════════════════════════════════════════════
-   CUSTOM CURSOR — trailing gold ring
-══════════════════════════════════════════════════════════════════ */
-function CustomCursor() {
-  const rawX = useMotionValue(-200);
-  const rawY = useMotionValue(-200);
+const reveal = { initial: { opacity: 0.35, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-60px" }, transition: { type: "spring", stiffness: 160, damping: 24 } };
 
-  // Ring lags with spring
-  const ringX = useSpring(rawX, { stiffness: 90, damping: 22 });
-  const ringY = useSpring(rawY, { stiffness: 90, damping: 22 });
-
-  const [hov, setHov] = useState(false);
-  const [click, setClick] = useState(false);
-
-  // Centered offset transforms
-  const dotTX  = useTransform(rawX,  v => v - 3);
-  const dotTY  = useTransform(rawY,  v => v - 3);
-  const ringTX = useTransform(ringX, v => v - 16);
-  const ringTY = useTransform(ringY, v => v - 16);
-
-  useEffect(() => {
-    const onMove = (e) => { rawX.set(e.clientX); rawY.set(e.clientY); };
-    const onDown = () => setClick(true);
-    const onUp   = () => setClick(false);
-    const onOver = (e) => {
-      const el = e.target;
-      setHov(!!(el.closest("a,button") || ["INPUT","TEXTAREA","SELECT"].includes(el.tagName)));
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("mouseup",   onUp);
-    document.addEventListener("mouseover", onOver);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("mouseup",   onUp);
-      document.removeEventListener("mouseover", onOver);
-    };
-  }, [rawX, rawY]);
-
+function HeroPhone() {
   return (
-    <>
-      {/* Dot */}
-      <motion.div
-        style={{
-          position:"fixed", left:0, top:0, pointerEvents:"none", zIndex:99999,
-          x: dotTX, y: dotTY,
-          width: 6, height: 6, borderRadius:"50%",
-          background: hov ? GOLD : "rgba(255,255,255,0.9)",
-        }}
-        animate={{ scale: click ? 0.5 : hov ? 1.8 : 1 }}
-        transition={{ type:"spring", stiffness:400, damping:18 }}
-      />
-      {/* Ring */}
-      <motion.div
-        style={{
-          position:"fixed", left:0, top:0, pointerEvents:"none", zIndex:99998,
-          x: ringTX, y: ringTY,
-          borderRadius:"50%",
-          border: `1.5px solid ${hov ? GOLD : "rgba(245,158,11,0.5)"}`,
-        }}
-        animate={{
-          width:  click ? 20 : hov ? 44 : 32,
-          height: click ? 20 : hov ? 44 : 32,
-          opacity: click ? 0.6 : 1,
-        }}
-        transition={{ type:"spring", stiffness:240, damping:22 }}
-      />
-    </>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   THREE.JS PARTICLE CANVAS — pulsing stars + network
-══════════════════════════════════════════════════════════════════ */
-function ParticleCanvas({ mouseRef }) {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const W = canvas.offsetWidth || window.innerWidth;
-    const H = canvas.offsetHeight || window.innerHeight;
-
-    const scene  = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 100);
-    camera.position.z = 8;
-
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
-    renderer.setSize(W, H);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-    // Blue-indigo particles
-    const N = 160, pts = [], flat = [];
-    for (let i = 0; i < N; i++) {
-      const x=(Math.random()-0.5)*20, y=(Math.random()-0.5)*11, z=(Math.random()-0.5)*7;
-      pts.push({x,y,z}); flat.push(x,y,z);
-    }
-    const pGeo = new THREE.BufferGeometry();
-    pGeo.setAttribute("position", new THREE.Float32BufferAttribute(flat,3));
-    const pMat = new THREE.PointsMaterial({ color:0x3b82f6, size:0.058, transparent:true, opacity:0.85, blending:THREE.AdditiveBlending, depthWrite:false });
-    const pointsMesh = new THREE.Points(pGeo, pMat);
-
-    // Network lines (precomputed)
-    const lineFlat=[], THRESH=3.6;
-    for (let i=0;i<N;i++) for (let j=i+1;j<N;j++){
-      const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, dz=pts[i].z-pts[j].z;
-      if (dx*dx+dy*dy+dz*dz < THRESH*THRESH)
-        lineFlat.push(pts[i].x,pts[i].y,pts[i].z, pts[j].x,pts[j].y,pts[j].z);
-    }
-    const lGeo = new THREE.BufferGeometry();
-    lGeo.setAttribute("position", new THREE.Float32BufferAttribute(lineFlat,3));
-    const linesMesh = new THREE.LineSegments(lGeo, new THREE.LineBasicMaterial({ color:0x1d4ed8, transparent:true, opacity:0.14, blending:THREE.AdditiveBlending, depthWrite:false }));
-
-    // Gold accent particles
-    const gFlat=[];
-    for (let i=0;i<40;i++) gFlat.push((Math.random()-0.5)*18,(Math.random()-0.5)*9,(Math.random()-0.5)*3+1);
-    const gGeo = new THREE.BufferGeometry();
-    gGeo.setAttribute("position", new THREE.Float32BufferAttribute(gFlat,3));
-    const gMat = new THREE.PointsMaterial({ color:0xf59e0b, size:0.045, transparent:true, opacity:0.55, blending:THREE.AdditiveBlending, depthWrite:false });
-    const goldMesh = new THREE.Points(gGeo, gMat);
-
-    const group = new THREE.Group();
-    group.add(pointsMesh); group.add(linesMesh);
-    scene.add(group); scene.add(goldMesh);
-
-    const onResize = () => {
-      const w=canvas.offsetWidth, h=canvas.offsetHeight;
-      camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h);
-    };
-    window.addEventListener("resize", onResize);
-
-    let raf;
-    const clock = new THREE.Clock();
-    const loop = () => {
-      const t = clock.getElapsedTime();
-      group.rotation.y = t*0.022;
-      group.rotation.x = t*0.011;
-      goldMesh.rotation.z = t*0.008;
-
-      // Pulsing opacity
-      pMat.opacity = 0.65 + Math.sin(t*1.3)*0.22;
-      gMat.opacity = 0.38 + Math.sin(t*1.9+1.2)*0.18;
-
-      const mx=(mouseRef.current?.x||0)*2.2;
-      const my=-(mouseRef.current?.y||0)*1.1;
-      camera.position.x += (mx-camera.position.x)*0.025;
-      camera.position.y += (my-camera.position.y)*0.025;
-      camera.lookAt(0,0,0);
-      renderer.render(scene,camera);
-      raf=requestAnimationFrame(loop);
-    };
-    loop();
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize",onResize);
-      renderer.dispose();
-    };
-  }, [mouseRef]);
-
-  return <canvas ref={canvasRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none" }} />;
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   FOG LAYERS — VERY VISIBLE animated mist
-══════════════════════════════════════════════════════════════════ */
-function FogLayers() {
-  return (
-    <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:1, overflow:"hidden" }}>
-      {/* MASSIVE white/blue fog blob — upper left, very obvious */}
-      <motion.div
-        animate={{ x:[-60,80,-60], opacity:[0.55,0.85,0.55] }}
-        transition={{ duration:18, repeat:Infinity, ease:"easeInOut" }}
-        style={{
-          position:"absolute", width:"80%", height:"70%", top:"-20%", left:"-10%",
-          background:"radial-gradient(ellipse at 40% 50%, rgba(120,160,255,0.28) 0%, rgba(37,99,235,0.15) 40%, transparent 70%)",
-          filter:"blur(40px)",
-        }}
-      />
-      {/* BRIGHT blue orb — center-right, very visible */}
-      <motion.div
-        animate={{ x:[50,-70,50], y:[-20,30,-20], opacity:[0.5,0.9,0.5] }}
-        transition={{ duration:22, repeat:Infinity, ease:"easeInOut" }}
-        style={{
-          position:"absolute", width:"55%", height:"60%", top:"10%", right:"-5%",
-          background:"radial-gradient(ellipse at 50% 50%, rgba(99,148,255,0.35) 0%, rgba(37,99,235,0.18) 45%, transparent 70%)",
-          filter:"blur(36px)",
-        }}
-      />
-      {/* WHITE mist streak — horizontal, sweeping */}
-      <motion.div
-        animate={{ x:[-120,120,-120], opacity:[0.2,0.55,0.2] }}
-        transition={{ duration:15, repeat:Infinity, ease:"easeInOut" }}
-        style={{
-          position:"absolute", width:"160%", height:"18%", top:"38%", left:"-30%",
-          background:"radial-gradient(ellipse 100% 100% at 50% 50%, rgba(200,220,255,0.22) 0%, rgba(100,150,255,0.1) 50%, transparent 70%)",
-          filter:"blur(50px)",
-        }}
-      />
-      {/* GOLD atmospheric haze — glowing pulse */}
-      <motion.div
-        animate={{ opacity:[0.2,0.65,0.2], scale:[0.85,1.15,0.85] }}
-        transition={{ duration:10, repeat:Infinity, ease:"easeInOut" }}
-        style={{
-          position:"absolute", width:"60%", height:"55%", top:"15%", left:"20%",
-          background:"radial-gradient(ellipse at 50% 50%, rgba(245,158,11,0.18) 0%, rgba(245,158,11,0.06) 50%, transparent 70%)",
-          filter:"blur(45px)",
-        }}
-      />
-      {/* Deep blue floor fog */}
-      <motion.div
-        animate={{ x:[-30,40,-30], opacity:[0.7,1,0.7] }}
-        transition={{ duration:25, repeat:Infinity, ease:"easeInOut" }}
-        style={{
-          position:"absolute", width:"120%", height:"50%", bottom:"-10%", left:"-10%",
-          background:"radial-gradient(ellipse 90% 100% at 50% 100%, rgba(15,45,94,0.75) 0%, rgba(5,13,31,0.5) 50%, transparent 80%)",
-          filter:"blur(28px)",
-        }}
-      />
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   SHOOTING STAR — light streak across the hero
-══════════════════════════════════════════════════════════════════ */
-function ShootingStar({ delay = 0, top = "28%", angle = -20 }) {
-  return (
-    <motion.div
-      initial={{ x:"-20vw", opacity:0 }}
-      animate={{ x:"120vw", opacity:[0, 1, 1, 0] }}
-      transition={{ duration:1.4, delay, repeat:Infinity, repeatDelay:6 + delay, ease:"easeIn" }}
-      style={{
-        position:"absolute", top, left:0,
-        width:200, height:1.5,
-        background:"linear-gradient(90deg, transparent, rgba(255,255,255,0.9), rgba(245,158,11,0.8), transparent)",
-        transform:`rotate(${angle}deg)`,
-        transformOrigin:"left center",
-        zIndex:4, pointerEvents:"none",
-        boxShadow:"0 0 8px rgba(255,255,255,0.6), 0 0 20px rgba(245,158,11,0.5)",
-        borderRadius:2,
-      }}
-    />
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   SECTION DIVIDER — shimmer line that scans on entry
-══════════════════════════════════════════════════════════════════ */
-function SectionDivider({ dark = false }) {
-  return (
-    <div style={{ position:"relative", height:1, background: dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)", overflow:"hidden" }}>
-      <motion.div
-        initial={{ x:"-100%" }}
-        whileInView={{ x:"220%" }}
-        viewport={{ once:true, margin:"0px" }}
-        transition={{ duration:1.6, ease:[0.4,0,0.2,1] }}
-        style={{
-          position:"absolute", top:0, bottom:0, width:"45%",
-          background:`linear-gradient(90deg, transparent, ${dark ? "rgba(245,158,11,0.45)" : "rgba(245,158,11,0.4)"}, rgba(37,99,235,0.2), transparent)`,
-        }}
-      />
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   WORD REVEAL — each word rises from a clip mask on scroll
-══════════════════════════════════════════════════════════════════ */
-function WordReveal({ text, containerStyle, wordStyle, delay = 0 }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once:true, margin:"-40px" });
-  return (
-    <div
-      ref={ref}
-      style={{ display:"flex", flexWrap:"wrap", columnGap:"0.28em", rowGap:"0.05em", ...containerStyle }}
-    >
-      {text.split(" ").map((word, i) => (
-        <span key={i} style={{ overflow:"hidden", display:"inline-block" }}>
-          <motion.span
-            initial={{ y:"110%", opacity:0 }}
-            animate={inView ? { y:0, opacity:1 } : {}}
-            transition={{ duration:0.75, delay: delay + i*0.09, ease:[0.16,1,0.3,1] }}
-            style={{ display:"inline-block", ...wordStyle }}
-          >
-            {word}
-          </motion.span>
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   PARALLAX SECTION — content shifts subtly as you scroll through
-══════════════════════════════════════════════════════════════════ */
-function ParallaxSection({ children, style, strength = 22, id }) {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target:ref, offset:["start end","end start"] });
-  const y = useTransform(scrollYProgress, [0,1], [-strength, strength]);
-  return (
-    <section ref={ref} id={id} style={{ ...style, overflow:"hidden" }}>
-      <motion.div style={{ y }}>
-        {children}
-      </motion.div>
-    </section>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   FLOATING 3D PROFILE CARD — glow + fog emergence
-══════════════════════════════════════════════════════════════════ */
-function FloatingCard({ data, posStyle, factor, floatDur, initDelay, mouseX, mouseY }) {
-  const px = useSpring(useTransform(mouseX, v=>v*factor*80), { stiffness:55, damping:22 });
-  const py = useSpring(useTransform(mouseY, v=>v*factor*42), { stiffness:55, damping:22 });
-
-  return (
-    <motion.div
-      style={{ position:"absolute", ...posStyle, zIndex:3, x:px, y:py }}
-      initial={{ opacity:0, scale:0.78, filter:"blur(16px)" }}
-      animate={{ opacity:1, scale:1, filter:"blur(0px)" }}
-      transition={{ duration:1.1, delay:initDelay, ease:[0.16,1,0.3,1] }}
-    >
-      {/* Neon glow halo — very visible */}
-      <div style={{
-        position:"absolute", inset:-18,
-        borderRadius:28,
-        background:"radial-gradient(ellipse at 50% 50%, rgba(37,99,235,0.45) 0%, rgba(99,148,255,0.2) 50%, transparent 75%)",
-        pointerEvents:"none",
-        filter:"blur(18px)",
-        zIndex:-1,
-      }} />
-
-      <motion.div
-        animate={{ y:[0,-14,0], rotateZ:[-0.7,0.7,-0.7] }}
-        transition={{ duration:floatDur, repeat:Infinity, ease:"easeInOut", delay:initDelay*0.4, repeatType:"mirror" }}
-        style={{
-          width:200,
-          background:"rgba(4,10,24,0.88)",
-          backdropFilter:"blur(28px)", WebkitBackdropFilter:"blur(28px)",
-          border:"1.5px solid rgba(99,148,255,0.55)",
-          borderRadius:20, padding:"18px 16px",
-          boxShadow:"0 0 0 1px rgba(99,148,255,0.2), 0 0 24px rgba(37,99,235,0.55), 0 0 60px rgba(37,99,235,0.25), 0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)",
-          position:"relative",
-        }}
-      >
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-          <div style={{
-            width:42, height:42, borderRadius:"50%", flexShrink:0,
-            background:`linear-gradient(${data.grad})`,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:"0.82rem", fontWeight:800, color:WHITE, fontFamily:HF,
-            boxShadow:"0 4px 14px rgba(0,0,0,0.35)",
-          }}>{data.initials}</div>
-          <div>
-            <div style={{ color:WHITE, fontWeight:700, fontSize:"0.86rem", fontFamily:HF, lineHeight:1.2 }}>{data.name}</div>
-            <div style={{ color:"rgba(255,255,255,0.45)", fontSize:"0.7rem", marginTop:2, fontFamily:BF }}>{data.school}</div>
+    <div style={{ position: "relative", width: 312, height: 640, borderRadius: 56, padding: 11, background: "linear-gradient(145deg, #E9E9EC, #B9BAC0 40%, #F4F4F6 60%, #A8A9AF)", boxShadow: "0 60px 120px rgba(17,17,18,.28), 0 0 0 1px rgba(17,17,18,.08)", flexShrink: 0 }}>
+      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 46, overflow: "hidden", background: "#F6F6F4", color: "#111112" }}>
+        <div style={{ position: "absolute", top: 11, left: "50%", marginLeft: -50, width: 100, height: 30, borderRadius: 20, background: "#000", zIndex: 5 }} />
+        <div style={{ position: "absolute", top: 58, left: 18, right: 18, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 23, letterSpacing: "-0.045em" }}>Room8</span>
+          <Icon name="sliders" size={18} />
+        </div>
+        <div style={{ position: "absolute", top: 96, left: 14, right: 14, display: "flex", background: "#EDEDEA", borderRadius: 999, padding: 3, fontSize: 11.5, fontWeight: 600 }}>
+          {["Match", "Browse", "For You"].map((t, i) => <span key={t} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: 999, background: i === 0 ? "#111112" : "transparent", color: i === 0 ? "#fff" : "rgba(17,17,18,.6)" }}>{t}</span>)}
+        </div>
+        <div style={{ position: "absolute", top: 136, left: 10, right: 10, bottom: 64, borderRadius: 24, overflow: "hidden", background: "#2a2a2c" }}>
+          <img src="/brand/riley.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "80px 14px 14px", background: "linear-gradient(180deg, transparent, rgba(17,17,18,.6) 35%, rgba(17,17,18,.92))", color: "#fff" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
+              <div>
+                <p style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 25, letterSpacing: "-0.04em", lineHeight: 1 }}>Riley, 20</p>
+                <p style={{ fontSize: 11.5, opacity: .85, marginTop: 4 }}>Portland State University</p>
+              </div>
+              <MatchBadge pct={96} size={50} />
+            </div>
+            <div style={{ display: "flex", gap: 5, marginTop: 10 }}>
+              {["Clean", "Active", "Early riser"].map((t) => <span key={t} className="r8-photo-tag" style={{ height: 26, padding: "0 10px", fontSize: 11 }}>{t}</span>)}
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 12 }}>
+              <span className="r8-card-btn" style={{ width: 42, height: 42 }}><Icon name="x" size={18} stroke={2.2} /></span>
+              <span className="r8-card-btn" style={{ width: 42, height: 42 }}><Icon name="arrowUp" size={17} stroke={2.2} /></span>
+              <span className="r8-card-btn r8-card-btn--like" style={{ width: 42, height: 42 }}><Icon name="heart" size={20} stroke={0} fill="#B48CF5" /></span>
+            </div>
           </div>
         </div>
-        <div style={{ display:"inline-block", marginBottom:10, background:"rgba(37,99,235,0.2)", border:"1px solid rgba(59,130,246,0.3)", borderRadius:6, padding:"3px 8px", fontSize:"0.68rem", color:"#93c5fd", fontFamily:BF }}>{data.major}</div>
-        <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:10 }}>
-          {data.tags.map(t => (
-            <div key={t} style={{ fontSize:"0.63rem", padding:"2px 7px", borderRadius:5, background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.55)", fontFamily:BF }}>{t}</div>
-          ))}
+        <div style={{ position: "absolute", bottom: 20, left: 0, right: 0, display: "flex", justifyContent: "space-around", color: "#111112" }}>
+          <Icon name="home" size={21} fill="#111112" /><Icon name="chat" size={21} color="rgba(17,17,18,.4)" /><Icon name="user" size={21} color="rgba(17,17,18,.4)" />
         </div>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.22)", borderRadius:10, padding:"7px 12px" }}>
-          <span style={{ color:"rgba(255,255,255,0.5)", fontSize:"0.7rem", fontFamily:BF }}>Compatibility</span>
-          <span style={{ color:GOLD, fontWeight:900, fontSize:"1.05rem", fontFamily:HF }}>{data.compat}%</span>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/* ─── Counter ────────────────────────────────────────────────────── */
-function Counter({ to, suffix="" }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once:true, margin:"-80px" });
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (!inView) return;
-    const n = parseInt(to);
-    if (isNaN(n)) { setVal(to); return; }
-    const ctrl = animate(0, n, { duration:1.8, ease:[0.16,1,0.3,1], onUpdate: v => setVal(Math.floor(v)) });
-    return ctrl.stop;
-  }, [inView, to]);
-  return <span ref={ref}>{val}{suffix}</span>;
-}
-
-/* ─── FadeUp — cinematic scale + blur ───────────────────────────── */
-function FadeUp({ children, delay=0, style, from=44 }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once:true, margin:"-56px" });
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity:0, y:from, scale:0.975, filter:"blur(8px)" }}
-      animate={inView ? { opacity:1, y:0, scale:1, filter:"blur(0px)" } : {}}
-      transition={{ duration:0.85, delay, ease:[0.16,1,0.3,1] }}
-      style={style}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/* ─── Marquee ────────────────────────────────────────────────────── */
-function Marquee({ items }) {
-  const list = [...items,...items];
-  return (
-    <div style={{ overflow:"hidden", maskImage:"linear-gradient(90deg,transparent 0%,#000 8%,#000 92%,transparent 100%)", WebkitMaskImage:"linear-gradient(90deg,transparent 0%,#000 8%,#000 92%,transparent 100%)" }}>
-      <motion.div
-        animate={{ x:["0%","-50%"] }}
-        transition={{ duration:34, repeat:Infinity, ease:"linear" }}
-        style={{ display:"flex", gap:0, width:"max-content" }}
-      >
-        {list.map((item,i) => (
-          <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"0 30px" }}>
-            <span style={{ color:GOLD, fontSize:"0.42rem", opacity:0.65 }}>◆</span>
-            <span style={{ color:"rgba(255,255,255,0.4)", fontSize:"0.85rem", fontWeight:500, fontFamily:BF, whiteSpace:"nowrap", letterSpacing:"0.02em" }}>{item}</span>
-          </div>
-        ))}
-      </motion.div>
+      </div>
     </div>
   );
 }
 
-/* ─── Feature Card ───────────────────────────────────────────────── */
-function FeatureCard({ f, delay }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <FadeUp delay={delay}>
-      <motion.div
-        onMouseEnter={()=>setHov(true)}
-        onMouseLeave={()=>setHov(false)}
-        animate={{ y:hov?-7:0 }}
-        transition={{ type:"spring", stiffness:280, damping:20 }}
-        style={{
-          background:WHITE, border:`1.5px solid ${hov?GOLD:BORD}`, borderRadius:20,
-          padding:"36px 30px", height:"100%", cursor:"default",
-          boxShadow:hov ? "0 20px 60px rgba(245,158,11,0.13), 0 4px 20px rgba(0,0,0,0.06)" : "0 4px 20px rgba(0,0,0,0.04)",
-          transition:"border-color 0.25s, box-shadow 0.25s",
-        }}
-      >
-        <motion.div
-          animate={{ scale:hov?1.12:1, rotate:hov?6:0 }}
-          transition={{ type:"spring", stiffness:300 }}
-          style={{
-            width:56, height:56, borderRadius:14, fontSize:"1.6rem",
-            background:hov ? `linear-gradient(135deg,${GOLD},${GOLD_D})` : "linear-gradient(135deg,#FEF3C7,#FDE68A)",
-            display:"flex", alignItems:"center", justifyContent:"center",
-            marginBottom:22, boxShadow:hov?"0 8px 24px rgba(245,158,11,0.4)":"none",
-            transition:"background 0.25s, box-shadow 0.25s",
-          }}
-        >{f.icon}</motion.div>
-        <div style={{
-          display:"inline-block", marginBottom:14,
-          background:hov?"rgba(245,158,11,0.1)":"rgba(37,99,235,0.06)",
-          border:`1px solid ${hov?"rgba(245,158,11,0.25)":"rgba(37,99,235,0.12)"}`,
-          borderRadius:100, padding:"3px 11px",
-          fontSize:"0.66rem", fontWeight:700, color:hov?GOLD_D:BLUE,
-          letterSpacing:"0.12em", fontFamily:BF, textTransform:"uppercase",
-          transition:"all 0.25s",
-        }}>{f.badge}</div>
-        <h3 style={{ fontFamily:HF, fontWeight:700, fontSize:"1.12rem", color:NAVY, margin:"0 0 10px", lineHeight:1.3 }}>{f.title}</h3>
-        <p style={{ color:MUTED, fontSize:"0.92rem", lineHeight:1.72, margin:0, fontFamily:BF }}>{f.desc}</p>
-        {f.more && (
-          <a href={f.more.href} style={{ display:"inline-block", marginTop:12, color:BLUE, fontSize:"0.85rem", fontWeight:600, fontFamily:BF, textDecoration:"none" }}>{f.more.label} →</a>
-        )}
-      </motion.div>
-    </FadeUp>
-  );
-}
+const FEATURES = [
+  { icon: "sliders", title: "Better matches", body: "Go beyond interests. Match on real lifestyle, habits and housing preferences." },
+  { icon: "shield", title: "Built for college", body: "Verified students, safer connections, and a community that just makes sense." },
+  { icon: "bolt", title: "Find your fit, faster", body: "Swipe, match and chat with people who are actually compatible." },
+];
 
-/* ─── Testimonial Card (real beta testers only) ──────────────────── */
-function TestimonialCard({ t, delay }) {
-  return (
-    <motion.figure
-      initial={{ opacity:0, y:36 }}
-      whileInView={{ opacity:1, y:0 }}
-      viewport={{ once:true, margin:"-50px" }}
-      transition={{ duration:0.7, delay, ease:[0.16,1,0.3,1] }}
-      style={{
-        margin:0, background:WHITE, border:`1px solid ${BORD}`, borderRadius:20,
-        padding:"28px 26px", height:"100%", boxShadow:"0 4px 28px rgba(0,0,0,0.06)",
-        display:"flex", flexDirection:"column",
-      }}
-    >
-      <blockquote style={{ margin:"0 0 22px", color:"#1E293B", fontSize:"0.98rem", lineHeight:1.7, flex:1, fontFamily:BF }}>
-        "{t.quote}"
-      </blockquote>
-      <figcaption style={{ display:"flex", alignItems:"center", gap:12 }}>
-        {t.photo ? (
-          <img src={t.photo} alt={t.name} width={44} height={44} style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
-        ) : (
-          <div style={{ width:44, height:44, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${NAVY},${BLUE})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.78rem", fontWeight:700, color:WHITE, fontFamily:HF }}>
-            {t.name.split(" ").map(w=>w[0]).join("")}
-          </div>
-        )}
-        <div>
-          <div style={{ fontWeight:700, color:NAVY, fontSize:"0.92rem", fontFamily:HF }}>{t.name}</div>
-          <div style={{ color:MUTED, fontSize:"0.8rem", marginTop:1, fontFamily:BF }}>{[t.year, t.school].filter(Boolean).join(", ")}</div>
-        </div>
-      </figcaption>
-    </motion.figure>
-  );
-}
-
-/* ─── Signup counter: real verified count from the API ──────────── */
 function SignupCounter() {
   const [stats, setStats] = useState(null);
   useEffect(() => {
     let alive = true;
-    fetch(`${API_URL}/api/stats/public`)
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (alive) setStats(d); })
-      .catch(() => {});
+    fetch(`${API_URL}/api/stats/public`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (alive) setStats(d); }).catch(() => {});
     return () => { alive = false; };
   }, []);
   if (!stats || stats.verified_students < COUNTER_MIN_TO_SHOW) return null;
-  const updated = new Date(stats.updated_at + "T12:00:00").toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  const updated = new Date(stats.updated_at + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   return (
-    <motion.p
-      initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ duration:0.6 }}
-      style={{ margin:"18px 0 0", color:"rgba(255,255,255,0.7)", fontSize:"0.92rem", fontFamily:BF }}
-    >
-      <strong style={{ color:GOLD }}>{stats.verified_students.toLocaleString()}</strong> verified students from{" "}
-      <strong style={{ color:GOLD }}>{stats.schools}</strong> {stats.schools === 1 ? "campus" : "campuses"} already signed up
-      <span style={{ display:"block", fontSize:"0.72rem", color:"rgba(255,255,255,0.35)", marginTop:4 }}>Updated {updated}</span>
-    </motion.p>
+    <p className="r8-muted" style={{ fontSize: 15, marginTop: 18 }}>
+      <b style={{ color: "var(--text)" }}>{stats.verified_students.toLocaleString()}</b> verified students from <b style={{ color: "var(--text)" }}>{stats.schools}</b> {stats.schools === 1 ? "campus" : "campuses"} already in.
+      <span className="r8-faint" style={{ display: "block", fontSize: 12.5, marginTop: 2 }}>Updated {updated}</span>
+    </p>
   );
 }
 
-/* ─── Founders (audit D3.3) ──────────────────────────────────────── */
-function FounderSection() {
+function SectionTitle({ eyebrow, title, sub }) {
   return (
-    <section id="about" style={{ background:WHITE, padding:"104px 24px" }}>
-      <div style={{ maxWidth:960, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:48 }}>
-          <div style={{ display:"inline-flex", background:"rgba(15,45,94,0.06)", border:"1px solid rgba(15,45,94,0.1)", borderRadius:100, padding:"6px 18px", marginBottom:20 }}>
-            <span style={{ fontSize:"0.64rem", fontWeight:700, color:NAVY, fontFamily:BF, letterSpacing:"0.22em", textTransform:"uppercase" }}>Who's behind Room8</span>
-          </div>
-          <h2 style={{ fontFamily:HF, fontWeight:800, fontSize:"clamp(1.8rem,3.6vw,2.6rem)", color:NAVY, letterSpacing:"-0.025em", margin:"0 0 14px" }}>Built by students who've been there</h2>
-          <p style={{ color:MUTED, fontSize:"1rem", lineHeight:1.7, maxWidth:560, margin:"0 auto", fontFamily:BF }}>
-            Room8 started as a student project at The Evergreen State College in 2024. We're two co-founders building it for students like us.
-          </p>
-        </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:24 }}>
-          {FOUNDERS.map(f => (
-            <div key={f.name} style={{ border:`1px solid ${BORD}`, borderRadius:20, padding:"28px 26px", display:"flex", gap:18, alignItems:"flex-start", boxShadow:"0 4px 20px rgba(0,0,0,0.04)" }}>
-              {f.photo ? (
-                <img src={f.photo} alt={f.name} width={72} height={72} style={{ width:72, height:72, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
-              ) : (
-                <div style={{ width:72, height:72, borderRadius:"50%", flexShrink:0, background:`linear-gradient(135deg,${NAVY},${BLUE})`, display:"flex", alignItems:"center", justifyContent:"center", color:WHITE, fontWeight:800, fontFamily:HF, fontSize:"1.2rem" }}>
-                  {f.name.split(" ").map(w=>w[0]).join("")}
-                </div>
-              )}
-              <div>
-                <div style={{ fontFamily:HF, fontWeight:700, fontSize:"1.1rem", color:NAVY }}>{f.name}</div>
-                <div style={{ color:MUTED, fontSize:"0.85rem", fontFamily:BF, marginTop:2 }}>{f.role}, {f.school}</div>
-                {f.story && <p style={{ color:"#334155", fontSize:"0.92rem", lineHeight:1.65, margin:"12px 0 0", fontFamily:BF }}>{f.story}</p>}
-                {f.links.length > 0 && (
-                  <div style={{ display:"flex", gap:14, marginTop:12, flexWrap:"wrap" }}>
-                    {f.links.filter(l => l.href).map(l => (
-                      <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" style={{ color:BLUE, fontSize:"0.85rem", fontWeight:600, fontFamily:BF, textDecoration:"none" }}>{l.label} →</a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+    <motion.div {...reveal} style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 48px" }}>
+      {eyebrow && <p className="r8-eyebrow" style={{ marginBottom: 14 }}>{eyebrow}</p>}
+      <h2 style={{ fontSize: "clamp(34px, 6vw, 56px)", lineHeight: 1.02, letterSpacing: "-0.04em" }}>{title}</h2>
+      {sub && <p className="r8-muted" style={{ fontSize: 18, marginTop: 16, lineHeight: 1.55 }}>{sub}</p>}
+    </motion.div>
   );
 }
 
-/* ─── FAQ (audit D1.4) ───────────────────────────────────────────── */
-function FAQSection() {
-  return (
-    <section id="faq" style={{ background:SURF, padding:"104px 24px" }}>
-      <div style={{ maxWidth:760, margin:"0 auto" }}>
-        <h2 style={{ textAlign:"center", fontFamily:HF, fontWeight:800, fontSize:"clamp(1.8rem,3.6vw,2.6rem)", color:NAVY, letterSpacing:"-0.025em", margin:"0 0 40px" }}>Questions students ask</h2>
-        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          {FAQS.map(f => (
-            <details key={f.id} id={f.id} style={{ background:WHITE, border:`1px solid ${BORD}`, borderRadius:14, padding:"18px 22px" }}>
-              <summary style={{ fontFamily:HF, fontWeight:700, fontSize:"1.02rem", color:NAVY, cursor:"pointer" }}>{f.q}</summary>
-              <p style={{ color:"#334155", fontSize:"0.94rem", lineHeight:1.7, margin:"12px 0 0", fontFamily:BF }}>
-                {f.a}{" "}
-                {f.link && <Link to={f.link.to} style={{ color:BLUE, fontWeight:600 }}>{f.link.label}</Link>}
-              </p>
-            </details>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   MAIN COMPONENT
-══════════════════════════════════════════════════════════════════ */
 export default function Home() {
-  const navigate  = useNavigate();
-  const user      = getCurrentUser();
-  const handleStart = () => navigate(user ? "/app" : "/register");
+  const navigate = useNavigate();
+  const user = getCurrentUser();
+  const start = () => navigate(user ? "/app" : "/register");
+  const { scrollY } = useScroll();
+  const phoneY = useTransform(scrollY, [0, 600], [0, -60]);
+  const [openFaq, setOpenFaq] = useState(null);
 
-  // Mouse tracking
-  const mouseRaw = useRef({ x:0, y:0 });
-  const mouseX   = useMotionValue(0);
-  const mouseY   = useMotionValue(0);
-  const onHeroMouse = useCallback((e) => {
-    const x=(e.clientX/window.innerWidth -0.5)*2;
-    const y=(e.clientY/window.innerHeight-0.5)*2;
-    mouseRaw.current={x,y}; mouseX.set(x); mouseY.set(y);
-  },[mouseX,mouseY]);
-
-  // Hero parallax on scroll
-  const heroRef = useRef(null);
-  const { scrollYProgress:heroP } = useScroll({ target:heroRef, offset:["start start","end start"] });
-  const heroY  = useTransform(heroP,[0,1],[0,140]);
-  const heroOp = useTransform(heroP,[0,0.6],[1,0]);
-
-  // Cursor CSS: hide native cursor only on desktop
-  // Footer links like /#about and /#faq land here from other pages
   useEffect(() => {
     if (!window.location.hash) return;
-    const t = setTimeout(() => {
-      document.querySelector(window.location.hash)?.scrollIntoView({ behavior: "smooth" });
-    }, 300);
+    const id = window.location.hash.slice(1);
+    if (id.startsWith("faq-")) setOpenFaq(id);
+    const t = setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 300);
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
-    document.body.classList.add("r8-cursor-page");
-    return () => document.body.classList.remove("r8-cursor-page");
-  }, []);
-
   return (
-    <div style={{ fontFamily:BF, color:"#0A0A0A", overflowX:"hidden" }}>
-
-      {/* Fixed custom cursor */}
-      <CustomCursor />
-
-      {/* ════════════════════════════════════════════════════════════
-          HERO
-      ════════════════════════════════════════════════════════════ */}
-      <section
-        ref={heroRef}
-        onMouseMove={onHeroMouse}
-        style={{
-          position:"relative", minHeight:"100vh",
-          background:"linear-gradient(180deg, #000000 0%, #020818 35%, #061028 65%, #0F2D5E 100%)",
-          overflow:"hidden",
-          display:"flex", alignItems:"center", justifyContent:"center",
-        }}
-      >
-        {/* Three.js stars */}
-        <ParticleCanvas mouseRef={mouseRaw} />
-
-        {/* VERY VISIBLE fog mist layers */}
-        <FogLayers />
-
-        {/* Shooting stars */}
-        <ShootingStar delay={2}  top="22%" angle={-15} />
-        <ShootingStar delay={8}  top="45%" angle={-10} />
-        <ShootingStar delay={14} top="30%" angle={-20} />
-
-        {/* Vignette — breathing */}
-        <motion.div
-          animate={{ opacity:[0.5,0.72,0.5] }}
-          transition={{ duration:7, repeat:Infinity, ease:"easeInOut" }}
-          style={{
-            position:"absolute", inset:0, zIndex:2, pointerEvents:"none",
-            background:"radial-gradient(ellipse 70% 80% at 50% 50%, transparent 20%, rgba(0,0,0,0.7) 100%)",
-          }}
-        />
-
-        {/* Floating profile cards */}
-        <div className="hero-cards">
-          <FloatingCard data={MOCK_PROFILES[0]} posStyle={{ top:"16%",left:"4%"  }} factor={0.025} floatDur={5.2} initDelay={0.3}  mouseX={mouseX} mouseY={mouseY} />
-          <FloatingCard data={MOCK_PROFILES[1]} posStyle={{ top:"11%",right:"4%" }} factor={0.038} floatDur={4.8} initDelay={0.55} mouseX={mouseX} mouseY={mouseY} />
-          <FloatingCard data={MOCK_PROFILES[2]} posStyle={{ bottom:"19%",left:"6%" }}  factor={0.018} floatDur={5.8} initDelay={0.8}  mouseX={mouseX} mouseY={mouseY} />
-          <FloatingCard data={MOCK_PROFILES[3]} posStyle={{ bottom:"16%",right:"5%" }} factor={0.03}  floatDur={6.1} initDelay={1.05} mouseX={mouseX} mouseY={mouseY} />
+    <div style={{ position: "relative", overflow: "hidden" }}>
+      {/* Hero */}
+      <section style={{ position: "relative", padding: "calc(var(--safe-t) + 120px) 20px 40px" }}>
+        <div className="r8-hero" style={{ position: "relative", maxWidth: 1200, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "minmax(0, 1fr)", alignItems: "center", gap: 56 }}>
+          <div>
+            <h1 style={{ fontSize: "clamp(48px, 7.2vw, 88px)", lineHeight: 0.98, letterSpacing: "-0.05em", fontWeight: 800 }}>
+              <motion.span initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 20, delay: 0.05 }} style={{ display: "block" }}>Find a roommate</motion.span>
+              <motion.span initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 20, delay: 0.15 }} style={{ display: "block", paddingBottom: "0.06em" }}>who just gets it.</motion.span>
+            </h1>
+            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="r8-muted" style={{ fontSize: "clamp(18px, 2.2vw, 21px)", lineHeight: 1.5, maxWidth: 500, marginTop: 26 }}>
+              The roommate matching app for college students. Meet compatible people, find your place, and build a better college year together.
+            </motion.p>
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 34 }}>
+              <button className="r8-btn r8-btn--primary r8-btn--lg" onClick={start}>{user ? "Open the App" : "Get the App"}</button>
+              <a href="#how-it-works" className="r8-btn r8-btn--lg" style={{ border: "1.5px solid var(--line-2)", color: "var(--text)" }}>How It Works</a>
+            </motion.div>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="r8-faint" style={{ fontSize: 14, marginTop: 22, lineHeight: 1.5 }}>
+              Free for students. We never sell your data. <Link to="/privacy" style={{ textDecoration: "underline", color: "var(--text-2)" }}>Privacy policy</Link>
+            </motion.p>
+            <SignupCounter />
+          </div>
+          <motion.div style={{ y: phoneY, display: "flex", justifyContent: "center", position: "relative" }} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 90, damping: 18, delay: 0.2 }}>
+            <div aria-hidden="true" style={{ position: "absolute", inset: "-15% -25%", background: "radial-gradient(35% 30% at 35% 45%, rgba(219,140,242,.28), transparent 70%), radial-gradient(30% 30% at 70% 60%, rgba(95,227,244,.24), transparent 70%), radial-gradient(30% 25% at 55% 85%, rgba(245,138,196,.18), transparent 70%)", pointerEvents: "none" }} />
+            <div aria-hidden="true" style={{ position: "relative", transform: "rotate(8deg)" }}><HeroPhone /></div>
+          </motion.div>
         </div>
-
-        {/* ── Hero text ── */}
-        <motion.div style={{ y:heroY, opacity:heroOp, position:"relative", zIndex:10, textAlign:"center", padding:"0 24px", maxWidth:980 }}>
-
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity:0, y:14 }} animate={{ opacity:1, y:0 }}
-            transition={{ duration:0.65 }}
-            style={{
-              display:"inline-flex", alignItems:"center", gap:9,
-              background:"rgba(245,158,11,0.09)", border:"1px solid rgba(245,158,11,0.24)",
-              borderRadius:100, padding:"7px 20px", marginBottom:32,
-              marginTop:32,
-            }}
-          >
-            <motion.span
-              animate={{ opacity:[1,0.3,1] }}
-              transition={{ duration:2.2, repeat:Infinity }}
-              style={{ fontSize:"0.42rem", color:GOLD }}
-            >◆</motion.span>
-            <span style={{ fontSize:"0.78rem", fontWeight:600, color:GOLD, fontFamily:BF, letterSpacing:"0.1em" }}>
-              Early access is open. Free for students.
-            </span>
-          </motion.div>
-
-          {/* Tagline — very wide tracking */}
-          <motion.p
-            initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }}
-            transition={{ duration:0.6, delay:0.1 }}
-            style={{
-              fontFamily:BF, fontWeight:500, margin:"0 0 20px",
-              fontSize:"clamp(0.72rem,1.4vw,0.88rem)",
-              color:"rgba(255,255,255,0.38)",
-              letterSpacing:"0.26em", textTransform:"uppercase",
-              background:"none", backdropFilter:"none",
-            }}
-          >
-            Your Campus. Your People. Your Home.
-          </motion.p>
-
-          {/* Radial glow BEHIND the headline */}
-          <div style={{
-            position:"absolute", top:"30%", left:"50%",
-            transform:"translate(-50%,-50%)",
-            width:700, height:400,
-            background:"radial-gradient(ellipse at 50% 50%, rgba(37,99,235,0.38) 0%, rgba(245,158,11,0.14) 40%, transparent 70%)",
-            filter:"blur(55px)",
-            pointerEvents:"none", zIndex:0,
-          }} />
-
-          {/* MASSIVE headline — clipped reveal */}
-          <h1
-            className="hero-h1"
-            style={{
-              fontFamily:HF, fontWeight:900, margin:0, lineHeight:0.92,
-              letterSpacing:"-0.04em",
-              fontSize:"clamp(56px, 15vw, 175px)",
-              position:"relative", zIndex:1,
-            }}
-          >
-            {["Find Your","People."].map((line,i)=>(
-              <span key={line} style={{ display:"block", overflow:"hidden" }}>
-                <motion.span
-                  initial={{ y:"108%" }}
-                  animate={{ y:0 }}
-                  transition={{ duration:0.95, delay:0.18+i*0.14, ease:[0.16,1,0.3,1] }}
-                  style={{ display:"block", color: i===1 ? GOLD : WHITE }}
-                >{line}{i===0 ? " " : ""}</motion.span>
-              </span>
-            ))}
-          </h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity:0, y:18 }} animate={{ opacity:1, y:0 }}
-            transition={{ duration:0.7, delay:0.52 }}
-            style={{
-              fontFamily:BF, margin:"30px auto 46px",
-              fontSize:"clamp(0.98rem,2vw,1.18rem)",
-              color:"rgba(255,255,255,0.55)",
-              maxWidth:520, lineHeight:1.75,
-            }}
-          >
-            The roommate matching app built for college students. Verified profiles, lifestyle compatibility, and real campus community.
-          </motion.p>
-
-          {/* CTAs */}
-          <motion.div
-            initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }}
-            transition={{ duration:0.65, delay:0.66 }}
-            style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}
-          >
-            <motion.button
-              whileHover={{ scale:1.05, y:-3 }} whileTap={{ scale:0.97 }}
-              onClick={handleStart}
-              style={{
-                background:GOLD, color:DARK, border:"none",
-                padding:"16px 38px", borderRadius:10,
-                fontWeight:800, fontSize:"1rem", cursor:"pointer",
-                fontFamily:HF, letterSpacing:"0.01em",
-                boxShadow:"0 8px 36px rgba(245,158,11,0.48), 0 2px 8px rgba(245,158,11,0.3)",
-              }}
-            >Get Started Free →</motion.button>
-            <motion.button
-              whileHover={{ scale:1.04, y:-2 }}
-              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
-              style={{
-                color:"rgba(255,255,255,0.82)",
-                border:"1.5px solid rgba(255,255,255,0.22)",
-                padding:"15px 34px", borderRadius:10,
-                fontWeight:600, fontSize:"1rem",
-                cursor:"pointer", fontFamily:BF,
-                backdropFilter:"blur(10px)",
-                background:"rgba(255,255,255,0.04)",
-              }}
-            >See How It Works</motion.button>
-          </motion.div>
-
-          {/* Privacy promise (audit D1.4) */}
-          <motion.p
-            initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ duration:0.6, delay:0.8 }}
-            style={{ margin:"18px 0 0", color:"rgba(255,255,255,0.55)", fontSize:"0.85rem", fontFamily:BF }}
-          >
-            🔒 We never sell your data or share it with advertisers.{" "}
-            <Link to="/privacy" style={{ color:"rgba(255,255,255,0.8)", textDecoration:"underline" }}>Privacy policy</Link>
-          </motion.p>
-
-          {/* Real signup count (audit D3.1) */}
-          <SignupCounter />
-
-          {/* Dramatic scroll indicator */}
-          <motion.div
-            initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:1.5, duration:0.9 }}
-            style={{ marginTop:64, display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}
-          >
-            <span style={{ fontFamily:BF, fontSize:"0.6rem", fontWeight:600, color:"rgba(255,255,255,0.3)", letterSpacing:"0.35em", textTransform:"uppercase" }}>scroll</span>
-            {/* Animated pulsing line */}
-            <div style={{ position:"relative", width:1, height:60, overflow:"hidden" }}>
-              <div style={{ position:"absolute", inset:0, background:"rgba(255,255,255,0.1)" }} />
-              <motion.div
-                animate={{ y:["-100%","100%"] }}
-                transition={{ duration:1.5, repeat:Infinity, ease:"easeInOut" }}
-                style={{
-                  position:"absolute", top:0, left:0, right:0, height:"50%",
-                  background:`linear-gradient(180deg, transparent, ${GOLD}, rgba(245,158,11,0.4), transparent)`,
-                  boxShadow:`0 0 8px ${GOLD}, 0 0 20px rgba(245,158,11,0.7)`,
-                }}
-              />
-            </div>
-          </motion.div>
-        </motion.div>
+        <div style={{ maxWidth: 1200, margin: "64px auto 0", borderTop: "1px solid var(--line)", paddingTop: 36, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 28 }}>
+          {FEATURES.map((f) => (
+            <motion.div key={f.title} {...reveal}>
+              <Icon name={f.icon} size={26} />
+              <h3 style={{ fontSize: 19, fontWeight: 700, margin: "12px 0 6px" }}>{f.title}</h3>
+              <p className="r8-muted" style={{ fontSize: 15, lineHeight: 1.5, maxWidth: 300 }}>{f.body}</p>
+            </motion.div>
+          ))}
+        </div>
       </section>
 
-      {/* ════════════════════════════════════════════════════════════
-          CAMPUS BANNER
-      ════════════════════════════════════════════════════════════ */}
-      <SectionDivider dark />
-
-      <div style={{ background:"#080F1E", padding:"32px 24px", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
-        <div style={{ maxWidth:960, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"center", gap:20, flexWrap:"wrap" }}>
-          <motion.div
-            animate={{ opacity:[0.4,0.8,0.4] }}
-            transition={{ duration:3, repeat:Infinity, ease:"easeInOut" }}
-            style={{ fontSize:"0.5rem", color:GOLD }}
-          >◆</motion.div>
-          <span style={{ fontFamily:BF, fontSize:"0.8rem", fontWeight:600, color:"rgba(255,255,255,0.35)", letterSpacing:"0.22em", textTransform:"uppercase", textAlign:"center" }}>
-            Coming to a campus near you
-          </span>
-          <motion.div
-            animate={{ opacity:[0.4,0.8,0.4] }}
-            transition={{ duration:3, repeat:Infinity, ease:"easeInOut", delay:1.5 }}
-            style={{ fontSize:"0.5rem", color:GOLD }}
-          >◆</motion.div>
-          <Link to="/schools" style={{ fontFamily:BF, fontSize:"0.8rem", fontWeight:700, color:GOLD, letterSpacing:"0.1em", textTransform:"uppercase", textDecoration:"none", border:"1px solid rgba(245,158,11,0.3)", borderRadius:100, padding:"5px 16px", transition:"all 0.15s" }}
-            onMouseEnter={e=>{ e.currentTarget.style.background="rgba(245,158,11,0.1)"; }}
-            onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; }}
-          >Partner with us →</Link>
+      {/* How it works */}
+      <section id="how-it-works" style={{ position: "relative", padding: "110px 20px", scrollMarginTop: 80 }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+          <SectionTitle eyebrow="How it works" title={<>Three steps. <span className="r8-iri-text">Zero randoms.</span></>} sub="No housing office emails, no awkward Facebook group posts. Just people from your school who live like you do." />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+            {STEPS.map((s, i) => (
+              <motion.div key={s.title} {...reveal} transition={{ ...reveal.transition, delay: i * 0.08 }} className="r8-card" style={{ padding: 28, borderRadius: 30, position: "relative", overflow: "hidden" }}>
+                <span aria-hidden="true" style={{ position: "absolute", right: 18, top: 6, fontFamily: "var(--display)", fontWeight: 800, fontSize: 96, letterSpacing: "-0.06em", opacity: 0.07 }}>{i + 1}</span>
+                <span style={{ width: 52, height: 52, borderRadius: 17, background: "var(--iri)", color: "#0E0F12", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 22, boxShadow: "var(--glow)" }}><Icon name={s.icon} size={24} stroke={2} /></span>
+                <h3 style={{ fontSize: 23, marginBottom: 10 }}>{s.title}</h3>
+                <p className="r8-muted" style={{ fontSize: 16, lineHeight: 1.55 }}>{s.body}</p>
+              </motion.div>
+            ))}
+          </div>
+          <motion.div {...reveal} style={{ textAlign: "center", marginTop: 40 }}>
+            <button className="r8-btn r8-btn--solid r8-btn--lg" onClick={start}>Find your roommate<Icon name="arrowRight" size={20} /></button>
+          </motion.div>
         </div>
-      </div>
+      </section>
 
-      <SectionDivider />
-
-      {/* ════════════════════════════════════════════════════════════
-          FEATURES
-      ════════════════════════════════════════════════════════════ */}
-      <ParallaxSection strength={20} style={{ background:WHITE, padding:"116px 24px" }}>
-        <div style={{ maxWidth:1080, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:68 }}>
-            <FadeUp>
-              <div style={{
-                display:"inline-flex", alignItems:"center", gap:8,
-                background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.2)",
-                borderRadius:100, padding:"6px 18px", marginBottom:24,
-              }}>
-                <span style={{ fontSize:"0.64rem", fontWeight:700, color:GOLD_D, fontFamily:BF, letterSpacing:"0.22em", textTransform:"uppercase" }}>
-                  Built for College Life
-                </span>
+      {/* Features */}
+      <section style={{ position: "relative", padding: "60px 20px 110px" }}>
+        <div aria-hidden="true" className="r8-aura r8-aura--a" style={{ width: 520, height: 520, top: 100, left: "40%" }} />
+        <div style={{ position: "relative", maxWidth: 1120, margin: "0 auto" }}>
+          <SectionTitle eyebrow="Built for how students live" title="Everything a roommate search should've been." />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+            <motion.article {...reveal} className="r8-card" style={{ padding: 30, borderRadius: 32 }}>
+              <span className="r8-badge r8-badge--iri" style={{ marginBottom: 18 }}><Icon name="school" size={14} />Campus only</span>
+              <h3 style={{ fontSize: 28, marginBottom: 12 }}>School verified</h3>
+              <p className="r8-muted" style={{ fontSize: 16, lineHeight: 1.55 }}>Verify with your .edu email. We send a quick confirmation and you're in. No student ID uploads, no paperwork.</p>
+              <a href="#faq-verification" onClick={() => setOpenFaq("faq-verification")} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, fontWeight: 600, color: "var(--text)", textDecoration: "underline" }}>How verification works<Icon name="arrowRight" size={16} /></a>
+            </motion.article>
+            <motion.article {...reveal} transition={{ ...reveal.transition, delay: 0.06 }} className="r8-card" style={{ padding: 30, borderRadius: 32 }}>
+              <span className="r8-badge r8-badge--iri" style={{ marginBottom: 18 }}><Icon name="sliders" size={14} />Real compatibility</span>
+              <h3 style={{ fontSize: 28, marginBottom: 12 }}>Matched on how you live</h3>
+              <p className="r8-muted" style={{ fontSize: 16, lineHeight: 1.55, marginBottom: 18 }}>Sleep schedule, study habits, cleanliness and noise. The stuff that actually matters when you share a space.</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[["moon", "Night owl"], ["sun", "Early bird"], ["sparkle", "Spotless"], ["quiet", "Likes it quiet"], ["book", "Library"], ["users", "Social"]].map(([ic, t], k) => (
+                  <motion.span key={t} initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 + k * 0.05, type: "spring", stiffness: 400, damping: 18 }} className="r8-chip"><Icon name={ic} size={15} />{t}</motion.span>
+                ))}
               </div>
-            </FadeUp>
-            <WordReveal
-              text="Built for how students actually live"
-              containerStyle={{ justifyContent:"center" }}
-              wordStyle={{ fontFamily:HF, fontWeight:800, fontSize:"clamp(2rem,4vw,3.1rem)", color:NAVY, letterSpacing:"-0.025em", lineHeight:1.15 }}
-              delay={0.1}
-            />
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))", gap:24 }}>
-            {FEATURES.map((f,i)=>(<FeatureCard key={f.title} f={f} delay={i*0.09} />))}
-          </div>
-        </div>
-      </ParallaxSection>
-
-      <SectionDivider />
-
-      {/* ════════════════════════════════════════════════════════════
-          HOW IT WORKS
-      ════════════════════════════════════════════════════════════ */}
-      <ParallaxSection id="how-it-works" strength={18} style={{ background:SURF, padding:"116px 24px" }}>
-        <div style={{ maxWidth:980, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:76 }}>
-            <FadeUp>
-              <div style={{
-                display:"inline-flex", alignItems:"center", gap:8,
-                background:"rgba(15,45,94,0.06)", border:"1px solid rgba(15,45,94,0.1)",
-                borderRadius:100, padding:"6px 18px", marginBottom:24,
-              }}>
-                <span style={{ fontSize:"0.64rem", fontWeight:700, color:NAVY, fontFamily:BF, letterSpacing:"0.22em", textTransform:"uppercase" }}>
-                  How It Works
-                </span>
+            </motion.article>
+            <motion.article {...reveal} transition={{ ...reveal.transition, delay: 0.12 }} className="r8-card" style={{ padding: 30, borderRadius: 32 }}>
+              <span className="r8-badge r8-badge--iri" style={{ marginBottom: 18 }}><Icon name="shield" size={14} />Safety first</span>
+              <h3 style={{ fontSize: 28, marginBottom: 12 }}>Built-in safety</h3>
+              <p className="r8-muted" style={{ fontSize: 16, lineHeight: 1.55 }}>Photo verification reviewed by a real person, plus reporting and blocking on every profile and chat.</p>
+            </motion.article>
+            <motion.article {...reveal} transition={{ ...reveal.transition, delay: 0.18 }} className="r8-card" style={{ padding: 30, borderRadius: 32 }}>
+              <span className="r8-badge r8-badge--iri" style={{ marginBottom: 18 }}><Icon name="chat" size={14} />Real time</span>
+              <h3 style={{ fontSize: 28, marginBottom: 16 }}>Match, then talk</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {[["them", "hiii saw you're an early bird too"], ["me", "yes!! 6am gym girl here"], ["them", "ok we're living together"]].map(([who, t], k) => (
+                  <motion.span key={t} initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 + k * 0.25 }}
+                    style={{ alignSelf: who === "me" ? "flex-end" : "flex-start", maxWidth: "85%", padding: "9px 14px", borderRadius: 20, fontSize: 14.5, ...(who === "me" ? { background: "linear-gradient(135deg, #6F8BFF, #B07CFF)", color: "#fff", borderBottomRightRadius: 6 } : { background: "var(--elev-2)", border: "1px solid var(--line)", borderBottomLeftRadius: 6 }) }}>{t}</motion.span>
+                ))}
               </div>
-            </FadeUp>
-            <WordReveal
-              text="Three steps to your perfect roommate"
-              containerStyle={{ justifyContent:"center" }}
-              wordStyle={{ fontFamily:HF, fontWeight:800, fontSize:"clamp(2rem,4vw,3rem)", color:NAVY, letterSpacing:"-0.025em", lineHeight:1.15 }}
-              delay={0.1}
-            />
+            </motion.article>
           </div>
-
-          <div style={{ position:"relative" }}>
-            {/* Connector line */}
-            <div className="step-connector">
-              <motion.div
-                initial={{ scaleX:0 }}
-                whileInView={{ scaleX:1 }}
-                viewport={{ once:true, margin:"-80px" }}
-                transition={{ duration:1.5, delay:0.35, ease:[0.16,1,0.3,1] }}
-                style={{
-                  position:"absolute", top:52, left:"19%", right:"19%", height:1.5,
-                  background:`linear-gradient(90deg,${GOLD},${BLUE})`,
-                  transformOrigin:"left", opacity:0.45,
-                }}
-              />
-            </div>
-
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))", gap:36 }}>
-              {STEPS.map((s,i)=>(
-                <FadeUp key={s.n} delay={i*0.15}>
-                  <motion.div
-                    whileHover={{ y:-6 }}
-                    transition={{ type:"spring", stiffness:280, damping:20 }}
-                    style={{ background:WHITE, border:`1px solid ${BORD}`, borderRadius:20, padding:"36px 28px", boxShadow:"0 4px 24px rgba(0,0,0,0.05)" }}
-                  >
-                    <div style={{ width:54, height:54, borderRadius:"50%", background:`linear-gradient(135deg,${NAVY},${BLUE})`, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24, position:"relative", boxShadow:"0 6px 22px rgba(15,45,94,0.28)" }}>
-                      <span style={{ fontFamily:HF, fontWeight:900, fontSize:"1rem", color:WHITE }}>{s.n}</span>
-                      <div style={{ position:"absolute", top:-3, right:-3, width:12, height:12, borderRadius:"50%", background:GOLD, boxShadow:"0 2px 8px rgba(245,158,11,0.6)" }} />
-                    </div>
-                    <div style={{ fontSize:"1.8rem", marginBottom:12 }}>{s.icon}</div>
-                    <h3 style={{ fontFamily:HF, fontWeight:700, fontSize:"1.15rem", color:NAVY, margin:"0 0 12px" }}>{s.title}</h3>
-                    <p style={{ color:MUTED, fontSize:"0.92rem", lineHeight:1.72, margin:0, fontFamily:BF }}>{s.desc}</p>
-                  </motion.div>
-                </FadeUp>
-              ))}
-            </div>
-          </div>
-
-          <FadeUp delay={0.3} style={{ textAlign:"center", marginTop:58 }}>
-            <motion.button
-              whileHover={{ scale:1.05, y:-3 }} whileTap={{ scale:0.97 }}
-              onClick={handleStart}
-              style={{ background:NAVY, color:WHITE, border:"none", padding:"16px 42px", borderRadius:10, fontWeight:700, fontSize:"1rem", cursor:"pointer", fontFamily:HF, boxShadow:"0 8px 28px rgba(15,45,94,0.28)" }}
-            >Find Your Room8 →</motion.button>
-          </FadeUp>
         </div>
-      </ParallaxSection>
+      </section>
 
+      {/* Testimonials (real only) */}
       {TESTIMONIALS.length >= TESTIMONIALS_MIN_TO_SHOW && (
-        <section style={{ background:WHITE, padding:"104px 24px" }}>
-          <div style={{ maxWidth:1080, margin:"0 auto" }}>
-            <h2 style={{ textAlign:"center", fontFamily:HF, fontWeight:800, fontSize:"clamp(1.8rem,3.6vw,2.6rem)", color:NAVY, letterSpacing:"-0.025em", margin:"0 0 48px" }}>What beta testers are saying</h2>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:24 }}>
-              {TESTIMONIALS.slice(0,6).map((t,i)=>(<TestimonialCard key={t.name} t={t} delay={i*0.08} />))}
+        <section style={{ padding: "60px 20px 110px" }}>
+          <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+            <SectionTitle eyebrow="From the beta" title="What students are saying" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+              {TESTIMONIALS.slice(0, 6).map((t, i) => (
+                <motion.figure key={t.name} {...reveal} transition={{ ...reveal.transition, delay: i * 0.06 }} className="r8-card" style={{ margin: 0, padding: 26, borderRadius: 28, display: "flex", flexDirection: "column", gap: 18 }}>
+                  <blockquote style={{ margin: 0, fontSize: 18, lineHeight: 1.5, fontFamily: "var(--display)", fontWeight: 500, letterSpacing: "-0.01em", flex: 1 }}>"{t.quote}"</blockquote>
+                  <figcaption style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <Avatar src={t.photo} name={t.name} size={44} />
+                    <span><b style={{ display: "block", fontSize: 15 }}>{t.name}</b><span className="r8-faint" style={{ fontSize: 13.5 }}>{[t.year, t.school].filter(Boolean).join(", ")}</span></span>
+                  </figcaption>
+                </motion.figure>
+              ))}
             </div>
           </div>
         </section>
       )}
 
-      <SectionDivider dark />
-
-      {/* ════════════════════════════════════════════════════════════
-          HONEST LAUNCH MESSAGING
-      ════════════════════════════════════════════════════════════ */}
-      <ParallaxSection
-        strength={18}
-        style={{ background:`linear-gradient(135deg,${NAVY} 0%,#1e3a6e 100%)`, padding:"96px 24px", position:"relative", overflow:"hidden" }}
-      >
-        <div style={{ position:"absolute", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(245,158,11,0.1) 0%,transparent 70%)", top:"50%", left:"50%", transform:"translate(-50%,-50%)", pointerEvents:"none" }} />
-        <div style={{ maxWidth:960, margin:"0 auto", position:"relative", zIndex:1 }}>
-          <div style={{ textAlign:"center", marginBottom:60 }}>
-            <WordReveal
-              text="Where we're headed"
-              containerStyle={{ justifyContent:"center" }}
-              wordStyle={{ fontFamily:HF, fontWeight:800, fontSize:"clamp(2rem,4vw,2.9rem)", color:WHITE, letterSpacing:"-0.025em", lineHeight:1.15 }}
-            />
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:20 }}>
-            {[
-              { label:"Early Access Open Now", sub:"Sign up free with your .edu email", icon:"🚀" },
-              { label:"Campus Pilots Next",    sub:"First campus pilots start this spring", icon:"🔑" },
-              { label:"Built for Students",    sub:"Free, always",           icon:"🎓" },
-              { label:"Seeking Partners",      sub:"Universities welcome",   icon:"🏫" },
-            ].map((s,i)=>(
-              <FadeUp key={s.label} delay={i*0.1}>
-                <motion.div
-                  whileHover={{ y:-5, boxShadow:"0 24px 60px rgba(0,0,0,0.3)" }}
-                  style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:"36px 24px", textAlign:"center", backdropFilter:"blur(16px)", boxShadow:"0 8px 32px rgba(0,0,0,0.15)" }}
-                >
-                  <div style={{ fontSize:"2.2rem", marginBottom:14 }}>{s.icon}</div>
-                  <div style={{ fontFamily:HF, fontWeight:800, fontSize:"1.05rem", color:WHITE, lineHeight:1.25, marginBottom:6 }}>{s.label}</div>
-                  <div style={{ color:"rgba(255,255,255,0.45)", fontSize:"0.8rem", fontFamily:BF }}>{s.sub}</div>
-                </motion.div>
-              </FadeUp>
+      {/* Status */}
+      <section style={{ padding: "40px 20px 110px" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+          <SectionTitle eyebrow="Where we're at" title="Early, on purpose." sub="We open campuses as they fill up, so the first time you swipe there are real people from your school on the other side." />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+            {[["sparkle", "Early access open now", "Sign up free with your .edu email"], ["key", "Campus pilots next", "First campus pilots start this spring"], ["school", "Built for students", "Free, always"], ["users", "Seeking partners", "Housing offices welcome"]].map(([ic, t, d], i) => (
+              <motion.div key={t} {...reveal} transition={{ ...reveal.transition, delay: i * 0.06 }} className="r8-card" style={{ padding: 22, borderRadius: 24, display: "flex", gap: 14, alignItems: "center" }}>
+                <span style={{ width: 44, height: 44, borderRadius: 14, background: "var(--iri-soft)", border: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name={ic} size={21} /></span>
+                <span><b style={{ display: "block", fontSize: 16 }}>{t}</b><span className="r8-muted" style={{ fontSize: 14 }}>{d}</span></span>
+              </motion.div>
             ))}
           </div>
         </div>
-      </ParallaxSection>
+      </section>
 
-      <SectionDivider />
-
-      {/* ════════════════════════════════════════════════════════════
-          PARTNER WITH US — for universities
-      ════════════════════════════════════════════════════════════ */}
-      <ParallaxSection strength={18} style={{ background:SURF, padding:"116px 24px" }}>
-        <div style={{ maxWidth:960, margin:"0 auto" }}>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:80, alignItems:"center" }} className="partner-grid">
-            {/* Left: copy */}
+      {/* For universities */}
+      <section style={{ padding: "0 20px 110px" }}>
+        <motion.div {...reveal} style={{ maxWidth: 1120, margin: "0 auto", borderRadius: 40, padding: "clamp(32px, 6vw, 64px)", position: "relative", overflow: "hidden", background: "#0E0F12", color: "#F2F2F5", border: "1px solid rgba(255,255,255,.1)" }}>
+          <div aria-hidden="true" style={{ position: "absolute", width: 520, height: 520, borderRadius: "50%", background: "conic-gradient(from 90deg, #5FE3F4, #9DB1FF, #DB8CF2, #F58AC4, #5FE3F4)", filter: "blur(100px)", opacity: .45, right: -160, top: -200 }} />
+          <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 40, alignItems: "center" }}>
             <div>
-              <FadeUp>
-                <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.2)", borderRadius:100, padding:"6px 18px", marginBottom:24 }}>
-                  <span style={{ fontSize:"0.64rem", fontWeight:700, color:GOLD_D, fontFamily:BF, letterSpacing:"0.22em", textTransform:"uppercase" }}>For Universities</span>
-                </div>
-              </FadeUp>
-              <WordReveal
-                text="Partner with Room8"
-                containerStyle={{}}
-                wordStyle={{ fontFamily:HF, fontWeight:800, fontSize:"clamp(2rem,4vw,3rem)", color:NAVY, letterSpacing:"-0.025em", lineHeight:1.1, display:"block" }}
-                delay={0.1}
-              />
-              <FadeUp delay={0.3}>
-                <p style={{ color:MUTED, fontSize:"1rem", lineHeight:1.78, margin:"20px 0 36px", fontFamily:BF }}>
-                  We're actively partnering with universities and housing coordinators to bring verified, student-safe roommate matching to campuses across the country. Be among the first institutions to offer this to your students.
-                </p>
-                <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-                  <motion.a
-                    whileHover={{ scale:1.04, y:-2 }} whileTap={{ scale:0.97 }}
-                    href="mailto:partner@room8app.com"
-                    style={{ background:NAVY, color:WHITE, padding:"14px 32px", borderRadius:10, fontWeight:700, fontSize:"0.95rem", textDecoration:"none", fontFamily:HF, boxShadow:"0 6px 24px rgba(15,45,94,0.28)", display:"inline-block" }}
-                  >Contact Us →</motion.a>
-                  <motion.a
-                    whileHover={{ scale:1.03 }}
-                    href="/purpose"
-                    style={{ color:NAVY, border:`1.5px solid ${BORD}`, padding:"13px 28px", borderRadius:10, fontWeight:600, fontSize:"0.95rem", textDecoration:"none", fontFamily:BF, display:"inline-block" }}
-                  >Learn More</motion.a>
-                </div>
-              </FadeUp>
+              <p className="r8-eyebrow" style={{ color: "rgba(242,242,245,.55)", marginBottom: 14 }}>For universities</p>
+              <h2 style={{ fontSize: "clamp(32px, 5vw, 48px)", lineHeight: 1.04, color: "#F2F2F5" }}>Give your students a better first roommate.</h2>
+              <p style={{ fontSize: 17, lineHeight: 1.55, marginTop: 16, color: "rgba(242,242,245,.7)" }}>Students verify with their school email, match on lifestyle, and can confirm roommates straight to your housing office.</p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 26 }}>
+                <a href="mailto:partner@room8app.com" className="r8-btn r8-btn--primary">Contact us<Icon name="arrowRight" size={18} /></a>
+                <Link to="/schools" className="r8-btn" style={{ color: "#F2F2F5", border: "1px solid rgba(255,255,255,.2)", background: "rgba(255,255,255,.06)" }}>Learn more</Link>
+              </div>
             </div>
-
-            {/* Right: benefit cards */}
-            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-              {[
-                { icon:"✅", title:"School-Verified Profiles", desc:"Students verify with their school .edu email, and verified students are marked on their profile." },
-                { icon:"🛡️", title:"Safety First",             desc:"Built-in reporting, blocking, and moderation tools." },
-                { icon:"📊", title:"Housing Insights",         desc:"Aggregate data on student housing preferences at your school." },
-                { icon:"💬", title:"Dedicated Support",        desc:"White-glove onboarding and ongoing support for your housing office." },
-              ].map((b,i)=>(
-                <FadeUp key={b.title} delay={0.15+i*0.08}>
-                  <motion.div
-                    whileHover={{ x:4 }}
-                    transition={{ type:"spring", stiffness:300 }}
-                    style={{ display:"flex", gap:16, alignItems:"flex-start", background:WHITE, border:`1px solid ${BORD}`, borderRadius:14, padding:"18px 20px", boxShadow:"0 2px 12px rgba(0,0,0,0.04)" }}
-                  >
-                    <span style={{ fontSize:"1.4rem", flexShrink:0 }}>{b.icon}</span>
-                    <div>
-                      <div style={{ fontFamily:HF, fontWeight:700, fontSize:"0.95rem", color:NAVY, marginBottom:4 }}>{b.title}</div>
-                      <div style={{ color:MUTED, fontSize:"0.83rem", lineHeight:1.6, fontFamily:BF }}>{b.desc}</div>
-                    </div>
-                  </motion.div>
-                </FadeUp>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+              {[["school", "Verified students", "School email confirmation"], ["shield", "Safety tools", "Reporting, blocking, moderation"], ["grid", "Housing insights", "Aggregate preference data"], ["users", "Real support", "Hands-on onboarding"]].map(([ic, t, d]) => (
+                <div key={t} style={{ padding: 18, borderRadius: 22, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
+                  <Icon name={ic} size={22} />
+                  <b style={{ display: "block", marginTop: 12, fontSize: 15.5 }}>{t}</b>
+                  <span style={{ fontSize: 13.5, color: "rgba(242,242,245,.6)" }}>{d}</span>
+                </div>
               ))}
             </div>
           </div>
-        </div>
-      </ParallaxSection>
-
-      <FounderSection />
-
-      <FAQSection />
-
-      <SectionDivider dark />
-
-      {/* ════════════════════════════════════════════════════════════
-          FINAL CTA
-      ════════════════════════════════════════════════════════════ */}
-      <section style={{
-        background:`linear-gradient(168deg,${DARK} 0%,${NAVY} 100%)`,
-        padding:"128px 24px", textAlign:"center",
-        position:"relative", overflow:"hidden",
-      }}>
-        {[
-          { w:500, top:"-20%", left:"-10%",  op:0.09 },
-          { w:700, top:"30%",  right:"-12%", op:0.08 },
-          { w:350, bottom:"-15%", left:"35%",op:0.12 },
-        ].map((o,i)=>(
-          <div key={i} style={{ position:"absolute", width:o.w, height:o.w, borderRadius:"50%", background:`radial-gradient(circle,rgba(245,158,11,${o.op}) 0%,transparent 70%)`, top:o.top, left:o.left, right:o.right, bottom:o.bottom, pointerEvents:"none" }} />
-        ))}
-
-        <motion.div
-          initial={{ opacity:0, y:52 }}
-          whileInView={{ opacity:1, y:0 }}
-          viewport={{ once:true, margin:"-60px" }}
-          transition={{ duration:0.9, ease:[0.16,1,0.3,1] }}
-          style={{ maxWidth:660, margin:"0 auto", position:"relative", zIndex:1 }}
-        >
-          <motion.div
-            initial={{ scaleX:0 }} whileInView={{ scaleX:1 }}
-            viewport={{ once:true }} transition={{ duration:0.85, delay:0.2 }}
-            style={{ width:64, height:3, background:`linear-gradient(90deg,${GOLD},${GOLD_D})`, borderRadius:2, margin:"0 auto 36px", transformOrigin:"center" }}
-          />
-          <WordReveal
-            text="The smarter way to find your roommate"
-            containerStyle={{ justifyContent:"center" }}
-            wordStyle={{ fontFamily:HF, fontWeight:900, fontSize:"clamp(2.2rem,5vw,4rem)", lineHeight:1.08, letterSpacing:"-0.03em", color:WHITE }}
-            delay={0.15}
-          />
-          <motion.p
-            initial={{ opacity:0 }} whileInView={{ opacity:1 }}
-            viewport={{ once:true }} transition={{ delay:0.6, duration:0.7 }}
-            style={{ color:"rgba(255,255,255,0.5)", lineHeight:1.78, marginBottom:46, fontSize:"1.05rem", fontFamily:BF, marginTop:24 }}
-          >
-            Stop leaving your living situation to chance. Be among the first students to use Room8 at your university — free early access, now open.
-          </motion.p>
-          <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
-            <motion.button
-              whileHover={{ scale:1.06, y:-4 }} whileTap={{ scale:0.97 }}
-              onClick={handleStart}
-              style={{ background:GOLD, color:DARK, border:"none", padding:"17px 42px", borderRadius:10, fontWeight:800, fontSize:"1.05rem", cursor:"pointer", fontFamily:HF, boxShadow:"0 8px 40px rgba(245,158,11,0.52)", letterSpacing:"0.01em" }}
-            >Get Early Access →</motion.button>
-            {!user && (
-              <motion.div whileHover={{ scale:1.03 }}>
-                <Link to="/login" style={{ color:"rgba(255,255,255,0.72)", border:"1.5px solid rgba(255,255,255,0.18)", padding:"16px 36px", borderRadius:10, fontWeight:600, fontSize:"1rem", textDecoration:"none", display:"block", fontFamily:BF, backdropFilter:"blur(10px)", background:"rgba(255,255,255,0.04)" }}>Log In</Link>
-              </motion.div>
-            )}
-          </div>
-          <motion.p
-            initial={{ opacity:0 }} whileInView={{ opacity:1 }}
-            viewport={{ once:true }} transition={{ delay:0.8 }}
-            style={{ color:"rgba(255,255,255,0.22)", fontSize:"0.78rem", marginTop:30, fontFamily:BF, letterSpacing:"0.06em" }}
-          >
-            Free for students · Early access beta · School verified
-          </motion.p>
         </motion.div>
       </section>
 
-      {/* ── Global + responsive styles ── */}
-      <style>{`
-        /* Custom cursor */
-        .r8-cursor-page,
-        .r8-cursor-page * {
-          cursor: none !important;
-        }
-        @media (hover: none), (pointer: coarse) {
-          .r8-cursor-page,
-          .r8-cursor-page * { cursor: auto !important; }
-        }
+      {/* Founders */}
+      <section id="about" style={{ padding: "40px 20px 110px", scrollMarginTop: 80 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <SectionTitle eyebrow="Who's behind Room8" title="Built by students who've been there." sub="Room8 started as a student project at The Evergreen State College in 2024. We're two co-founders building it for students like us." />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+            {FOUNDERS.map((f, i) => (
+              <motion.div key={f.name} {...reveal} transition={{ ...reveal.transition, delay: i * 0.08 }} className="r8-card" style={{ padding: 24, borderRadius: 28, display: "flex", gap: 18, alignItems: "flex-start" }}>
+                <Avatar src={f.photo} name={f.name} size={76} ring />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontFamily: "var(--display)", fontWeight: 700, fontSize: 21, letterSpacing: "-0.02em" }}>{f.name}</p>
+                  <p className="r8-muted" style={{ fontSize: 14.5 }}>{f.role}, {f.school}</p>
+                  {f.story && <p style={{ fontSize: 15, lineHeight: 1.55, marginTop: 12 }}>{f.story}</p>}
+                  {f.links.filter((l) => l.href).length > 0 && (
+                    <div style={{ display: "flex", gap: 14, marginTop: 12 }}>
+                      {f.links.filter((l) => l.href).map((l) => <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text)", textDecoration: "underline", display: "inline-flex", alignItems: "center", gap: 4 }}>{l.label}<Icon name="arrowRight" size={14} /></a>)}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        /* Hide floating cards on small screens */
-        .hero-cards { pointer-events: none; }
-        @media (max-width: 960px) {
-          .hero-cards > *:nth-child(3),
-          .hero-cards > *:nth-child(4) { display: none !important; }
-        }
-        @media (max-width: 767px) {
-          .hero-cards { display: none !important; }
-          .step-connector { display: none !important; }
-        }
-        #faq details > summary::-webkit-details-marker { color: ${GOLD}; }
-        @media (max-width: 600px) {
-          section { padding-top: 72px !important; padding-bottom: 72px !important; }
-        }
-      `}</style>
+      {/* FAQ */}
+      <section id="faq" style={{ padding: "40px 20px 110px", scrollMarginTop: 80 }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <SectionTitle title="Questions students ask" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {FAQS.map((f) => {
+              const open = openFaq === f.id;
+              return (
+                <div key={f.id} id={f.id} className="r8-card" style={{ borderRadius: 22, overflow: "hidden", scrollMarginTop: 100 }}>
+                  <button onClick={() => setOpenFaq(open ? null : f.id)} aria-expanded={open} aria-controls={`${f.id}-a`}
+                    style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "20px 22px", textAlign: "left", fontFamily: "var(--display)", fontWeight: 600, fontSize: 18, letterSpacing: "-0.015em" }}>
+                    {f.q}
+                    <motion.span animate={{ rotate: open ? 45 : 0 }} transition={{ type: "spring", stiffness: 400, damping: 24 }} style={{ width: 34, height: 34, borderRadius: "50%", background: open ? "var(--iri)" : "var(--glass-2)", color: open ? "#0E0F12" : "var(--text)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="plus" size={18} stroke={2.2} /></motion.span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {open && (
+                      <motion.div id={`${f.id}-a`} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 32 }} style={{ overflow: "hidden" }}>
+                        <p className="r8-muted" style={{ padding: "0 22px 22px", fontSize: 16, lineHeight: 1.6 }}>
+                          {f.a} {f.link && <Link to={f.link.to} style={{ color: "var(--text)", fontWeight: 600, textDecoration: "underline" }}>{f.link.label}</Link>}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section style={{ position: "relative", padding: "80px 20px 140px", textAlign: "center", overflow: "hidden" }}>
+        <div aria-hidden="true" style={{ position: "absolute", width: 640, height: 640, left: "50%", top: "50%", marginLeft: -320, marginTop: -320, borderRadius: "50%", background: "conic-gradient(from 0deg, #5FE3F4, #9DB1FF, #DB8CF2, #F58AC4, #5FE3F4)", filter: "blur(120px)", opacity: .16 }} />
+        <motion.div {...reveal} style={{ position: "relative", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <h2 style={{ fontSize: "clamp(40px, 7vw, 72px)", lineHeight: 1, letterSpacing: "-0.045em" }}>Stop leaving it <span className="r8-iri-text">to chance.</span></h2>
+          <p className="r8-muted" style={{ fontSize: 18, marginTop: 18, maxWidth: 520 }}>Be one of the first students to use Room8 at your school. Free early access, open now.</p>
+          <button className="r8-btn r8-btn--primary r8-btn--lg" onClick={start} style={{ marginTop: 32 }}>{user ? "Open the App" : "Get the App"}</button>
+          {!user && <Link to="/login" className="r8-btn r8-btn--ghost" style={{ marginTop: 10 }}>I already have an account</Link>}
+        </motion.div>
+      </section>
+
+      <style>{`@media (min-width: 900px) { .r8-hero { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) !important; } }`}</style>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import re
 import os
 import sys
 sys.stdout.reconfigure(line_buffering=True)
@@ -120,6 +121,8 @@ def create_app():
     # Native app origins (Capacitor iOS + Android webviews) are always allowed
     raw_origins += ",capacitor://localhost,https://localhost,http://localhost"
     allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+    # Netlify deploy previews of this site only (deploy-preview-<n>--findroom8.netlify.app)
+    allowed_origins.append(re.compile(r"^https://deploy-preview-\d+--findroom8\.netlify\.app$"))
 
     CORS(
         app,

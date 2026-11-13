@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getCurrentUser, logout as apiLogout } from "../api";
-import { Mark, Wordmark } from "../ui/Logo";
+import { Wordmark } from "../ui/Logo";
 import Icon from "../ui/Icon";
 
 const PUBLIC_LINKS = [
@@ -50,7 +50,7 @@ export default function Header() {
           display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 20px",
         }}>
           <Link to="/" aria-label="Room8 home" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}><Mark size={39} /><Wordmark size={27} /></span>
+            <Wordmark size={31} />
           </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FOUNDERS, LEGAL_ENTITY } from "../siteContent";
-import { Mark, Wordmark } from "../ui/Logo";
+import { Wordmark } from "../ui/Logo";
 
 const COLS = [
   { title: "Product", links: [["/#how-it-works", "How it works"], ["/#faq", "FAQ"], ["/register", "Sign up"], ["/login", "Log in"]] },
@@ -17,7 +17,7 @@ export default function Footer() {
       <div style={{ maxWidth: 1120, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 32 }}>
         <div style={{ gridColumn: "span 1", minWidth: 220 }}>
           <Link to="/" style={{ display: "inline-flex", alignItems: "center", gap: 8 }} aria-label="Room8 home">
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><Mark size={33} /><Wordmark size={23} /></span>
+            <Wordmark size={23} />
           </Link>
           <p className="r8-muted" style={{ fontSize: 14.5, marginTop: 14, maxWidth: 260 }}>Roommate matching for college students. Verified, campus only, free for students.</p>
         </div>

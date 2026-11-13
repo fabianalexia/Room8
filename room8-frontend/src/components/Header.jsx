@@ -53,7 +53,8 @@ export default function Header() {
             <Wordmark size={27} />
           </Link>
 
-          <div className="r8-hdr-links" style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="r8-hdr-links" style={{ display: "flex", alignItems: "center", gap: 2, marginRight: 10 }}>
             {links.map((l) => {
               const active = !l.to.includes("#") && pathname === l.to;
               return (
@@ -65,14 +66,13 @@ export default function Header() {
             })}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div className="r8-hdr-links" style={{ display: "flex", gap: 8 }}>
               {user ? (
                 <><Link to="/app" className="r8-btn r8-btn--dark r8-btn--sm">Open app</Link><button className="r8-btn r8-btn--soft r8-btn--sm" onClick={handleLogout}>Log out</button></>
               ) : (
                 <>
-                  <Link to="/login" className="r8-btn r8-btn--soft r8-btn--sm">Log In</Link>
-                  <Link to="/register" className="r8-btn r8-btn--dark r8-btn--sm">Get the App</Link>
+                  <Link to="/login" style={{ display: "inline-flex", alignItems: "center", height: 46, padding: "0 14px", fontSize: 15, fontWeight: 500, color: "var(--text-2)" }}>Log in</Link>
+                  <Link to="/register" className="r8-btn r8-btn--dark" style={{ height: 46, padding: "0 22px", fontSize: 15 }}>Get the App</Link>
                 </>
               )}
             </div>

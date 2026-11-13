@@ -51,5 +51,19 @@ jobs:
         run: |
           xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
             CODE_SIGNING_ALLOWED=NO build | tail -40
           exit ${PIPESTATUS[0]}
+
+      # Zipped Room8.app you can drag onto a running iOS Simulator to install it
+      - name: Package simulator app
+        working-directory: room8-frontend/ios/App
+        run: |
+          APP=$(find "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator" -maxdepth 1 -name "*.app" | head -1)
+          cd "$(dirname "$APP")" && ditto -c -k --keepParent "$(basename "$APP")" "$RUNNER_TEMP/Room8-simulator.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: room8-ios-simulator
+          path: ${{ runner.temp }}/Room8-simulator.zip
+          retention-days: 14

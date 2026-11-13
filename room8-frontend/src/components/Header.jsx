@@ -58,7 +58,7 @@ export default function Header() {
             {links.map((l) => {
               const active = !l.to.includes("#") && pathname === l.to;
               return (
-                <Link key={l.to} to={l.to} style={{ padding: "8px 18px", fontSize: 15, fontWeight: 500, color: active ? "var(--text)" : "var(--text-2)", transition: "color .2s" }}
+                <Link key={l.to} to={l.to} className="r8-hdr-link" style={{ padding: "8px 18px", whiteSpace: "nowrap", fontSize: 15, fontWeight: 500, color: active ? "var(--text)" : "var(--text-2)", transition: "color .2s" }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; }} onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "var(--text-2)"; }}>
                   {l.label}
                 </Link>
@@ -66,12 +66,12 @@ export default function Header() {
             })}
           </div>
 
-            <div className="r8-hdr-links" style={{ display: "flex", gap: 8 }}>
+            <div className="r8-hdr-cta" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               {user ? (
-                <><Link to="/app" className="r8-btn r8-btn--dark r8-btn--sm">Open app</Link><button className="r8-btn r8-btn--soft r8-btn--sm" onClick={handleLogout}>Log out</button></>
+                <><Link to="/app" className="r8-btn r8-btn--dark r8-btn--sm">Open app</Link><button className="r8-btn r8-btn--soft r8-btn--sm r8-hdr-login" onClick={handleLogout}>Log out</button></>
               ) : (
                 <>
-                  <Link to="/login" style={{ display: "inline-flex", alignItems: "center", height: 46, padding: "0 14px", fontSize: 15, fontWeight: 500, color: "var(--text-2)" }}>Log in</Link>
+                  <Link to="/login" className="r8-hdr-login" style={{ display: "inline-flex", alignItems: "center", height: 46, padding: "0 14px", fontSize: 15, fontWeight: 500, color: "var(--text-2)" }}>Log in</Link>
                   <Link to="/register" className="r8-btn r8-btn--dark" style={{ height: 46, padding: "0 22px", fontSize: 15 }}>Get the App</Link>
                 </>
               )}
@@ -83,7 +83,7 @@ export default function Header() {
         </nav>
       </header>
       <style>{`
-        @media (max-width: 820px) { .r8-hdr-links { display: none !important; } .r8-hdr-menu { display: inline-flex !important; } }
+        @media (max-width: 900px) { .r8-hdr-login { display: none !important; } .r8-hdr-link { padding: 8px 10px !important; font-size: 14px !important; } } @media (max-width: 520px) { .r8-hdr-links { display: none !important; } .r8-hdr-menu { display: inline-flex !important; } .r8-hdr-cta .r8-btn { height: 40px !important; padding: 0 16px !important; font-size: 14px !important; } }
       `}</style>
 
       <AnimatePresence>

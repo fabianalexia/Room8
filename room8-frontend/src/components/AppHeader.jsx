@@ -18,7 +18,7 @@ export default function AppHeader({ right }) {
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--bg)", padding: "calc(var(--safe-t) + 14px) 20px 12px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <Wordmark size={30} />
+        <Wordmark size={28} />
         <div style={{ display: "flex", gap: 10 }}>
           {right}
           <button className="r8-icon-btn r8-icon-btn--round" aria-label="Edit preferences" onClick={() => navigate("/profile")} style={{ background: "var(--elev-2)", border: 0 }}>

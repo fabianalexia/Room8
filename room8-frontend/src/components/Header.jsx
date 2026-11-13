@@ -50,7 +50,7 @@ export default function Header() {
           display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 20px",
         }}>
           <Link to="/" aria-label="Room8 home" style={{ display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
-            <Wordmark size={27} />
+            <Wordmark size={31} />
           </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FOUNDERS, LEGAL_ENTITY } from "../siteContent";
-import { Mark, Wordmark } from "../ui/Logo";
+import { Wordmark } from "../ui/Logo";
 
 const COLS = [
   { title: "Product", links: [["/#how-it-works", "How it works"], ["/#faq", "FAQ"], ["/register", "Sign up"], ["/login", "Log in"]] },

@@ -37,10 +37,18 @@ export function Mark({ size = 32, surface = "var(--bg)", people = "var(--text)",
   );
 }
 
-export function Wordmark({ size = 24, color = "var(--text)", style }) {
+// "room" in the roof's cyan to periwinkle, then the mark itself is the 8
+export function Wordmark({ size = 24, color, style, surface, people }) {
+  const fs = size * 1.1;
+  const S = fs * 1.22;
   return (
-    <span style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: size * 1.08, lineHeight: 1, letterSpacing: "-0.045em", color, ...style }}>
-      Room8
+    <span aria-label="Room8" role="img" style={{ display: "inline-flex", alignItems: "flex-end", lineHeight: 1, ...style }}>
+      <span aria-hidden="true" style={{
+        fontFamily: "var(--display)", fontWeight: 800, fontSize: fs, lineHeight: 1, letterSpacing: "-0.05em",
+        ...(color ? { color } : { background: "linear-gradient(90deg, #2EC9F2, #7F8FFF)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }),
+        paddingBottom: fs * 0.02,
+      }}>room</span>
+      <Mark size={S} surface={surface} people={people} title="" style={{ marginLeft: -S * 0.19, marginBottom: fs * 0.13 - S * (4 / 70) }} />
     </span>
   );
 }

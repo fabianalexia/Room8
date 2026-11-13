@@ -29,12 +29,17 @@ const reveal = { initial: { opacity: 0.35, y: 24 }, whileInView: { opacity: 1, y
 
 function HeroPhone() {
   return (
-    <div style={{ position: "relative", width: 330, height: 680, borderRadius: 60, padding: 4, background: "linear-gradient(120deg, #F2F2F4 0%, #9C9DA3 18%, #E6E6E9 34%, #8D8E94 52%, #DADBDF 70%, #7E7F85 88%, #EDEDF0 100%)", boxShadow: "0 80px 120px -30px rgba(17,17,18,.45), 0 30px 60px rgba(17,17,18,.18)", flexShrink: 0 }}>
-      {[[-3, 150, 34], [-3, 200, 58], [-3, 268, 58], [331, 220, 92]].map(([x, y, h], i) => (
-        <span key={i} style={{ position: "absolute", left: x, top: y, width: 3, height: h, borderRadius: 2, background: "linear-gradient(90deg, #8D8E94, #D8D9DD)" }} />
+    <div style={{ position: "relative", width: 330, height: 680, transformStyle: "preserve-3d", flexShrink: 0 }}>
+      {/* metal side thickness: stacked layers give the frame real depth when tilted */}
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} style={{ position: "absolute", inset: 0, borderRadius: 62, transform: `translateZ(${-(i + 1)}px)`, background: "linear-gradient(90deg, #5d5e63, #c4c5ca 18%, #7b7c82 50%, #d3d4d8 82%, #5d5e63)" }} />
       ))}
-      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 56, padding: 8, background: "#0B0B0C" }}>
-      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 48, overflow: "hidden", background: "#F6F6F4", color: "#111112" }}>
+      {[[-4, 150, 34], [-4, 205, 62], [-4, 280, 62], [330, 228, 96]].map(([x, y, h], i) => (
+        <span key={"b" + i} style={{ position: "absolute", left: x, top: y, width: 5, height: h, borderRadius: 3, transform: "translateZ(-6px)", background: "linear-gradient(90deg, #6f7076, #d6d7db 60%, #8b8c92)" }} />
+      ))}
+      <div style={{ position: "absolute", inset: 0, borderRadius: 62, padding: 5, background: "linear-gradient(135deg, #FBFBFC 0%, #C9CACE 16%, #8E8F95 38%, #ECECEF 55%, #A2A3A9 74%, #DCDDE1 90%, #F4F4F6 100%)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,.75), inset 0 0 0 2.5px rgba(0,0,0,.18)" }}>
+      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 57, padding: 9, background: "#050506", boxShadow: "inset 0 0 0 1.5px #1c1c1f" }}>
+      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 48, overflow: "hidden", background: "#F6F6F4", color: "#111112", transform: "translateZ(0.5px)" }}>
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 8, pointerEvents: "none", background: "linear-gradient(115deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 32%)" }} />
         <div style={{ position: "absolute", top: 16, left: 26, right: 22, display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, zIndex: 6 }}><span>9:41</span><span style={{ display: "flex", gap: 5, alignItems: "center" }}><span style={{ width: 17, height: 10, borderRadius: 2, background: "linear-gradient(90deg,#111 75%,#bbb 75%)" }} /><span style={{ width: 22, height: 11, borderRadius: 3, border: "1.5px solid #111", padding: 1 }}><span style={{ display: "block", width: "80%", height: "100%", background: "#111", borderRadius: 1 }} /></span></span></div>
         <div style={{ position: "absolute", top: 12, left: "50%", marginLeft: -52, width: 104, height: 31, borderRadius: 20, background: "#000", zIndex: 7 }} />
@@ -69,6 +74,8 @@ function HeroPhone() {
           <Icon name="home" size={21} fill="#111112" /><Icon name="chat" size={21} color="rgba(17,17,18,.4)" /><Icon name="user" size={21} color="rgba(17,17,18,.4)" />
         </div>
         <div style={{ position: "absolute", bottom: 7, left: "50%", marginLeft: -60, width: 120, height: 4, borderRadius: 3, background: "#111112" }} />
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 9, pointerEvents: "none", background: "linear-gradient(118deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.08) 26%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 72%, rgba(255,255,255,.07) 100%)" }} />
+      </div>
       </div>
       </div>
     </div>
@@ -149,8 +156,13 @@ export default function Home() {
             <SignupCounter />
           </div>
           <motion.div style={{ y: phoneY, display: "flex", justifyContent: "center", position: "relative" }} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 90, damping: 18, delay: 0.2 }}>
-            <div aria-hidden="true" style={{ position: "absolute", inset: "-20% -30%", background: "radial-gradient(28% 32% at 30% 62%, rgba(95,227,244,.55), transparent 70%), radial-gradient(30% 34% at 72% 42%, rgba(219,140,242,.50), transparent 70%), radial-gradient(26% 26% at 62% 82%, rgba(245,138,196,.40), transparent 70%), radial-gradient(24% 24% at 40% 30%, rgba(157,177,255,.40), transparent 70%)", pointerEvents: "none" }} />
-            <div aria-hidden="true" style={{ position: "relative", transform: "perspective(1800px) rotateY(-16deg) rotateX(4deg) rotateZ(7deg)", transformStyle: "preserve-3d" }}><HeroPhone /></div>
+            <div aria-hidden="true" style={{ position: "absolute", inset: "-20% -30%", background: "radial-gradient(28% 32% at 30% 62%, rgba(95,227,244,.42), transparent 70%), radial-gradient(30% 34% at 72% 42%, rgba(219,140,242,.40), transparent 70%), radial-gradient(26% 26% at 62% 82%, rgba(245,138,196,.30), transparent 70%), radial-gradient(24% 24% at 40% 30%, rgba(157,177,255,.30), transparent 70%)", pointerEvents: "none" }} />
+            <div aria-hidden="true" className="r8-phone-fit">
+              <div className="r8-phone-fit__inner">
+                <div style={{ position: "absolute", left: 30, right: 10, bottom: -38, height: 70, borderRadius: "50%", background: "rgba(17,17,18,.38)", filter: "blur(26px)", transform: "skewX(-20deg)" }} />
+                <div style={{ transform: "perspective(2000px) rotateY(-24deg) rotateX(8deg) rotateZ(7deg)", transformStyle: "preserve-3d" }}><HeroPhone /></div>
+              </div>
+            </div>
           </motion.div>
         </div>
         <div style={{ maxWidth: 1200, margin: "72px auto 0", background: "var(--elev)", border: "1px solid var(--line)", borderRadius: 28, padding: "34px 36px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 28, boxShadow: "var(--shadow-1)" }}>
@@ -352,7 +364,11 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <style>{`@media (min-width: 900px) { .r8-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; } } @media (max-width: 899px) { .r8-hero > div:last-child { transform: scale(.82); margin: -40px 0 -60px; } }`}</style>
+      <style>{`@media (min-width: 900px) { .r8-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; } } .r8-phone-fit { --s: 1; width: calc(390px * var(--s)); height: calc(740px * var(--s)); position: relative; }
+        .r8-phone-fit__inner { position: absolute; left: 30px; top: 20px; width: 330px; height: 680px; transform: scale(var(--s)); transform-origin: 0 0; }
+        @media (max-width: 1100px) { .r8-phone-fit { --s: .86; } }
+        @media (max-width: 899px) { .r8-phone-fit { --s: .74; margin-top: 8px; } }
+        @media (max-width: 420px) { .r8-phone-fit { --s: .66; } }`}</style>
     </div>
   );
 }

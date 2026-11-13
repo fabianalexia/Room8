@@ -61,13 +61,6 @@ function Layout() {
   const isAppPage = APP_PAGES.some((p) => pathname.startsWith(p));
   const isAuthPage = ["/login", "/register", "/forgot-password", "/reset-password", "/auth/callback"].some((p) => pathname.startsWith(p));
   useRouteMeta(pathname);
-  // Website and sign-in pages are always light (matches the approved design); the app follows the phone.
-  useEffect(() => {
-    const light = !isAppPage;
-    document.documentElement.dataset.theme = light ? "light" : "";
-    const meta = document.querySelector('meta[name="theme-color"]:not([media])');
-    if (meta) meta.setAttribute("content", light ? "#F6F6F4" : "#0C0C0D");
-  }, [isAppPage]);
 
   return (
     <>

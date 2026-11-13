@@ -83,7 +83,7 @@ function HeroPhone() {
 }
 
 // Scales the 3D phone to whatever width its column has (desktop, half screen, phone)
-const HERO_PHONE_IMG = null; // set to "/brand/hero-phone.png" once the rendered phone image is added
+const HERO_PHONE_IMG = "/brand/hero-phone.webp"; // rendered phone; the code-built HeroPhone is the fallback
 function PhoneFit() {
   const ref = useRef(null);
   const [s, setS] = useState(1);
@@ -94,7 +94,15 @@ function PhoneFit() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  if (HERO_PHONE_IMG) return <img src={HERO_PHONE_IMG} alt="" style={{ position: "relative", width: "100%", maxWidth: 520, display: "block", margin: "0 auto" }} />;
+  if (HERO_PHONE_IMG) return (
+    <div aria-hidden="true" style={{ position: "relative", width: "100%", maxWidth: 400, margin: "0 auto" }}>
+      <div style={{ position: "absolute", left: "12%", right: "8%", bottom: "-3%", height: "9%", borderRadius: "50%", background: "rgba(17,17,18,.35)", filter: "blur(22px)" }} />
+      <picture>
+        <source srcSet={HERO_PHONE_IMG} type="image/webp" />
+        <img src="/brand/hero-phone.png" alt="" width="756" height="1473" fetchpriority="high" style={{ position: "relative", width: "100%", height: "auto", display: "block" }} />
+      </picture>
+    </div>
+  );
   return (
     <div ref={ref} aria-hidden="true" style={{ position: "relative", width: "100%", height: 740 * s }}>
       <div style={{ position: "absolute", left: "50%", top: 0, width: 400, height: 740, marginLeft: -200 * s, transform: `scale(${s})`, transformOrigin: "0 0" }}>

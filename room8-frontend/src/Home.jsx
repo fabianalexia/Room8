@@ -1,5 +1,5 @@
 // src/Home.jsx: Room8 public homepage
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { getCurrentUser, API_URL } from "./api";
@@ -29,9 +29,20 @@ const reveal = { initial: { opacity: 0.35, y: 24 }, whileInView: { opacity: 1, y
 
 function HeroPhone() {
   return (
-    <div style={{ position: "relative", width: 312, height: 640, borderRadius: 56, padding: 11, background: "linear-gradient(145deg, #E9E9EC, #B9BAC0 40%, #F4F4F6 60%, #A8A9AF)", boxShadow: "0 60px 120px rgba(17,17,18,.28), 0 0 0 1px rgba(17,17,18,.08)", flexShrink: 0 }}>
-      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 46, overflow: "hidden", background: "#F6F6F4", color: "#111112" }}>
-        <div style={{ position: "absolute", top: 11, left: "50%", marginLeft: -50, width: 100, height: 30, borderRadius: 20, background: "#000", zIndex: 5 }} />
+    <div style={{ position: "relative", width: 330, height: 680, transformStyle: "preserve-3d", flexShrink: 0 }}>
+      {/* metal side thickness: stacked layers give the frame real depth when tilted */}
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} style={{ position: "absolute", inset: 0, borderRadius: 62, transform: `translateZ(${-(i + 1)}px)`, background: "linear-gradient(90deg, #5d5e63, #c4c5ca 18%, #7b7c82 50%, #d3d4d8 82%, #5d5e63)" }} />
+      ))}
+      {[[-4, 150, 34], [-4, 205, 62], [-4, 280, 62], [330, 228, 96]].map(([x, y, h], i) => (
+        <span key={"b" + i} style={{ position: "absolute", left: x, top: y, width: 5, height: h, borderRadius: 3, transform: "translateZ(-6px)", background: "linear-gradient(90deg, #6f7076, #d6d7db 60%, #8b8c92)" }} />
+      ))}
+      <div style={{ position: "absolute", inset: 0, borderRadius: 62, padding: 5, background: "linear-gradient(135deg, #FBFBFC 0%, #C9CACE 16%, #8E8F95 38%, #ECECEF 55%, #A2A3A9 74%, #DCDDE1 90%, #F4F4F6 100%)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,.75), inset 0 0 0 2.5px rgba(0,0,0,.18)" }}>
+      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 57, padding: 9, background: "#050506", boxShadow: "inset 0 0 0 1.5px #1c1c1f" }}>
+      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: 48, overflow: "hidden", background: "#F6F6F4", color: "#111112", transform: "translateZ(0.5px)" }}>
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 8, pointerEvents: "none", background: "linear-gradient(115deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 32%)" }} />
+        <div style={{ position: "absolute", top: 16, left: 26, right: 22, display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, zIndex: 6 }}><span>9:41</span><span style={{ display: "flex", gap: 5, alignItems: "center" }}><span style={{ width: 17, height: 10, borderRadius: 2, background: "linear-gradient(90deg,#111 75%,#bbb 75%)" }} /><span style={{ width: 22, height: 11, borderRadius: 3, border: "1.5px solid #111", padding: 1 }}><span style={{ display: "block", width: "80%", height: "100%", background: "#111", borderRadius: 1 }} /></span></span></div>
+        <div style={{ position: "absolute", top: 12, left: "50%", marginLeft: -52, width: 104, height: 31, borderRadius: 20, background: "#000", zIndex: 7 }} />
         <div style={{ position: "absolute", top: 58, left: 18, right: 18, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontFamily: "var(--display)", fontWeight: 800, fontSize: 23, letterSpacing: "-0.045em" }}>Room8</span>
           <Icon name="sliders" size={18} />
@@ -39,7 +50,7 @@ function HeroPhone() {
         <div style={{ position: "absolute", top: 96, left: 14, right: 14, display: "flex", background: "#EDEDEA", borderRadius: 999, padding: 3, fontSize: 11.5, fontWeight: 600 }}>
           {["Match", "Browse", "For You"].map((t, i) => <span key={t} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: 999, background: i === 0 ? "#111112" : "transparent", color: i === 0 ? "#fff" : "rgba(17,17,18,.6)" }}>{t}</span>)}
         </div>
-        <div style={{ position: "absolute", top: 136, left: 10, right: 10, bottom: 64, borderRadius: 24, overflow: "hidden", background: "#2a2a2c" }}>
+        <div style={{ position: "absolute", top: 136, left: 10, right: 10, bottom: 66, borderRadius: 26, overflow: "hidden", background: "#2a2a2c" }}>
           <img src="/brand/riley.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
           <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "80px 14px 14px", background: "linear-gradient(180deg, transparent, rgba(17,17,18,.6) 35%, rgba(17,17,18,.92))", color: "#fff" }}>
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
@@ -62,14 +73,49 @@ function HeroPhone() {
         <div style={{ position: "absolute", bottom: 20, left: 0, right: 0, display: "flex", justifyContent: "space-around", color: "#111112" }}>
           <Icon name="home" size={21} fill="#111112" /><Icon name="chat" size={21} color="rgba(17,17,18,.4)" /><Icon name="user" size={21} color="rgba(17,17,18,.4)" />
         </div>
+        <div style={{ position: "absolute", bottom: 7, left: "50%", marginLeft: -60, width: 120, height: 4, borderRadius: 3, background: "#111112" }} />
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 9, pointerEvents: "none", background: "linear-gradient(118deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.08) 26%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 72%, rgba(255,255,255,.07) 100%)" }} />
+      </div>
+      </div>
+      </div>
+    </div>
+  );
+}
+
+// Scales the 3D phone to whatever width its column has (desktop, half screen, phone)
+const HERO_PHONE_IMG = "/brand/hero-phone.webp"; // rendered phone; the code-built HeroPhone is the fallback
+function PhoneFit() {
+  const ref = useRef(null);
+  const [s, setS] = useState(1);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setS(Math.min(1, e.contentRect.width / 400)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  if (HERO_PHONE_IMG) return (
+    <div aria-hidden="true" style={{ position: "relative", width: "100%", maxWidth: 400, margin: "0 auto" }}>
+      <div style={{ position: "absolute", left: "12%", right: "8%", bottom: "-3%", height: "9%", borderRadius: "50%", background: "rgba(17,17,18,.35)", filter: "blur(22px)" }} />
+      <picture>
+        <source srcSet={HERO_PHONE_IMG} type="image/webp" />
+        <img src="/brand/hero-phone.png" alt="" width="756" height="1473" fetchpriority="high" style={{ position: "relative", width: "100%", height: "auto", display: "block" }} />
+      </picture>
+    </div>
+  );
+  return (
+    <div ref={ref} aria-hidden="true" style={{ position: "relative", width: "100%", height: 740 * s }}>
+      <div style={{ position: "absolute", left: "50%", top: 0, width: 400, height: 740, marginLeft: -200 * s, transform: `scale(${s})`, transformOrigin: "0 0" }}>
+        <div style={{ position: "absolute", left: 60, right: 30, bottom: 2, height: 70, borderRadius: "50%", background: "rgba(17,17,18,.38)", filter: "blur(26px)", transform: "skewX(-20deg)" }} />
+        <div style={{ position: "absolute", left: 35, top: 25, transform: "perspective(2000px) rotateY(-24deg) rotateX(8deg) rotateZ(7deg)", transformStyle: "preserve-3d" }}><HeroPhone /></div>
       </div>
     </div>
   );
 }
 
 const FEATURES = [
-  { icon: "sliders", title: "Better matches", body: "Go beyond interests. Match on real lifestyle, habits and housing preferences." },
-  { icon: "shield", title: "Built for college", body: "Verified students, safer connections, and a community that just makes sense." },
+  { icon: "layers", title: "Better matches", body: "Go beyond interests. Match on real lifestyle, habits and housing preferences." },
+  { icon: "shieldCheck", title: "Built for college", body: "Verified students, safer connections, and a community that just makes sense." },
   { icon: "bolt", title: "Find your fit, faster", body: "Swipe, match and chat with people who are actually compatible." },
 ];
 
@@ -120,35 +166,36 @@ export default function Home() {
     <div style={{ position: "relative", overflow: "hidden" }}>
       {/* Hero */}
       <section style={{ position: "relative", padding: "calc(var(--safe-t) + 120px) 20px 40px" }}>
-        <div className="r8-hero" style={{ position: "relative", maxWidth: 1200, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "minmax(0, 1fr)", alignItems: "center", gap: 56 }}>
-          <div>
-            <h1 style={{ fontSize: "clamp(48px, 7.2vw, 88px)", lineHeight: 0.98, letterSpacing: "-0.05em", fontWeight: 800 }}>
-              <motion.span initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 20, delay: 0.05 }} style={{ display: "block" }}>Find a roommate</motion.span>
-              <motion.span initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 20, delay: 0.15 }} style={{ display: "block", paddingBottom: "0.06em" }}>who just gets it.</motion.span>
+        <div className="r8-hero" style={{ position: "relative", maxWidth: 1200, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "minmax(0, 1.12fr) minmax(0, .88fr)", alignItems: "center", gap: "clamp(6px, 3vw, 56px)" }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ fontSize: "clamp(30px, 8.6vw, 96px)", lineHeight: 0.93, letterSpacing: "-0.055em", fontWeight: 800 }}>
+              {["Find a", "roommate", "who just", "gets it."].map((t, i) => (
+                <motion.span key={t} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 140, damping: 20, delay: 0.05 + i * 0.07 }} style={{ display: "block", whiteSpace: "nowrap" }}>{t}</motion.span>
+              ))}
             </h1>
-            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="r8-muted" style={{ fontSize: "clamp(18px, 2.2vw, 21px)", lineHeight: 1.5, maxWidth: 500, marginTop: 26 }}>
+            <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} style={{ fontSize: "clamp(13px, 2.5vw, 21px)", lineHeight: 1.42, maxWidth: 470, marginTop: "clamp(12px, 2.4vw, 28px)", color: "var(--text)", opacity: .8 }}>
               The roommate matching app for college students. Meet compatible people, find your place, and build a better college year together.
             </motion.p>
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 34 }}>
-              <button className="r8-btn r8-btn--primary r8-btn--lg" onClick={start}>{user ? "Open the App" : "Get the App"}</button>
-              <a href="#how-it-works" className="r8-btn r8-btn--lg" style={{ border: "1.5px solid var(--line-2)", color: "var(--text)" }}>How It Works</a>
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ display: "flex", gap: "clamp(6px, 1.4vw, 12px)", flexWrap: "wrap", marginTop: "clamp(16px, 3vw, 34px)" }}>
+              <button className="r8-btn r8-btn--primary r8-hero-btn" onClick={start}>{user ? "Open the App" : "Get the App"}</button>
+              <a href="#how-it-works" className="r8-btn r8-hero-btn" style={{ background: "var(--elev)", border: "1px solid var(--line-2)", color: "var(--text)", boxShadow: "var(--shadow-1)" }}>How It Works</a>
             </motion.div>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="r8-faint" style={{ fontSize: 14, marginTop: 22, lineHeight: 1.5 }}>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="r8-faint" style={{ fontSize: "clamp(11px, 2vw, 14px)", marginTop: "clamp(12px, 2vw, 22px)", lineHeight: 1.5 }}>
               Free for students. We never sell your data. <Link to="/privacy" style={{ textDecoration: "underline", color: "var(--text-2)" }}>Privacy policy</Link>
             </motion.p>
             <SignupCounter />
           </div>
-          <motion.div style={{ y: phoneY, display: "flex", justifyContent: "center", position: "relative" }} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 90, damping: 18, delay: 0.2 }}>
-            <div aria-hidden="true" style={{ position: "absolute", inset: "-15% -25%", background: "radial-gradient(35% 30% at 35% 45%, rgba(219,140,242,.28), transparent 70%), radial-gradient(30% 30% at 70% 60%, rgba(95,227,244,.24), transparent 70%), radial-gradient(30% 25% at 55% 85%, rgba(245,138,196,.18), transparent 70%)", pointerEvents: "none" }} />
-            <div aria-hidden="true" style={{ position: "relative", transform: "rotate(8deg)" }}><HeroPhone /></div>
+          <motion.div style={{ y: phoneY, position: "relative", minWidth: 0 }} initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 90, damping: 18, delay: 0.2 }}>
+            <div aria-hidden="true" style={{ position: "absolute", inset: "-20% -30%", background: "radial-gradient(28% 32% at 30% 62%, rgba(95,227,244,.42), transparent 70%), radial-gradient(30% 34% at 72% 42%, rgba(219,140,242,.40), transparent 70%), radial-gradient(26% 26% at 62% 82%, rgba(245,138,196,.30), transparent 70%), radial-gradient(24% 24% at 40% 30%, rgba(157,177,255,.30), transparent 70%)", pointerEvents: "none" }} />
+            <PhoneFit />
           </motion.div>
         </div>
-        <div style={{ maxWidth: 1200, margin: "64px auto 0", borderTop: "1px solid var(--line)", paddingTop: 36, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 28 }}>
+        <div className="r8-feat" style={{ maxWidth: 1200, margin: "clamp(28px, 6vw, 72px) auto 0", background: "var(--elev)", border: "1px solid var(--line)", borderRadius: "clamp(18px, 3vw, 28px)", padding: "clamp(16px, 4vw, 36px)", display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "clamp(10px, 3vw, 28px)", boxShadow: "var(--shadow-1)" }}>
           {FEATURES.map((f) => (
-            <motion.div key={f.title} {...reveal}>
-              <Icon name={f.icon} size={26} />
-              <h3 style={{ fontSize: 19, fontWeight: 700, margin: "12px 0 6px" }}>{f.title}</h3>
-              <p className="r8-muted" style={{ fontSize: 15, lineHeight: 1.5, maxWidth: 300 }}>{f.body}</p>
+            <motion.div key={f.title} {...reveal} style={{ minWidth: 0 }}>
+              <Icon name={f.icon} size={24} />
+              <h3 style={{ fontSize: "clamp(13px, 2.4vw, 19px)", fontWeight: 700, margin: "10px 0 5px", letterSpacing: "-0.02em" }}>{f.title}</h3>
+              <p className="r8-muted" style={{ fontSize: "clamp(11px, 2vw, 15px)", lineHeight: 1.45, maxWidth: 300 }}>{f.body}</p>
             </motion.div>
           ))}
         </div>
@@ -342,7 +389,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <style>{`@media (min-width: 900px) { .r8-hero { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr) !important; } }`}</style>
+      <style>{`.r8-hero-btn { height: clamp(40px, 7vw, 54px); padding: 0 clamp(14px, 3.4vw, 30px); font-size: clamp(13px, 2.6vw, 17px); }`}</style>
     </div>
   );
 }

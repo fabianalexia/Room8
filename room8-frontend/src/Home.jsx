@@ -83,7 +83,7 @@ function HeroPhone() {
 }
 
 // Scales the 3D phone to whatever width its column has (desktop, half screen, phone)
-const HERO_PHONE_IMG = "/brand/hero-phone.webp"; // rendered phone; the code-built HeroPhone is the fallback
+const HERO_PHONE_IMG = "/brand/hero-phone.webp?v=2"; // rendered phone; the code-built HeroPhone is the fallback
 function PhoneFit() {
   const ref = useRef(null);
   const [s, setS] = useState(1);
@@ -99,7 +99,7 @@ function PhoneFit() {
       <div style={{ position: "absolute", left: "12%", right: "8%", bottom: "-3%", height: "9%", borderRadius: "50%", background: "rgba(17,17,18,.35)", filter: "blur(22px)" }} />
       <picture>
         <source srcSet={HERO_PHONE_IMG} type="image/webp" />
-        <img src="/brand/hero-phone.png" alt="" width="756" height="1473" fetchpriority="high" style={{ position: "relative", width: "100%", height: "auto", display: "block" }} />
+        <img src="/brand/hero-phone.png?v=2" alt="" width="748" height="1461" fetchpriority="high" style={{ position: "relative", width: "100%", height: "auto", display: "block" }} />
       </picture>
     </div>
   );

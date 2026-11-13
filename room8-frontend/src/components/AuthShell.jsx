@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Wordmark } from "../ui/Logo";
+import { Mark, Wordmark } from "../ui/Logo";
 import Icon from "../ui/Icon";
 
 export default function AuthShell({ title, sub, children, footer, banner }) {
@@ -14,7 +14,7 @@ export default function AuthShell({ title, sub, children, footer, banner }) {
       <aside className="r8-auth__brand" aria-hidden="true" style={{ display: "none", position: "relative", overflow: "hidden", padding: 44, flexDirection: "column", justifyContent: "space-between", color: "#fff", background: "#1a1a1c" }}>
         <img src="/brand/duo.jpg" alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "45% 30%" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(17,17,18,.35), rgba(17,17,18,.05) 30%, rgba(17,17,18,.75))" }} />
-        <Link to="/" style={{ position: "relative" }}><Wordmark size={30} color="#fff" /></Link>
+        <Link to="/" style={{ position: "relative" }}><span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}><Mark size={42} surface="#2a2a2c" people="#fff" /><Wordmark size={30} color="#fff" /></span></Link>
         <div style={{ position: "relative" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 14, padding: "14px 18px", borderRadius: 24, marginBottom: 24, background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.22)", WebkitBackdropFilter: "blur(24px) saturate(160%)", backdropFilter: "blur(24px) saturate(160%)" }}>
             <span className="r8-match-pill" style={{ height: 38, fontSize: 18 }}>98%</span>
@@ -29,7 +29,7 @@ export default function AuthShell({ title, sub, children, footer, banner }) {
         <div aria-hidden="true" className="r8-aura r8-aura--a" style={{ width: 380, height: 380, top: -200, right: -180 }} />
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 260, damping: 28 }} style={{ position: "relative", width: "100%", maxWidth: 420 }}>
           <Link to="/" aria-label="Room8 home" className="r8-auth__mlogo" style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 28 }}>
-            <Wordmark size={30} />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}><Mark size={42} /><Wordmark size={30} /></span>
           </Link>
           {banner}
           <h1 style={{ fontSize: "clamp(32px, 8vw, 40px)", marginBottom: 8 }}>{title}</h1>
